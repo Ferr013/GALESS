@@ -118,3 +118,105 @@ def plot_z_sigma_distributions(fig, ax, title, zl_array, zs_array, sigma_array,
         folderpath = 'img/'+utils.remove_spaces_from_string(title)
         if not os.path.exists(folderpath): os.makedirs(folderpath)
         plt.savefig(folderpath+'/'+fn_prefix+'corner_plts.jpg', dpi=200)
+
+
+
+def compare_z_distributions_surveys(ax, title, color,
+                                        zl_array, zs_array, sigma_array, matrix_LL, matrix_noLL,
+                                        PLOT_FOR_KEYNOTE = 1, SMOOTH = 0):
+    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
+
+    _n, __n, ___n, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
+    _ , __  , ___, P_zs_LL  , P_zl_LL  , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH)
+
+    ax[0].plot(zl_array, P_zl_noLL, c=color, ls='-' , label=title)
+    ax[0].plot(zs_array, P_zs_noLL, c=color, ls=':')
+    ax[1].plot(zl_array, P_zl_LL, c=color, ls='--', label=title)
+    ax[1].plot(zs_array, P_zs_LL, c=color, ls=':')
+    ax[0].set_ylabel(r'$P$', fontsize=20)
+    ax[0].set_xlabel(r'$z$', fontsize=20) 
+    ax[1].set_xlabel(r'$z$', fontsize=20)
+
+def single_compare_z_distributions_surveys(ax, title, color,
+                                        zl_array, zs_array, sigma_array, matrix_LL, matrix_noLL,
+                                        PLOT_FOR_KEYNOTE = 1, SMOOTH = 0):
+    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
+
+    _n, __n, ___n, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
+    _ , __  , ___, P_zs_LL  , P_zl_LL  , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH)
+
+    ax[0].plot(zl_array, P_zl_noLL, c=color, ls='-' , label=title)
+    ax[0].plot(zs_array, P_zs_noLL, c=color, ls=':')
+    ax[1].plot(zl_array, P_zl_LL, c=color, ls='--', label=title)
+    ax[1].plot(zs_array, P_zs_LL, c=color, ls=':')
+    ax[0].set_ylabel(r'$P$', fontsize=20)
+    ax[0].set_xlabel(r'$z$', fontsize=20) 
+    ax[1].set_xlabel(r'$z$', fontsize=20) 
+
+def single_compare_sigma_distributions_surveys(ax, title, color,
+                                        zl_array, zs_array, sigma_array, matrix_LL, matrix_noLL,
+                                        PLOT_FOR_KEYNOTE = 1, SMOOTH = 0):
+    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
+
+    _n, __n, ___n, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
+    _ , __  , ___, P_zs_LL  , P_zl_LL  , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH)
+
+    ax[0].plot(sigma_array, P_sg_noLL, c=color, ls = '-', label=title)
+    ax[1].plot(sigma_array, P_sg_LL  , c=color, ls = ':')
+    ax[0].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+    ax[1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+    ax[0].set_ylabel(r'$P$', fontsize=20)
+
+def compare_z_distributions_surveys(surveys_selection, sigma_array, zl_array, zs_array, cmap_c = cm.cool):
+    _col_  = iter(cmap_c(np.linspace(0, 1, len(surveys_selection))))
+
+    _PLOT_FOR_KEYNOTE = 1
+    set_plt_param(PLOT_FOR_KEYNOTE = _PLOT_FOR_KEYNOTE)
+    fig, ax = plt.subplots(1, 2, figsize=(11, 5), sharex=False, sharey=True)
+    plt.subplots_adjust(wspace=.02, hspace=.2)
+    for title in surveys_selection:
+        survey_params = utils.read_survey_params(title, VERBOSE = 0)
+        limit    = survey_params['limit']
+        cut      = survey_params['cut']
+        area     = survey_params['area']
+        seeing   = survey_params['seeing']
+        exp_time_sec = survey_params['exp_time_sec']
+        pixel_arcsec = survey_params['pixel_arcsec']
+        zero_point_m = survey_params['zero_point_m']
+        sky_bckgnd_m = survey_params['sky_bckgnd_m']
+        photo_band   = survey_params['photo_band']
+        matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+        single_compare_z_distributions_surveys(ax, title, next(_col_), 
+                                                        zl_array, zs_array, sigma_array, matrix_LL, matrix_noLL, 
+                                                        PLOT_FOR_KEYNOTE = 1, SMOOTH = 1)
+    ax[0].set_xlim((0,5.2))
+    ax[1].set_xlim((0,5.2))
+    ax[0].legend()
+    plt.show()
+
+def compare_sigma_distributions_surveys(surveys_selection, sigma_array, zl_array, zs_array, cmap_c = cm.cool):
+    _col_  = iter(cmap_c(np.linspace(0, 1, len(surveys_selection))))
+
+    _PLOT_FOR_KEYNOTE = 1
+    set_plt_param(PLOT_FOR_KEYNOTE = _PLOT_FOR_KEYNOTE)
+    fig, ax = plt.subplots(1, 2, figsize=(11, 5), sharex=False, sharey=True)
+    plt.subplots_adjust(wspace=.02, hspace=.2)
+    for title in surveys_selection:
+        survey_params = utils.read_survey_params(title, VERBOSE = 0)
+        limit    = survey_params['limit']
+        cut      = survey_params['cut']
+        area     = survey_params['area']
+        seeing   = survey_params['seeing']
+        exp_time_sec = survey_params['exp_time_sec']
+        pixel_arcsec = survey_params['pixel_arcsec']
+        zero_point_m = survey_params['zero_point_m']
+        sky_bckgnd_m = survey_params['sky_bckgnd_m']
+        photo_band   = survey_params['photo_band']
+        matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+        single_compare_sigma_distributions_surveys(ax, title, next(_col_), 
+                                                        zl_array, zs_array, sigma_array, matrix_LL, matrix_noLL, 
+                                                        PLOT_FOR_KEYNOTE = 1, SMOOTH = 1)
+    ax[0].set_xlim((100,400))
+    ax[1].set_xlim((100,400))
+    ax[0].legend()
+    plt.show()

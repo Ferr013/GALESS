@@ -4,8 +4,24 @@ import pickle
 def remove_spaces_from_string(string):
     return "".join(string.split())
 
-def load_pickled_files(temp_title):
-    TITLE = remove_spaces_from_string(temp_title)
+def read_survey_params(title, VERBOSE = 0):
+    TITLE = remove_spaces_from_string(title)
+    FPATH = os.path.split(os.path.dirname(os.path.abspath('')))[0]+'/GALESS/galess/data/surveys_params/'+TITLE+'.param'
+    params = {}
+    with open(FPATH, "r") as file:
+        for line in file:
+            key, value = line.strip().split(": ")
+            if key in ['limit', 'cut', 'area', 'seeing', 'exp_time_sec', 'pixel_arcsec', 'zero_point_m', 'sky_bckgnd_m']:
+                value = float(value)
+            params[key] = value
+    if(VERBOSE):
+        print("Survey params:")
+        for key, value in params.items():
+            print(f"{key}: {value}")
+    return params
+
+def load_pickled_files(title):
+    TITLE = remove_spaces_from_string(title)
     FOLDERPATH = os.path.split(os.path.dirname(os.path.abspath('')))[0]+'/GALESS/galess/data/surveys_results/'+TITLE+'/'
     if os.path.exists(FOLDERPATH):
         FNAME = TITLE+'_matrix_LL.pkl'
@@ -26,10 +42,10 @@ def load_pickled_files(temp_title):
     raise ValueError('Files do not exists. Run the model on this survey.')
 
 def save_pickled_files(
-                    temp_title, 
+                    title, 
                     temp_LL, Theta_E_LL, prob_LL,
                     temp_noLL, Theta_E_noLL, prob_noLL):
-    TITLE = remove_spaces_from_string(temp_title)
+    TITLE = remove_spaces_from_string(title)
     FOLDERPATH = os.path.split(os.path.dirname(os.path.abspath('')))[0]+'/GALESS/galess/data/surveys_results/'+TITLE+'/'
     if not os.path.exists(FOLDERPATH):
         os.makedirs(FOLDERPATH)

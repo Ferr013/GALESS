@@ -1,0 +1,10 @@
+title: EUCLID Wide VIS
+limit: 26.2
+cut: 25
+area: 15000
+seeing: 0.17
+exp_time_sec: 1610
+pixel_arcsec: 0.1
+zero_point_m: 25.5
+sky_bckgnd_m: 22.2
+photo_band: sdss_i0

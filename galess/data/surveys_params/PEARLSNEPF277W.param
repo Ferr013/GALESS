@@ -1,0 +1,10 @@
+title: PEARLS NEP F277W
+limit: 28.5
+cut: 26.8
+area: 0.015194444444444444
+seeing: 0.092
+exp_time_sec: 11680
+pixel_arcsec: 0.03
+zero_point_m: 28.0865
+sky_bckgnd_m: 22
+photo_band: ukirt_wfcam_K

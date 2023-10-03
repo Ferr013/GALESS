@@ -471,7 +471,7 @@ def get_UV_cont_slope(zs, intrinsic_Mag_UV):
 def Flux_integral_div_C(UV_slope, avg_wave, FWHM_wave):
     return ((avg_wave+FWHM_wave/2)**(UV_slope+1)-(avg_wave-FWHM_wave/2)**(UV_slope+1))/(UV_slope+1)
 
-def Norm_AB_mag_integral_div_C(avg_wave, FWHM_wave):
+def Norm_AB(avg_wave, FWHM_wave):
     return np.log(avg_wave+FWHM_wave/2)-np.log(avg_wave-FWHM_wave/2)
 
 def K_correction_singleMag_Hogg(zs, observing_band, restframe_band, intrinsic_Mag):
@@ -480,8 +480,8 @@ def K_correction_singleMag_Hogg(zs, observing_band, restframe_band, intrinsic_Ma
     rest_frame_wave, rest_frame_FWHM = get_wavelength_nm_from_photo_band(restframe_band)
     obsr_frame_wave, obsr_frame_FWHM = get_wavelength_nm_from_photo_band(observing_band)
     UV_slope = get_UV_cont_slope(zs, intrinsic_Mag)+1
-    rest_frame_flux = Flux_integral_div_C(UV_slope, rest_frame_wave, rest_frame_FWHM)/Norm_AB_mag_integral_div_C(rest_frame_wave, rest_frame_FWHM)
-    obsr_frame_flux = Flux_integral_div_C(UV_slope, obsr_frame_wave, obsr_frame_FWHM)/Norm_AB_mag_integral_div_C(obsr_frame_wave, obsr_frame_FWHM)/(1 + zs)
+    rest_frame_flux = Flux_integral_div_C(UV_slope, rest_frame_wave, rest_frame_FWHM)/Norm_AB(rest_frame_wave, rest_frame_FWHM)
+    obsr_frame_flux = Flux_integral_div_C(UV_slope, obsr_frame_wave, obsr_frame_FWHM)/Norm_AB(obsr_frame_wave, obsr_frame_FWHM)/(1 + zs)
     return -2.5*np.log10(obsr_frame_flux/rest_frame_flux)
 
 def K_correction(zs, observing_band, restframe_band, intrinsic_Mag):
