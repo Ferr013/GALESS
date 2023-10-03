@@ -300,9 +300,8 @@ def limit_magnitude_given_SNR(SNR, exp_time_sec, sky_bckgnd_m_per_arcsec_sq, zer
 
 ######### SIE LENS FUNCTIONS #######################################################################################################################
 def load_weights_dP_dmu_SIE(BASEPATH=''):
-    BASEPATH = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]+'/galess/' if BASEPATH == '' else ''
+    BASEPATH = os.path.split(os.path.dirname(os.path.abspath('')))[0]+'/GALESS/galess/' if BASEPATH == '' else ''
     if os.path.isfile(BASEPATH+'data/SIE_dPdmu/weights_dP_dmu_SIE.txt'):
-        print('np.loadtxt')
         weights = np.loadtxt(BASEPATH+'data/SIE_dPdmu/weights_dP_dmu_SIE.txt')
         __dP_dmu_SIE1, __w1 = np.loadtxt(BASEPATH+'data/SIE_dPdmu/dP_dmu_SIE_1.txt'), weights[0]
         __dP_dmu_SIE2, __w2 = np.loadtxt(BASEPATH+'data/SIE_dPdmu/dP_dmu_SIE_2.txt'), weights[1]
