@@ -12,7 +12,7 @@ import ls_utils as utils
 def set_plt_param(PLOT_FOR_KEYNOTE = 1):
     params_paper = {
         'axes.labelsize': 14,
-        'legend.fontsize': 10,
+        'legend.fontsize': 7,
         'xtick.labelsize': 10,
         'ytick.labelsize': 10,
         'text.usetex': False,
@@ -96,15 +96,15 @@ def plot_z_sigma_distributions(fig, ax, title, zl_array, zs_array, sigma_array,
         ax[1,0].legend([f'#Lenses w/ LL: {np.sum(matrix_LL):.0f}', f'#Lenses no LL: {np.sum(matrix_noLL):.0f}'], fontsize=20)
     ax[1,0].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
     ax[1,0].set_ylabel(r'$z_l$', fontsize=20)
-    ax[0,0].set_xlim((0,4.2))
+    ax[0,0].set_xlim((0,5.2))
     ax[1,1].set_xlim((100,400))
     ax[1,0].set_xlim((100,400))
     ax[1,0].set_ylim((0,2.5))
     if(LOG):
         ax[0,0].set_yscale('log')
-        ax[0,2].set_yscale('log')
+        ax[0,1].set_yscale('log')
         ax[0,0].set_ylim((1e-3,2))
-        ax[0,2].set_ylim((1e-3,2))    
+        ax[0,1].set_ylim((1e-3,2))    
     plt.tight_layout()
     if (SAVE):
         folderpath = 'img/'+utils.remove_spaces_from_string(title)
@@ -200,4 +200,73 @@ def compare_sigma_distributions_surveys(surveys_selection, sigma_array, zl_array
     ax[0].set_xlim((100,400))
     ax[1].set_xlim((100,400))
     ax[0].legend()
+    plt.show()
+
+    
+def plot_angular_separation(survey_title, zs_array, cmap_c = cm.cool, SPLIT_REDSHIFTS = 0, RANDOM_FIELD = 0, PLOT_ACF = 0):
+    survey_params = utils.read_survey_params(survey_title, VERBOSE = 0)
+    limit    = survey_params['limit']
+    cut      = survey_params['cut']
+    area     = survey_params['area']
+    seeing   = survey_params['seeing']
+    exp_time_sec = survey_params['exp_time_sec']
+    pixel_arcsec = survey_params['pixel_arcsec']
+    zero_point_m = survey_params['zero_point_m']
+    sky_bckgnd_m = survey_params['sky_bckgnd_m']
+    photo_band   = survey_params['photo_band']
+    matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(survey_title)
+         
+    intsteps = 11
+    Theta_pos_noLL, Theta_pos_LL = np.zeros(Theta_E_noLL.shape), np.zeros(Theta_E_LL.shape)
+    for _m in np.linspace(1,2, intsteps):
+        Theta_pos_noLL = Theta_pos_noLL + Theta_E_noLL*_m
+        Theta_pos_LL   = Theta_pos_LL   + Theta_E_LL*_m
+    Theta_pos_noLL, Theta_pos_LL = Theta_pos_noLL/intsteps, Theta_pos_LL/intsteps
+
+    if(RANDOM_FIELD): 
+        th_r_array   = np.linspace(0,10,100) #arcsec
+        RR = (np.power(th_r_array+np.diff(th_r_array)[0],2)-np.power(th_r_array,2))/(10**2)
+        P_rnd_galpos = np.cumsum(RR) 
+    if(PLOT_ACF):
+        #Barone_Nugent angualr two point correlation function https://iopscience.iop.org/article/10.1088/0004-637X/793/1/17/pdf
+        th_r_array   = np.linspace(0,10,100) #arcsec
+        A_w, beta    = 0.4, 0.6
+        omega_galpos = (A_w*np.power(th_r_array+np.diff(th_r_array)[0], -beta))
+        RR = (np.power(th_r_array+np.diff(th_r_array)[0],2)-np.power(th_r_array,2))/(10**2)
+        #TODO: it should come from \omega = (DD-2DR-RR)/RR -- how to find DR?
+        #TODO: or should I look at the integral definition? See [Eq.88] https://ned.ipac.caltech.edu/level5/March01/Strauss/Strauss5.html
+        P_rnd_galpos = np.cumsum((1+omega_galpos)*RR) 
+    
+    _PLOT_FOR_KEYNOTE = 1
+    set_plt_param(PLOT_FOR_KEYNOTE = _PLOT_FOR_KEYNOTE)
+
+    fig, ax = plt.subplots(1, 2, figsize=(12, 5), sharex=False, sharey=False)
+    plt.subplots_adjust(wspace=.15, hspace=.2)   
+    ax[0].set_ylabel(r'$P(<\theta$)', fontsize=20)
+    ax[0].set_xlabel(r'$\theta$ [arcsec]', fontsize=20)
+    ax[1].set_xlabel(r'$\theta$ [arcsec]', fontsize=20)
+    ax[0].set_xlim((0,10))
+    ax[1].set_xlim((0,10))
+    if(SPLIT_REDSHIFTS):
+        iterabel_zs_array = np.asarray((1, 3, 5, 7, 9))
+        color = iter(cmap_c(np.linspace(0, 1, len(iterabel_zs_array)+1)))
+        for zs in iterabel_zs_array:
+            ccc = next(color)
+            izs = np.argmin(np.abs(zs_array-zs))
+            lw = 3 if (zs==1 or zs==9) else 1
+            ax[0].hist(np.ravel(Theta_pos_noLL[izs][:][:]), weights=np.ravel(matrix_noLL[izs][:][:]), bins=200, range=(0, 12), 
+            density=True, histtype='step', color=ccc, label=str(zs), lw=lw, cumulative=True)
+            ax[1].hist(np.ravel(Theta_pos_LL[izs][:][:]), weights=np.ravel(matrix_LL[izs][:][:]), bins=200, range=(0, 12), 
+            density=True, histtype='step', color=ccc, label=str(zs), lw=lw, cumulative=True)
+    else:
+        color = iter(cmap_c(np.linspace(0, 1, 2)))
+        ax[0].hist(np.ravel(Theta_pos_noLL), weights=np.ravel(matrix_noLL), bins=200, range=(0, 12), 
+            density=True, histtype='step', color=next(color), label='no LL', cumulative=True)
+        ax[1].hist(np.ravel(Theta_pos_LL), weights=np.ravel(matrix_LL), bins=200, range=(0, 12), 
+            density=True, histtype='step', color=next(color), label='w/ LL', cumulative=True)
+    if(RANDOM_FIELD or PLOT_ACF): 
+        ax[0].plot(th_r_array, P_rnd_galpos, 'g:')
+        ax[1].plot(th_r_array, P_rnd_galpos, 'g:')
+    plt.legend(fontsize=15, loc='lower right')
+    plt.tight_layout()
     plt.show()
