@@ -62,12 +62,9 @@ def plot_z_sigma_distributions(fig, ax, title, zl_array, zs_array, sigma_array,
                                PLOT_FOR_KEYNOTE = 1, LOG = 0, SMOOTH = 0, SAVE = 0):
 
     line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
-
     Ngal_zl_sigma_noLL, Ngal_zs_sigma_noLL, Ngal_zs_zl_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
     Ngal_zl_sigma_LL, Ngal_zs_sigma_LL, Ngal_zs_zl_LL, P_zs_LL, P_zl_LL, P_sg_LL = ls.get_N_and_P_projections(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH)
-
     _nbins_Re = np.arange(0  , 4  , 0.25)
-        
     fig.suptitle(title, fontsize=25)
     ax[0,0].plot(zl_array, P_zl_LL, c=col_A, ls=':')
     ax[0,0].plot(zs_array, P_zs_LL, c=col_B, ls=':' , label='w/ lens light')
@@ -81,17 +78,14 @@ def plot_z_sigma_distributions(fig, ax, title, zl_array, zs_array, sigma_array,
     ax[0,1].hist(np.ravel(Theta_E_LL), weights=np.ravel(matrix_LL), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=col_D, ls = ':')
     ax[0,1].hist(np.ravel(Theta_E_noLL), weights=np.ravel(matrix_noLL), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=col_D, ls = '-')
     ax[0,1].set_xlabel(r'$\Theta_E$ [arcsec]', fontsize=20)
-
     _sigma, _zl = np.meshgrid(sigma_array, zl_array)
     ax[0,0].legend(fontsize=20)
-
     levels   = np.asarray([0.01, 0.1, 0.5, 1, 2, 3, 5])*(np.power(10,np.ceil(np.log10(np.max(Ngal_zl_sigma_LL))-1)))
     contours = ax[1,0].contour(_sigma, _zl,Ngal_zl_sigma_LL.T, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(Ngal_zl_sigma_LL), vmax=np.max(Ngal_zl_sigma_LL)), linestyles=':')
     ax[1,0].scatter(200,1.0, label='', alpha=0)
     ax[1,0].clabel(contours, inline=True, fontsize=8)
     ax[1,0].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
     ax[1,0].set_ylabel(r'$z_l$', fontsize=20)
-
     levels   = np.asarray([0.01, 0.1, 0.5, 1, 2, 3, 5])*(np.power(10,np.ceil(np.log10(np.max(Ngal_zl_sigma_noLL))-1)))
     contours = ax[1,0].contour(_sigma, _zl,Ngal_zl_sigma_noLL.T, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(Ngal_zl_sigma_noLL), vmax=np.max(Ngal_zl_sigma_noLL)), linestyles='-')
     ax[1,0].scatter(200,1.0, label='', alpha=0)
@@ -100,10 +94,8 @@ def plot_z_sigma_distributions(fig, ax, title, zl_array, zs_array, sigma_array,
         ax[1,0].legend([f'#Lenses w/ LL: {np.sum(matrix_LL):.1e}', f'#Lenses no LL: {np.sum(matrix_noLL):.1e}'], fontsize=20)
     else:
         ax[1,0].legend([f'#Lenses w/ LL: {np.sum(matrix_LL):.0f}', f'#Lenses no LL: {np.sum(matrix_noLL):.0f}'], fontsize=20)
-    
     ax[1,0].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
     ax[1,0].set_ylabel(r'$z_l$', fontsize=20)
-
     ax[0,0].set_xlim((0,4.2))
     ax[1,1].set_xlim((100,400))
     ax[1,0].set_xlim((100,400))
@@ -124,11 +116,8 @@ def plot_z_sigma_distributions(fig, ax, title, zl_array, zs_array, sigma_array,
 def compare_z_distributions_surveys(ax, title, color,
                                         zl_array, zs_array, sigma_array, matrix_LL, matrix_noLL,
                                         PLOT_FOR_KEYNOTE = 1, SMOOTH = 0):
-    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
-
     _n, __n, ___n, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
     _ , __  , ___, P_zs_LL  , P_zl_LL  , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH)
-
     ax[0].plot(zl_array, P_zl_noLL, c=color, ls='-' , label=title)
     ax[0].plot(zs_array, P_zs_noLL, c=color, ls=':')
     ax[1].plot(zl_array, P_zl_LL, c=color, ls='--', label=title)
@@ -139,37 +128,30 @@ def compare_z_distributions_surveys(ax, title, color,
 
 def single_compare_z_distributions_surveys(ax, title, color,
                                         zl_array, zs_array, sigma_array, matrix_LL, matrix_noLL,
-                                        PLOT_FOR_KEYNOTE = 1, SMOOTH = 0):
-    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
-
+                                        PLOT_FOR_KEYNOTE = 1, SMOOTH = 1):
     _n, __n, ___n, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
     _ , __  , ___, P_zs_LL  , P_zl_LL  , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH)
-
     ax[0].plot(zl_array, P_zl_noLL, c=color, ls='-' , label=title)
     ax[0].plot(zs_array, P_zs_noLL, c=color, ls=':')
     ax[1].plot(zl_array, P_zl_LL, c=color, ls='--', label=title)
     ax[1].plot(zs_array, P_zs_LL, c=color, ls=':')
-    ax[0].set_ylabel(r'$P$', fontsize=20)
     ax[0].set_xlabel(r'$z$', fontsize=20) 
     ax[1].set_xlabel(r'$z$', fontsize=20) 
+    ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
 
 def single_compare_sigma_distributions_surveys(ax, title, color,
                                         zl_array, zs_array, sigma_array, matrix_LL, matrix_noLL,
-                                        PLOT_FOR_KEYNOTE = 1, SMOOTH = 0):
-    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
-
+                                        PLOT_FOR_KEYNOTE = 1, SMOOTH = 1):
     _n, __n, ___n, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
     _ , __  , ___, P_zs_LL  , P_zl_LL  , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH)
-
     ax[0].plot(sigma_array, P_sg_noLL, c=color, ls = '-', label=title)
     ax[1].plot(sigma_array, P_sg_LL  , c=color, ls = ':')
     ax[0].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
     ax[1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
-    ax[0].set_ylabel(r'$P$', fontsize=20)
+    ax[0].set_ylabel(r'$dP/d\sigma$', fontsize=20)
 
 def compare_z_distributions_surveys(surveys_selection, sigma_array, zl_array, zs_array, cmap_c = cm.cool):
     _col_  = iter(cmap_c(np.linspace(0, 1, len(surveys_selection))))
-
     _PLOT_FOR_KEYNOTE = 1
     set_plt_param(PLOT_FOR_KEYNOTE = _PLOT_FOR_KEYNOTE)
     fig, ax = plt.subplots(1, 2, figsize=(11, 5), sharex=False, sharey=True)
@@ -196,7 +178,6 @@ def compare_z_distributions_surveys(surveys_selection, sigma_array, zl_array, zs
 
 def compare_sigma_distributions_surveys(surveys_selection, sigma_array, zl_array, zs_array, cmap_c = cm.cool):
     _col_  = iter(cmap_c(np.linspace(0, 1, len(surveys_selection))))
-
     _PLOT_FOR_KEYNOTE = 1
     set_plt_param(PLOT_FOR_KEYNOTE = _PLOT_FOR_KEYNOTE)
     fig, ax = plt.subplots(1, 2, figsize=(11, 5), sharex=False, sharey=True)

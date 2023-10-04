@@ -515,11 +515,9 @@ def get_photo_band_from_wavelength_nm(wav_nm):
         'ukirt_wfcam_Y', 'ukirt_wfcam_J', 'ukirt_wfcam_H', 'ukirt_wfcam_K']
     return supported_K_correctn_photo_bands[np.argmin(np.power(np.asarray([150, 230, 475, 622, 763, 905, 1031, 1241, 1631, 2201])-wav_nm,2))]
 
-def get_highest_LYA_rest_fram_observable(photo_band): # from (SDSS+UKIDSS) to match FP calibration https://ui.adsabs.harvard.edu/abs/2010MNRAS.408.1335L/abstract
+def get_highest_LYA_rest_fram_observable(photo_band): 
+    # from (SDSS+UKIDSS) to match FP calibration https://ui.adsabs.harvard.edu/abs/2010MNRAS.408.1335L/abstract
     return get_wavelength_nm_from_photo_band(photo_band)[0]/ 121.567-1 #nm
-    
-def _calcRest_fram_emission_(photo_band, z): # from (SDSS+UKIDSS) to match FP calibration https://ui.adsabs.harvard.edu/abs/2010MNRAS.408.1335L/abstract
-    return get_wavelength_nm_from_photo_band(photo_band)[0]/(z+1) 
 
 def get_obs_frame_band_from_rest_frame_band(z, restframe_band):
     return get_photo_band_from_wavelength_nm(get_wavelength_nm_from_photo_band(restframe_band)[0]*(z+1))
@@ -539,20 +537,38 @@ def get_FP_parameters_for_band_and_z_LaBarbera(photo_band, zl): #La Barbera+2010
     gamma_0B = _gamma_0B + 10.8*_beta_0B
     gamma_2B = _gamma_2B + _beta_2B*0.4*(27+10*np.log10(1+2)) - np.log10(cosmo.angular_diameter_distance(2).value/206.265)
     gamma_slope = (gamma_2B - gamma_0B)/2
-    if  (photo_band == 'sdss_g0'      ): alpha_0, beta_0, gamma_0 = 1.384, 0.315, -9.164 
-    elif(photo_band == 'sdss_r0'      ): alpha_0, beta_0, gamma_0 = 1.390, 0.314, -8.867 
-    elif(photo_band == 'sdss_i0'      ): alpha_0, beta_0, gamma_0 = 1.426, 0.312, -8.789 
-    elif(photo_band == 'sdss_z0'      ): alpha_0, beta_0, gamma_0 = 1.418, 0.317, -8.771 
-    elif(photo_band == 'ukirt_wfcam_Y'): alpha_0, beta_0, gamma_0 = 1.467, 0.314, -8.557 
-    elif(photo_band == 'ukirt_wfcam_J'): alpha_0, beta_0, gamma_0 = 1.530, 0.318, -8.600 
-    elif(photo_band == 'ukirt_wfcam_H'): alpha_0, beta_0, gamma_0 = 1.560, 0.318, -8.447 
-    elif(photo_band == 'ukirt_wfcam_K'): alpha_0, beta_0, gamma_0 = 1.552, 0.316, -8.270
-    elif(photo_band == 'galex_NUV' or photo_band == 'galex_FUV'): alpha_0, beta_0, gamma_0 = 1.384, 0.315, -9.164  #use blu-est filter -> 'sdss_g0'
-    else: alpha_0, beta_0, gamma_0, zl = 0, 0, 0, 0
+    if  (photo_band == 'sdss_g0'      ): 
+        alpha_0, beta_0, gamma_0 = 1.384, 0.315, -9.164 
+        alpha_s, beta_s, gamma_s = 0.024, 0.001,  0.079
+    elif(photo_band == 'sdss_r0'      ): 
+        alpha_0, beta_0, gamma_0 = 1.390, 0.314, -8.867 
+        alpha_s, beta_s, gamma_s = 0.018, 0.001,  0.058
+    elif(photo_band == 'sdss_i0'      ): 
+        alpha_0, beta_0, gamma_0 = 1.426, 0.312, -8.789 
+        alpha_s, beta_s, gamma_s = 0.016, 0.001,  0.053
+    elif(photo_band == 'sdss_z0'      ): 
+        alpha_0, beta_0, gamma_0 = 1.418, 0.317, -8.771 
+        alpha_s, beta_s, gamma_s = 0.021, 0.001,  0.072
+    elif(photo_band == 'ukirt_wfcam_Y'): 
+        alpha_0, beta_0, gamma_0 = 1.467, 0.314, -8.557 
+        alpha_s, beta_s, gamma_s = 0.019, 0.001,  0.058
+    elif(photo_band == 'ukirt_wfcam_J'): 
+        alpha_0, beta_0, gamma_0 = 1.530, 0.318, -8.600
+        alpha_s, beta_s, gamma_s = 0.017, 0.001,  0.060
+    elif(photo_band == 'ukirt_wfcam_H'): 
+        alpha_0, beta_0, gamma_0 = 1.560, 0.318, -8.447 
+        alpha_s, beta_s, gamma_s = 0.021, 0.002,  0.077
+    elif(photo_band == 'ukirt_wfcam_K'): 
+        alpha_0, beta_0, gamma_0 = 1.552, 0.316, -8.270
+        alpha_s, beta_s, gamma_s = 0.021, 0.002,  0.076
+    elif(photo_band == 'galex_NUV' or photo_band == 'galex_FUV'): 
+        alpha_0, beta_0, gamma_0 = 1.384, 0.315, -9.164  #use blu-est filter -> 'sdss_g0'
+        alpha_s, beta_s, gamma_s = 0.024, 0.001,  0.079
+    else: alpha_0, beta_0, gamma_0, alpha_s, beta_s, gamma_s, zl = 0, 0, 0, 0, 0, 0, 0
     alpha = alpha_0 + zl*alpha_slope
     beta  = beta_0  + zl*beta_slope
     gamma = gamma_0 + zl*gamma_slope
-    return alpha, beta, gamma
+    return alpha, beta, gamma, alpha_s, beta_s, gamma_s
 
 def Source_size_arcsec(M_array_UV, zs, Ls_M0 = -21, Ls_gamma = 0.25, Ls_R0 = 1):
     #Get Source SB from L-size relation with NO lensing in kpc -> arcsec
@@ -573,27 +589,43 @@ def get_log_R_eff_kpc(sigma, z, SAMPLE_INTERVAL=False): #gaussian spaced R_eff i
         return distribution.ppf(np.linspace(*bounds_for_range, num=11))
     else: return np.array([mean])
 
-def Check_R_from_sigma_FP(sigma, zl, zs, M_array_UV, obs_photo_band): 
+def get_FP_parameters(zl_rest_frame_photo_band, zl, n_sigma = 3, SAMPLE_INTERVAL = False): #gaussian spaced FP params
+    alpha, beta, gamma, alpha_s, beta_s, gamma_s = get_FP_parameters_for_band_and_z_LaBarbera(zl_rest_frame_photo_band, zl)
+    if SAMPLE_INTERVAL:
+        alpha_distribution     = stats.norm(loc=alpha, scale=alpha_s)
+        alpha_bounds_for_range = alpha_distribution.cdf([alpha-n_sigma*alpha_s, alpha+n_sigma*alpha_s])
+        alpha_array            = alpha_distribution.ppf(np.linspace(*alpha_bounds_for_range, num=11))
+        gamma_distribution     = stats.norm(loc=gamma, scale=gamma_s)
+        gamma_bounds_for_range = gamma_distribution.cdf([gamma-n_sigma*gamma_s, gamma+n_sigma*gamma_s])
+        gamma_array            = gamma_distribution.ppf(np.linspace(*gamma_bounds_for_range, num=11))
+        return alpha_array, np.array([beta]), gamma_array #beta is considered fixed
+    else: return np.array([alpha]), np.array([beta]), np.array([gamma])
+
+def Check_R_from_sigma_FP(sigma, zl, zs, m_array, M_array_UV, obs_photo_band, n_sigma = 3, SAMPLE_INTERVAL=False): 
     #If LENS_LIGHT_FLAG we sample the Fundamental Plane (given \sigma), and get the weights for the prob of seeing the bright image or 
     #the second through the lens light, averaging over the image position (i.e., [1,2]\theta_E for bright image and [0,1]\theta_E for 2nd img.
     zl_rest_frame_photo_band = get_rest_frame_band_from_obs_frame_band(zl, obs_photo_band)
-    alpha, beta, gamma = get_FP_parameters_for_band_and_z_LaBarbera(zl_rest_frame_photo_band, zl)
-    if(alpha == 0): return (0, 0)    #FIXME: it does not throw a warning!
+    alpha, beta, gamma = get_FP_parameters(zl_rest_frame_photo_band, zl, n_sigma = n_sigma, SAMPLE_INTERVAL=SAMPLE_INTERVAL)
+    if(alpha.mean() == 0): return (0, 0)  #FIXME: it does not throw a warning!
     arr_logRe = get_log_R_eff_kpc(sigma, zl, True) 
-    frac1st, frac2nd = 0, 0
     cosm_dimm_zl = 10*np.log10(1+zl) #Account for cosmological dimming \propto(1+z)^4
     Reinst = Theta_E(sigma, zl, zs)  #Einstein radius of the lens
-    SB_iLF = M_array_UV+5*np.log10(cosmo.luminosity_distance(zs).value*1e5)+2.5*np.log10(np.pi*np.power(Source_size_arcsec(M_array_UV, zs),2)) #mag arcsec^-2
+    SB_iLF = m_array+2.5*np.log10(np.pi*np.power(Source_size_arcsec(M_array_UV, zs),2)) #mag arcsec^-2
+    frac1st, frac2nd = 0, 0
     for Re_logkpc in arr_logRe:
         Re_arc  = np.power(10, Re_logkpc)/(cosmo.angular_diameter_distance(zl).value*1e3)*206265
-        SBe_avg = (np.log10(Re_arc)-gamma-alpha*np.log10(sigma))/beta #SB in [mag x arcsec^-2]
-        SBe = SBe_avg + 1.393 #for a deVac profile <SBe> = SBe - 1.393
-        img_ps, _frac1st, _frac2nd = np.linspace(1,2,10)*Reinst, 0, 0
-        for R_1st in img_ps:
-            SBr_1st = SBe + 8.32678*((R_1st/Re_arc)**0.25 - 1)          # SB of the lens light profile at the position of the first image
-            SBr_2nd = SBe + 8.32678*(((R_1st-Reinst)/Re_arc)**0.25 - 1) # SB of the lens light profile at the position of the second image
-            _frac1st, _frac2nd = _frac1st + (SB_iLF<(SBr_1st+cosm_dimm_zl)), _frac2nd + (SB_iLF<(SBr_2nd+cosm_dimm_zl))
-        frac1st, frac2nd = frac1st + _frac1st/len(img_ps), frac2nd + _frac2nd/len(img_ps)
+        FP_frac1st, FP_frac2nd = 0, 0
+        for _alpha, _gamma in zip(alpha, gamma[::-1]):
+            SBe_avg = (np.log10(Re_arc)-_gamma-_alpha*np.log10(sigma))/beta #SB in [mag x arcsec^-2]
+            SBe = SBe_avg + 1.393 #for a deVac profile <SBe> = SBe - 1.393
+            img_ps = np.linspace(1,2,10)*Reinst
+            _frac1st, _frac2nd = 0, 0
+            for R_1st in img_ps:
+                SBr_1st = SBe + 8.32678*((R_1st/Re_arc)**0.25 - 1)          # SB of the lens light profile at the position of the first image
+                SBr_2nd = SBe + 8.32678*(((R_1st-Reinst)/Re_arc)**0.25 - 1) # SB of the lens light profile at the position of the second image
+                _frac1st, _frac2nd = _frac1st + (SB_iLF<(SBr_1st+cosm_dimm_zl)), _frac2nd + (SB_iLF<(SBr_2nd+cosm_dimm_zl))
+            FP_frac1st, FP_frac2nd = FP_frac1st + _frac1st/len(img_ps), FP_frac2nd + _frac2nd/len(img_ps)
+        frac1st, frac2nd = frac1st + FP_frac1st/len(alpha), frac2nd + FP_frac2nd/len(alpha)
     return frac1st/len(arr_logRe), frac2nd/len(arr_logRe)
 ####################################################################################################
 
@@ -629,10 +661,8 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
         #correcting for distance modulus and K-correction
         obs_band_to_intr_UV_corr = 5 * np.log10(cosmo.luminosity_distance(zs).value * 1e5) + K_correction_from_UV(zs, photo_band, M_array_UV) 
         m_array = M_array_UV + obs_band_to_intr_UV_corr if FLAG_KCORRECTION else M_array_UV + 5 * np.log10(cosmo.luminosity_distance(zs).value * 1e5) 
-        
         M_lim_b = app_magn_limit - 5 * np.log10(cosmo.luminosity_distance(zs).value * 1e5)
         M_lim   = M_lim_b - K_correction_from_UV(zs, photo_band, M_lim_b) if FLAG_KCORRECTION else M_lim_b
-        
         idxM_matrix[izs][:][:] = int(np.argmin(np.power(m_array-mag_cut,2)))
         #Calculate the probability (at each mag bin) that the first image arc is stretched at least arc_mu_threshold
         frac_arc     = Fraction_1st_image_arc_SIE(arc_mu_threshold, M_array_UV, schechter_LF, zs) if SIE_FLAG else Fraction_1st_image_arc(arc_mu_threshold, M_array_UV, schechter_LF, zs) 
@@ -652,11 +682,9 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
                     #We approximate the selection of the arc strect OR the second image above M_lim with the max (eval at each mag bin)
                     SNR_1img = Signal_to_noise_ratio(m_array-2.5*np.log10(3), Source_size_arcsec(M_array_UV, zs), sky_bckgnd_m_per_arcsec_sq, zero_point_m, exp_time_sec)>=SNR
                     SNR_2img = Signal_to_noise_ratio(m_array, Source_size_arcsec(M_array_UV, zs),  sky_bckgnd_m_per_arcsec_sq, zero_point_m, exp_time_sec)>=SNR
-                    weight_1img, weight_2img      = Check_R_from_sigma_FP(sigma, zl, zs, M_array_UV, photo_band) if LENS_LIGHT_FLAG else (1,1)
+                    weight_1img, weight_2img      = Check_R_from_sigma_FP(sigma, zl, zs, m_array, M_array_UV, photo_band) if LENS_LIGHT_FLAG else (1,1)
                     weighted_prob_lens            = prob_lens*np.max(np.vstack((frac_arc*weight_1img*SNR_1img, frac_2nd_img*weight_2img*SNR_2img)), axis=0)
-                    ################################################################################################
                     Ngal_tensor[izs][isg][izl][:] = weighted_prob_lens*number_of_ETGs
-                    ################################################################################################
                     Ngal_matrix[izs][isg][izl]    = np.cumsum(Ngal_tensor, axis=3)[izs][isg][izl][idxM_matrix[izs][isg][izl]]
                     Theta_E_mat[izs][isg][izl]    = Theta_E(sigma, zl, zs)
                     if(DEBUG and sigma == 200 and izs == dbg_izs and izl == dbg_izl): 
