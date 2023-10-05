@@ -202,8 +202,43 @@ def compare_sigma_distributions_surveys(surveys_selection, sigma_array, zl_array
     ax[0].legend()
     plt.show()
 
+def get_Harikane_ACF_small_scale(z=3):
+    if(z==1):
+        return [[1.9963236274483052, 0.4783824964943629 ],
+                [2.896634936533222 , 0.37413962607747775],
+                [4.202972824736602 , 0.32034502042509283],
+                [5.970098880561779 , 0.24414084840368558],
+                [8.5708797932537   , 0.18367284109722465],
+                [12.304650542654327, 0.11380983017100621],
+                [17.85385904050169 , 0.08025911785892756],
+                [26.182665465840035, 0.07236866510323885]]
+    if(z==3):
+        return np.array([[1.9716086603186689, 2.7345961868755966],
+                        [2.8456616883636414 , 1.5292060917860244],
+                        [4.107199672835568  , 0.8177515184528737],
+                        [6.037769010610303  , 0.47820228886038607],
+                        [8.714431166023571  , 0.29903922282111883],
+                        [12.34904764254925  , 0.22867742907131222],
+                        [17.823624166116165 , 0.20449354873797368],
+                        [25.72518850120658  , 0.1462340619871049],
+                        [37.12967224032399  , 0.11958312623948672]])
+    return 0
+
+def plot_Harikane_ACF_small_scale():
+    data = get_Harikane_ACF_small_scale()
+    x, y = data[:,0], data[:,1]
+    fit  = np.polyfit(x, y, 3)
+    pol  = np.poly1d(fit)
+    xp   = np.linspace(1, 20, 100)
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4), sharex=False, sharey=False)
+    ax.scatter(x, y)
+    ax.plot(xp, pol(xp), c='g')
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlim((1,20))
+    plt.show()
     
-def plot_angular_separation(survey_title, zs_array, cmap_c = cm.cool, SPLIT_REDSHIFTS = 0, RANDOM_FIELD = 0, PLOT_ACF = 0):
+def plot_angular_separation(survey_title, zs_array, cmap_c = cm.cool, SPLIT_REDSHIFTS = 0, PLOT_ACF = 0, A_w = 0.4, beta = 0.6):
     survey_params = utils.read_survey_params(survey_title, VERBOSE = 0)
     limit    = survey_params['limit']
     cut      = survey_params['cut']
@@ -223,19 +258,32 @@ def plot_angular_separation(survey_title, zs_array, cmap_c = cm.cool, SPLIT_REDS
         Theta_pos_LL   = Theta_pos_LL   + Theta_E_LL*_m
     Theta_pos_noLL, Theta_pos_LL = Theta_pos_noLL/intsteps, Theta_pos_LL/intsteps
 
-    if(RANDOM_FIELD): 
-        th_r_array   = np.linspace(0,10,100) #arcsec
-        RR = (np.power(th_r_array+np.diff(th_r_array)[0],2)-np.power(th_r_array,2))/(10**2)
-        P_rnd_galpos = np.cumsum(RR) 
-    if(PLOT_ACF):
-        #Barone_Nugent angualr two point correlation function https://iopscience.iop.org/article/10.1088/0004-637X/793/1/17/pdf
-        th_r_array   = np.linspace(0,10,100) #arcsec
-        A_w, beta    = 0.4, 0.6
-        omega_galpos = (A_w*np.power(th_r_array+np.diff(th_r_array)[0], -beta))
-        RR = (np.power(th_r_array+np.diff(th_r_array)[0],2)-np.power(th_r_array,2))/(10**2)
-        #TODO: it should come from \omega = (DD-2DR-RR)/RR -- how to find DR?
-        #TODO: or should I look at the integral definition? See [Eq.88] https://ned.ipac.caltech.edu/level5/March01/Strauss/Strauss5.html
-        P_rnd_galpos = np.cumsum((1+omega_galpos)*RR) 
+    rad_to_arcsec = 1/206265
+    th_r_array    = np.linspace(0,12,100) #arcsec
+    th_r_radar    = th_r_array*rad_to_arcsec
+
+    data = get_Harikane_ACF_small_scale()
+    x, y = data[:,0], data[:,1]
+    fit  = np.polyfit(x, y, 3)
+    pol  = np.poly1d(fit) # A_w theta^-beta
+        
+    if(PLOT_ACF):        
+        #ACF Integral definition - See [Eq.1] https://articles.adsabs.harvard.edu/pdf/1977ApJ...217..385G
+        RR = np.pi*(np.power(th_r_array+np.diff(th_r_array)[0],2)-np.power(th_r_array,2))#/(np.pi*10**2)
+        ''' THIS WORKS ONLY AT LARGE SCALE >100"
+        #Barone_Nugent angualr two point correlation function 
+        #https://iopscience.iop.org/article/10.1088/0004-637X/793/1/17/pdf
+        CR = 2*np.pi*A_w*(np.power(th_r_radar+np.diff(th_r_radar)[0], 2-beta)-np.power(th_r_radar, 2-beta))/(2-beta)
+        '''
+        dth_r = np.diff(th_r_array)[0]
+        intgr = np.zeros(0)
+        for th_r in th_r_array:
+            xint  = np.array([th_r, th_r+dth_r])
+            yint  = np.array([pol(xint[0])*xint[0], pol(xint[1])*(xint[1])])
+            intgr = np.append(intgr, np.trapz(yint, xint))
+        CR = 2*np.pi*intgr
+        P_Rgalpos = np.cumsum(RR+CR)/np.sum(RR+CR) 
+        P_rnd_rnd = np.cumsum(RR)/np.sum(RR) 
     
     _PLOT_FOR_KEYNOTE = 1
     set_plt_param(PLOT_FOR_KEYNOTE = _PLOT_FOR_KEYNOTE)
@@ -245,8 +293,8 @@ def plot_angular_separation(survey_title, zs_array, cmap_c = cm.cool, SPLIT_REDS
     ax[0].set_ylabel(r'$P(<\theta$)', fontsize=20)
     ax[0].set_xlabel(r'$\theta$ [arcsec]', fontsize=20)
     ax[1].set_xlabel(r'$\theta$ [arcsec]', fontsize=20)
-    ax[0].set_xlim((0,10))
-    ax[1].set_xlim((0,10))
+    ax[0].set_xlim((0,12))
+    ax[1].set_xlim((0,12))
     if(SPLIT_REDSHIFTS):
         iterabel_zs_array = np.asarray((1, 3, 5, 7, 9))
         color = iter(cmap_c(np.linspace(0, 1, len(iterabel_zs_array)+1)))
@@ -264,9 +312,12 @@ def plot_angular_separation(survey_title, zs_array, cmap_c = cm.cool, SPLIT_REDS
             density=True, histtype='step', color=next(color), label='no LL', cumulative=True)
         ax[1].hist(np.ravel(Theta_pos_LL), weights=np.ravel(matrix_LL), bins=200, range=(0, 12), 
             density=True, histtype='step', color=next(color), label='w/ LL', cumulative=True)
-    if(RANDOM_FIELD or PLOT_ACF): 
-        ax[0].plot(th_r_array, P_rnd_galpos, 'g:')
-        ax[1].plot(th_r_array, P_rnd_galpos, 'g:')
+    if(PLOT_ACF): 
+        ax[0].plot(th_r_array, P_Rgalpos, 'g:')
+        ax[1].plot(th_r_array, P_Rgalpos, 'g:')
+        ax[0].plot(th_r_array, P_rnd_rnd, 'y:')
+        ax[1].plot(th_r_array, P_rnd_rnd, 'y:')
+
     plt.legend(fontsize=15, loc='lower right')
     plt.tight_layout()
     plt.show()

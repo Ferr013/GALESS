@@ -291,12 +291,7 @@ def Signal_to_noise_ratio(app_mag_src, src_size_arcsec,  sky_bckgnd_m_per_arcsec
     phc_src = magnitude2cps(app_mag_src, zero_point_m)*exposure_time_tot
     phc_sky = magnitude2cps(sky_bckgnd_m_per_arcsec_sq, zero_point_m)*exposure_time_tot
     sig_sq_bkg = (phc_sky*np.pi*src_size_arcsec**2)/(exposure_time_tot**2)
-    return phc_src/np.sqrt(phc_src+sig_sq_bkg)
-
-def limit_magnitude_given_SNR(SNR, exp_time_sec, sky_bckgnd_m_per_arcsec_sq, zero_point_m, pixel_arcsec, readout_noise = 0, num_exposures = 1):
-    cps_sky_level = magnitude2cps(sky_bckgnd_m_per_arcsec_sq, zero_point_m)
-    bkg_noise_cps = bkg_noise(readout_noise, exp_time_sec, cps_sky_level, pixel_arcsec, num_exposures)
-    return cps2magnitude(SNR*bkg_noise_cps, zero_point_m)             
+    return phc_src/np.sqrt(phc_src+sig_sq_bkg)           
 
 ######### SIE LENS FUNCTIONS #######################################################################################################################
 def load_weights_dP_dmu_SIE(BASEPATH=''):
@@ -570,8 +565,13 @@ def get_FP_parameters_for_band_and_z_LaBarbera(photo_band, zl): #La Barbera+2010
     gamma = gamma_0 + zl*gamma_slope
     return alpha, beta, gamma, alpha_s, beta_s, gamma_s
 
-def Source_size_arcsec(M_array_UV, zs, Ls_M0 = -21, Ls_gamma = 0.25, Ls_R0 = 1):
-    #Get Source SB from L-size relation with NO lensing in kpc -> arcsec
+def Source_size_arcsec(M_array_UV, zs):
+    # Get Source SB from L-size relation with NO lensing in kpc -> arcsec
+    Ls_M0    = -21
+    # Parameters evolution from Shibuya et al. (2015) 
+    # https://ui.adsabs.harvard.edu/abs/2015ApJS..219...15S/abstract
+    Ls_gamma = 0.27
+    Ls_R0    = 6.9*((1+zs)**-1.20) 
     return (np.power(10,(M_array_UV-Ls_M0)*(-0.4*Ls_gamma))*Ls_R0)/(cosmo.angular_diameter_distance(zs).value*1e3)*206265 
 
 def get_vel_disp_from_M_star(M_star_10_10_Msun, z): #Cannarozzo Sonnenfeld Nipoti (2020)
@@ -580,9 +580,31 @@ def get_vel_disp_from_M_star(M_star_10_10_Msun, z): #Cannarozzo Sonnenfeld Nipot
 def get_M_star_from_vel_disp(sigma, z):   #invert Cannarozzo Sonnenfeld Nipoti (2020)
     return np.power(10,(np.log10(sigma) - 0.48*np.log10(1+z) - 2.21)/0.18)*1e11 
 
-def get_log_R_eff_kpc(sigma, z, SAMPLE_INTERVAL=False): #gaussian spaced R_eff intervals
-    #L. Fan, A. Lapi, A. Bressan (2010)
-    mean, sigma  = (np.log10(get_M_star_from_vel_disp(sigma, z))-10)*(1/1.65)*(1-0.11*z), 0.15
+def get_log_R_eff_kpc(zl_rest_frame_photo_band, zl, SAMPLE_INTERVAL=False): #gaussian spaced R_eff intervals
+    #La Barbera+(2010) Fig. 11 - https://academic.oup.com/mnras/article/408/3/1313/1072129
+    if  (photo_band == 'sdss_g0'      ): 
+        mean, sigma  = 0.53, 0.41 
+    elif(photo_band == 'sdss_r0'      ): 
+        mean, sigma  = 0.50, 0.38 
+    elif(photo_band == 'sdss_i0'      ): 
+        mean, sigma  = 0.51, 0.39 
+    elif(photo_band == 'sdss_z0'      ): 
+        mean, sigma  = 0.49, 0.43 
+    elif(photo_band == 'ukirt_wfcam_Y'): 
+        mean, sigma  = 0.41, 0.36 
+    elif(photo_band == 'ukirt_wfcam_J'): 
+        mean, sigma  = 0.41, 0.34 
+    elif(photo_band == 'ukirt_wfcam_H'): 
+        mean, sigma  = 0.39, 0.37
+    elif(photo_band == 'ukirt_wfcam_K'): 
+        mean, sigma  = 0.38, 0.39 
+    elif(photo_band == 'galex_NUV' or photo_band == 'galex_FUV'): 
+        mean, sigma  = 0.53, 0.41   #use blu-est filter -> 'sdss_g0'
+    else
+        mean, sigma  = 0, 0 
+    # Parameters evolution from Shibuya et al. (2015) 
+    # https://ui.adsabs.harvard.edu/abs/2015ApJS..219...15S/abstract
+    mean = mean-1.20*np.log10(1+zl)
     if SAMPLE_INTERVAL:
         distribution = stats.norm(loc=mean, scale=sigma)
         bounds_for_range = distribution.cdf([mean-1.5*sigma, mean+1.5*sigma])
@@ -607,7 +629,7 @@ def Check_R_from_sigma_FP(sigma, zl, zs, m_array, M_array_UV, obs_photo_band, n_
     zl_rest_frame_photo_band = get_rest_frame_band_from_obs_frame_band(zl, obs_photo_band)
     alpha, beta, gamma = get_FP_parameters(zl_rest_frame_photo_band, zl, n_sigma = n_sigma, SAMPLE_INTERVAL=SAMPLE_INTERVAL)
     if(alpha.mean() == 0): return (0, 0)  #FIXME: it does not throw a warning!
-    arr_logRe = get_log_R_eff_kpc(sigma, zl, True) 
+    arr_logRe = get_log_R_eff_kpc(zl_rest_frame_photo_band, zl, True) 
     cosm_dimm_zl = 10*np.log10(1+zl) #Account for cosmological dimming \propto(1+z)^4
     Reinst = Theta_E(sigma, zl, zs)  #Einstein radius of the lens
     SB_iLF = m_array+2.5*np.log10(np.pi*np.power(Source_size_arcsec(M_array_UV, zs),2)) #mag arcsec^-2
