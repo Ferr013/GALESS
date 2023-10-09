@@ -600,7 +600,7 @@ def get_log_R_eff_kpc(zl_rest_frame_photo_band, zl, SAMPLE_INTERVAL=False): #gau
         mean, sigma  = 0.38, 0.39 
     elif(photo_band == 'galex_NUV' or photo_band == 'galex_FUV'): 
         mean, sigma  = 0.53, 0.41   #use blu-est filter -> 'sdss_g0'
-    else
+    else:
         mean, sigma  = 0, 0 
     # Parameters evolution from Shibuya et al. (2015) 
     # https://ui.adsabs.harvard.edu/abs/2015ApJS..219...15S/abstract
@@ -718,17 +718,17 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
     
 def get_N_and_P_projections(N_gal_matrix, sigma_array, zl_array, zs_array, SMOOTH=False):
     Ngal_zl_sigma = np.sum(N_gal_matrix, axis=0)
-    Ngal_zs_sigma = np.sum(N_gal_matrix, axis=1)
-    Ngal_zs_zl    = np.sum(N_gal_matrix, axis=2)
+    Ngal_zl_zs    = np.sum(N_gal_matrix, axis=1)
+    Ngal_sigma_zs = np.sum(N_gal_matrix, axis=2)
     P_zs          = np.sum(N_gal_matrix, axis=(1,2))/np.sum(N_gal_matrix)*(1/(zs_array[1]-zs_array[0]))
     P_zl          = np.sum(N_gal_matrix, axis=(0,1))/np.sum(N_gal_matrix)*(1/(zl_array[1]-zl_array[0]))
     P_sg          = np.sum(N_gal_matrix, axis=(0,2))/np.sum(N_gal_matrix)*(1/(sigma_array[1]-sigma_array[0]))
     if SMOOTH:### ROLLING AVERAGE #######################################################################
         Ngal_zl_sigma = signal.convolve2d(Ngal_zl_sigma, np.ones((3,3))/9, mode='same')
-        Ngal_zs_sigma = signal.convolve2d(Ngal_zs_sigma, np.ones((3,3))/9, mode='same')
-        Ngal_zs_zl    = signal.convolve2d(Ngal_zs_zl   , np.ones((3,3))/9, mode='same')
+        Ngal_zl_zs    = signal.convolve2d(Ngal_zl_zs   , np.ones((3,3))/9, mode='same')
+        Ngal_sigma_zs = signal.convolve2d(Ngal_sigma_zs, np.ones((3,3))/9, mode='same')
         P_zs          = np.convolve(P_zs, np.ones(3)/3, mode='same')
         P_zl          = np.convolve(P_zl, np.ones(3)/3, mode='same')
         P_sg          = np.convolve(P_sg, np.ones(3)/3, mode='same')
     ######################################################################################################
-    return Ngal_zl_sigma, Ngal_zs_sigma, Ngal_zs_zl, P_zs, P_zl, P_sg
+    return Ngal_zl_sigma, Ngal_sigma_zs, Ngal_zl_zs, P_zs, P_zl, P_sg
