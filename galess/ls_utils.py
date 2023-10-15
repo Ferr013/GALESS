@@ -39,7 +39,7 @@ def load_pickled_files(title):
             FPATH = FOLDERPATH+TITLE+'_prob_noLL.pkl'
             with open(FPATH, 'rb') as pickle_file: _prob_noLL = pickle.load(pickle_file)
             return _temp_LL, _Theta_E_LL, _prob_LL, _temp_noLL, _Theta_E_noLL, _prob_noLL
-    raise ValueError('Files do not exists. Run the model on this survey.')
+    raise ValueError('Files do not exist. Run the model on this survey.')
 
 def save_pickled_files(
                     title, 
