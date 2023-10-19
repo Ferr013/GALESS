@@ -1,9 +1,9 @@
 title: COSMOS Web F277W
-limit: 29.59
-cut: 27.5
+limit: 27.99
+cut: 27
 area: 0.54
 seeing: 0.092
-exp_time_sec: 11680
+exp_time_sec: 516
 pixel_arcsec: 0.03
 zero_point_m: 28.0865
 sky_bckgnd_m: 22

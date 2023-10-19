@@ -580,7 +580,7 @@ def get_vel_disp_from_M_star(M_star_10_10_Msun, z): #Cannarozzo Sonnenfeld Nipot
 def get_M_star_from_vel_disp(sigma, z):   #invert Cannarozzo Sonnenfeld Nipoti (2020)
     return np.power(10,(np.log10(sigma) - 0.48*np.log10(1+z) - 2.21)/0.18)*1e11 
 
-def get_log_R_eff_kpc(zl_rest_frame_photo_band, zl, SAMPLE_INTERVAL=False): #gaussian spaced R_eff intervals
+def get_log_R_eff_kpc(photo_band, zl, SAMPLE_INTERVAL=False): #gaussian spaced R_eff intervals
     #La Barbera+(2010) Fig. 11 - https://academic.oup.com/mnras/article/408/3/1313/1072129
     if  (photo_band == 'sdss_g0'      ): 
         mean, sigma  = 0.53, 0.41 

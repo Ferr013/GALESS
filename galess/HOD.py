@@ -3,12 +3,17 @@ import numpy as np
 from scipy import integrate
 from scipy import special
 from scipy.interpolate import InterpolatedUnivariateSpline as _spline
+
+from tqdm.notebook import tqdm
+
+from hmf import MassFunction
+from halomod.bias import Tinker10
 from astropy.cosmology import FlatLambdaCDM
-cosmo  = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
+cosmo  = FlatLambdaCDM(H0=67.74, Om0=0.3089, Tcmb0=2.725)
 OmegaM = cosmo.Om(0)
 OmegaL = cosmo.Ode(0)
 OmegaK = cosmo.Ok(0)
-OmegaB = 0.045
+OmegaB = 0.049
 OmegaC = OmegaM-OmegaB
 H0 = cosmo.H(0).value
 h  = H0/100
@@ -80,13 +85,25 @@ def dW_dlnR(k, r):
     return (9 * kr * np.cos(kr) + 3 * (kr**2 - 3) * np.sin(kr)) / kr**3
 
 def _sigma(r, z, D_ratio, _PS_NORM_):
-    intgr = lambda x: power_spectrum(x, z, D_ratio, _PS_NORM_)/(2*np.pi**2)*np.power(x,2)*W_F_transf(x, r)**2
-    sigma_sq = integrate.quad(intgr, 0, 1000)[0]
+    #intgr = lambda x: power_spectrum(x, z, D_ratio, _PS_NORM_)/(2*np.pi**2)*np.power(x,2)*W_F_transf(x, r)**2
+    #sigma_sq = integrate.quad(intgr, 0, 1000)[0]
+    k_array = np.logspace(-4, 4, 1000)
+    dlogk = np.log(k_array[1]/k_array[0])
+    intgrnd = np.zeros(0)
+    for x in k_array:
+        intgrnd = np.append(intgrnd, power_spectrum(x, z, D_ratio, _PS_NORM_)/(2*np.pi**2)*np.power(x,2)*W_F_transf(x, r)**2)
+    sigma_sq = np.sum(k_array*intgrnd) * dlogk
     return np.sqrt(sigma_sq)
 
 def _dlnsdlnm(r, sigma, z, D_ratio, _PS_NORM_):
-    intgr = lambda x: power_spectrum(x, z, D_ratio, _PS_NORM_)*np.power(x,2)*W_F_transf(x, r)*dW_dlnR(x, r)
-    I_R = integrate.quad(intgr, 0, 1000, limit=2000)[0]
+    #intgr = lambda x: power_spectrum(x, z, D_ratio, _PS_NORM_)*np.power(x,2)*W_F_transf(x, r)*dW_dlnR(x, r)
+    #I_R = integrate.quad(intgr, 0, 1000, limit=2000)[0]
+    k_array = np.logspace(-4, 4, 1000)
+    dlogk = np.log(k_array[1]/k_array[0])
+    intgrnd = np.zeros(0)
+    for x in k_array:
+        intgrnd = np.append(intgrnd, power_spectrum(x, z, D_ratio, _PS_NORM_)*np.power(x,2)*W_F_transf(x, r)*dW_dlnR(x, r))
+    I_R = np.sum(k_array*intgrnd) * dlogk
     return 1 / (6*np.pi**2) * np.abs(I_R) / sigma**2
 
 def f_TINKER(sigma, z): #for \Delta = 200
@@ -97,13 +114,18 @@ def f_TINKER(sigma, z): #for \Delta = 200
 	b = b0 * (1.0 + z)**-alpha
 	return A * (np.power(sigma / b,-a) + 1.0) * np.exp(-c0 / sigma**2)
 
+def nuc(sigma, z): #number of standard deviation
+    deltacrit = 1.69 / D_growth_factor(z)
+    return deltacrit / sigma
+
 def HMF(M_h, z):
     _PS_NORM_ = norm_power_spectrum()
     D_ratio   = (D_growth_factor(z)/D_growth_factor(0))**2 if z != 0 else 1
     r = np.power(3.0 * M_h / (4.0 * np.pi * rho_m(z)), 1/3)
     sigma = _sigma(r, z, D_ratio, _PS_NORM_)
     f_sigma = f_TINKER(sigma, z)
-    return  f_sigma * rho_m(z) * _dlnsdlnm(r, sigma, z, D_ratio, _PS_NORM_) / M_h**2
+    return f_sigma * rho_m(z) * _dlnsdlnm(r, sigma, z, D_ratio, _PS_NORM_) / M_h**2
+    #return np.sqrt(2./np.pi) * rho_m() / M_h**2 * _dlnsdlnm(r, sigma, z, D_ratio, _PS_NORM_) * nuc(sigma, z) * np.exp(-(nuc(sigma, z))/2) #dn/dlnm
 
 ##########################################################################################
 ### HALO OCCUPATION DISTRIBUTION #########################################################
@@ -117,6 +139,9 @@ def N_sat(M_h, M_sat, alpha, M_min, sigma_logM):
 
 def N_tot(M_h, M_sat, alpha, M_min, sigma_logM):
     return N_cen(M_h, M_min, sigma_logM) + N_sat(M_h, M_sat, alpha, M_min, sigma_logM)
+    #R = np.zeros(len(M_h))
+    #R[M_h>M_min] = np.power(M_h[M_h>M_min]/M_sat, alpha)
+    #return R
 
 def n_g(M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array):
     NTOT = N_tot(M_h_array, M_sat, alpha, M_min, sigma_logM)
@@ -157,9 +182,7 @@ def PS_1h_ss(k, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G):
 def PS_1h(k, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G):
     return PS_1h_cs(k, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G)+PS_1h_ss(k, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G)
 
-def halo_bias_TINKER(sigma):
-    rc = 1.686
-    nu = rc/sigma
+def halo_bias_TINKER(nu):
     A = 1.0 + 0.24 * np.log10(200) * np.exp(-(4/np.log10(200))**4)
     a = 0.44 * np.log10(200) - 0.88
     B = 0.183
@@ -168,37 +191,177 @@ def halo_bias_TINKER(sigma):
     c = 2.4
     return 1 - A * np.power(nu,a) / (np.power(nu,a) + rc**a) + B * np.power(nu,b) + C * np.power(nu,c)
 
-def PS_2h(k, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G, sigma_array, D_ratio, _PS_NORM_):
-    PS_m = power_spectrum(k, z, D_ratio, _PS_NORM_)
+def PS_2h(k, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G, nu_array, hmf_k, hmf_PS, D_ratio, _PS_NORM_, USE_MY_PS):
     NTOT = N_tot(M_h_array, M_sat, alpha, M_min, sigma_logM)
     U_FT = u_FT(k, M_h_array, z)
-    intg = integrate.simps(NTOT*HMF_array*halo_bias_TINKER(sigma_array)*U_FT, M_h_array)
-    return PS_m * np.power(intg/N_G,2)   
-    #dlogk = np.log(M_h_array[1]/M_h_array[0])
-    #return PS_m * np.sum(M_h_array*NTOT*HMF_array*halo_bias_TINKER(sigma_array)*U_FT) * dlogk * np.power(1/N_G,2)   
-        
-def PS_g(k, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G, sigma_array, D_ratio, _PS_NORM_):
-    PS1 = PS_1h(k, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G)
-    PS2 = PS_2h(k, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G, sigma_array, D_ratio, _PS_NORM_)
-    return PS1 + PS2
+    #bias = halo_bias_TINKER(nu_array)
+    bias = Tinker10(nu=nu_array).bias()
+    if (USE_MY_PS):
+        PS_m = power_spectrum(k, z, D_ratio, _PS_NORM_)
+        intg = integrate.simps(NTOT*HMF_array*bias*U_FT, M_h_array)
+        return PS_m * np.power(intg/N_G,2)
+        #dlogk = np.log(M_h_array[1]/M_h_array[0])
+        #return PS_m * np.sum(M_h_array*NTOT*HMF_array*halo_bias_TINKER(sigma_array)*U_FT) * dlogk * np.power(1/N_G,2)
+    else:
+        intg = integrate.simps(NTOT * HMF_array * bias * U_FT, M_h_array)
+        #return hmf_PS * np.power(intg/N_G,2) 
+        return np.power(intg/N_G,2) 
 
+def PS_g(k, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G, nu_array, hmf_k, hmf_PS, D_ratio, _PS_NORM_, USE_MY_PS):
+    PS1 = PS_1h(k, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G)
+    PS2 = PS_2h(k, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G, nu_array, hmf_k, hmf_PS, _PS_NORM_, D_ratio, USE_MY_PS) 
+    return PS1, PS2
+
+def omega_inner_integral(theta, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G, 
+                                nu_array, hmf_k, hmf_PS, _PS_NORM_, D_ratio, ONLY_1H_TERM, VERBOSE, USE_MY_PS):
+    if (USE_MY_PS): 
+        k_array = np.logspace(-3, 3, 2000)
+        dlogk = np.log(k_array[1]/k_array[0])
+        intgrnd1, intgrnd2 = np.zeros(0), np.zeros(0)
+        for k in k_array:
+            if(not ONLY_1H_TERM):
+                PS_1, PS_2 = PS_g(k, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G, nu_array,  hmf_k, hmf_PS, D_ratio, _PS_NORM_, USE_MY_PS)
+            else:
+                PS_1, PS_2 = PS_1h(k, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G), 0
+            intgrnd1 = np.append(intgrnd1, (PS_1) * k / (2*np.pi) * special.j0(k * theta * cosmo.comoving_distance(z).value))
+            intgrnd2 = np.append(intgrnd2, (PS_2) * k / (2*np.pi) * special.j0(k * theta * cosmo.comoving_distance(z).value))
+        return np.sum(k_array*intgrnd1) * dlogk, np.sum(k_array*intgrnd2) * dlogk
+    else:
+        PS_1, PS_2, INTG = np.zeros(0), np.zeros(0), np.zeros(0)
+        for k in hmf_k:
+            if(not ONLY_1H_TERM):
+                PS1, PS2 = PS_g(k, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G, nu_array, hmf_k, hmf_PS, _PS_NORM_, D_ratio, USE_MY_PS) 
+            else:
+                PS1, PS2 = PS_1h(k, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G), 0
+            PS_1 = np.append(PS_1, PS1)
+            PS_2 = np.append(PS_2, PS2)
+            INTG = np.append(INTG, k / (2*np.pi) * special.j0(k * theta * cosmo.comoving_distance(z).value))
+        intgrnd1 = (PS_1)*INTG
+        intgrnd2 = (hmf_PS*PS_2)*INTG
+        #return integrate.simps(intgrnd, hmf_k)
+        dlogk = np.log(hmf_k[1]/hmf_k[0])
+        return np.sum(hmf_k*intgrnd1) * dlogk, np.sum(hmf_k*intgrnd2) * dlogk
+
+def omega(theta, M_min, sigma_logM, M_sat, alpha, z_array, ONLY_1H_TERM = False, VERBOSE = False, USE_MY_PS = False, REWRITE_TBLS = False):
+    N_z_NORM = get_norm_z_distr_gal(z_array, M_min, sigma_logM, M_sat, alpha)
+    intg1, intg2 = np.zeros(0), np.zeros(0)
+    for iz, z in enumerate(z_array):
+        M_h_array, HMF_array, nu_array, hmf_k, hmf_PS = init_lookup_table(z, REWRITE_TBLS)
+        ###
+        _PS_NORM_ = norm_power_spectrum()
+        D_ratio   = (D_growth_factor(z)/D_growth_factor(0))**2 if z != 0 else 1
+        ###
+        N_G  = n_g(M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array)
+        if(VERBOSE):
+            print(f' -- At z : {z}')
+            print(f' ------ N(z)^2 : {np.power(N_z_NORM[iz], 2)}')
+            print(f' ------ c/H(z) : {c / cosmo.H(z).value}')
+        in_K1, in_K2 = omega_inner_integral(theta, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G, 
+                                    nu_array, hmf_k, hmf_PS, _PS_NORM_, D_ratio, ONLY_1H_TERM, VERBOSE, USE_MY_PS)
+        if(VERBOSE): print(f' ------ innr I : {in_K}')
+        intg1 = np.append(intg1, in_K1 / (c / cosmo.H(z).value) * np.power(N_z_NORM[iz], 2))
+        intg2 = np.append(intg2, in_K2 / (c / cosmo.H(z).value) * np.power(N_z_NORM[iz], 2))
+    return integrate.simps(intg1, z_array), integrate.simps(intg2, z_array)
+
+def omega_array(theta, M_min, sigma_logM, M_sat, alpha, z_array, ONLY_1H_TERM = False, VERBOSE = False, USE_MY_PS = False, REWRITE_TBLS = False):
+    omega1h, omega2h = np.zeros(0), np.zeros(0)
+    for tht in tqdm(theta):
+        o_1h, o_2h = omega(tht, M_min, sigma_logM, M_sat, alpha, z_array, ONLY_1H_TERM = ONLY_1H_TERM, VERBOSE= VERBOSE, USE_MY_PS = USE_MY_PS, REWRITE_TBLS=REWRITE_TBLS)
+        omega1h, omega2h = np.append(omega1h, o_1h), np.append(omega2h, o_2h)
+        REWRITE_TBLS = False
+    omega1h[omega1h<0] = 0
+    omega1h[(theta/(1/206265))>30] = 0
+    return omega1h, omega2h
+
+########################################################################################################
+### AVG QUANTITIES ###########################################################################
+    
 def get_norm_z_distr_gal(z_array, M_min, sigma_logM, M_sat, alpha):
+    shift_z_array = np.append(z_array-np.diff(z_array)[0]/2, z_array[-1]+np.diff(z_array)[0]/2)
     N_Garray = np.zeros(0)
-    for z in z_array:
-        M_h_array, HMF_array = init_lookup_table(z)
+    for z in shift_z_array:
+        M_h_array, HMF_array, nu_array, hmf_k, hmf_PS = init_lookup_table(z)
         nng  = n_g(M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array)
         dVdz = cosmo.comoving_distance(z).value**2 * c / cosmo.H(z).value
-        N_Garray = np.append(N_Garray, nng * dVdz * np.diff(z_array)[0])
-    return N_Garray / np.sum(N_Garray)
+        N_Garray = np.append(N_Garray, nng * dVdz)
+    cumtrpz = integrate.cumtrapz(N_Garray, shift_z_array)
+    Num = cumtrpz-np.append(0, cumtrpz[:-1])
+    return Num / integrate.trapz(N_Garray, shift_z_array) 
         
-def get_N_dens_avg(z_array, N_z_NORM, M_min, sigma_logM, M_sat, alpha):
+def get_N_dens_avg(z_array, M_min, sigma_logM, M_sat, alpha):
+    N_z_NORM = get_norm_z_distr_gal(z_array, M_min, sigma_logM, M_sat, alpha)
     _N_G, _dVdz = np.zeros(0),  np.zeros(0)
     for z in z_array:
-        M_h_array, HMF_array = init_lookup_table(z)
+        M_h_array, HMF_array, nu_array, hmf_k, hmf_PS = init_lookup_table(z)
         _N_G  = np.append(_N_G, n_g(M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array))
         _dVdz = np.append(_dVdz, cosmo.comoving_distance(z).value**2 * c / cosmo.H(z).value)
     return integrate.simps(_N_G * _dVdz * N_z_NORM, z_array)/integrate.simps(_dVdz*N_z_NORM, z_array)
 
+def get_AVG_N_tot(M_min, sigma_logM, M_sat, alpha, z, LOG_INTGR = False):
+    M_h_array, HMF_array, nu_array, hmf_k, hmf_PS = init_lookup_table(z)
+    NTOT = N_tot(M_h_array, M_sat, alpha, M_min, sigma_logM)
+    if(LOG_INTGR):
+        return np.sum(M_h_array*HMF_array*NTOT)/np.sum(M_h_array*HMF_array)
+    else:
+        return integrate.simps(HMF_array*NTOT, M_h_array)/integrate.simps(HMF_array, M_h_array)
+
+def get_AVG_Host_Halo_Mass(M_min, sigma_logM, M_sat, alpha, z, LOG_INTGR = False):
+    M_h_array, HMF_array, nu_array, hmf_k, hmf_PS = init_lookup_table(z)
+    NTOT = N_tot(M_h_array, M_sat, alpha, M_min, sigma_logM)
+    if(LOG_INTGR):
+        return np.sum(M_h_array*M_h_array*HMF_array*NTOT)/np.sum(M_h_array*HMF_array*NTOT)
+    else:
+        return integrate.simps(M_h_array*HMF_array*NTOT, M_h_array)/integrate.simps(HMF_array*NTOT, M_h_array) 
+
+def get_EFF_gal_bias(M_min, sigma_logM, M_sat, alpha, z, LOG_INTGR = False):
+    M_h_array, HMF_array, nu_array, hmf_k, hmf_PS = init_lookup_table(z)
+    #bias = halo_bias_TINKER(nu_array)
+    bias = Tinker10(nu=nu_array).bias()
+    NTOT = N_tot(M_h_array, M_sat, alpha, M_min, sigma_logM)
+    if(LOG_INTGR):
+        return np.sum(bias*M_h_array*HMF_array*NTOT)/np.sum(M_h_array*HMF_array*NTOT)
+    else:
+        return integrate.simps(bias*HMF_array*NTOT, M_h_array)/integrate.simps(HMF_array*NTOT, M_h_array)
+
+def get_AVG_f_sat(M_min, sigma_logM, M_sat, alpha, z, LOG_INTGR = False):
+    M_h_array, HMF_array, nu_array, hmf_k, hmf_PS = init_lookup_table(z)
+    NTOT = N_tot(M_h_array, M_sat, alpha, M_min, sigma_logM)
+    NSAT = N_sat(M_h_array, M_sat, alpha, M_min, sigma_logM)
+    if(LOG_INTGR):
+        return np.sum(M_h_array*HMF_array*NSAT)/np.sum(M_h_array*HMF_array*NTOT)
+    else:
+        return integrate.simps(HMF_array*NSAT, M_h_array)/integrate.simps(HMF_array*NTOT, M_h_array)
+
+########################################################################################################
+#### INITIALIZE HMF ####################################################################################
+
+def init_lookup_table(z, REWRITE_TBLS = False):
+    FOLDERPATH = os.path.split(os.path.dirname(os.path.abspath('')))[0]+'/GALESS/galess/data/HMF_tables/'
+    if os.path.exists(FOLDERPATH):
+        FPATH = FOLDERPATH+'redshift_'+str(int(z))+'_'+str(int(np.around(z%1, 2)*100))+'.txt'
+        if (os.path.isfile(FPATH) and not REWRITE_TBLS):
+            hmf_mass, hmf_dndm, hmf_nu = np.loadtxt(FPATH, delimiter=',')
+            FPATH = FOLDERPATH+'redshift_'+str(int(z))+'_'+str(int(np.around(z%1, 2)*100))+'_PS.txt'
+            hmf_k, hmf_PS = np.loadtxt(FPATH, delimiter=',')
+        else:
+            print(f'Calculating HMF table at redshift {z:.2f}')
+            hmf = MassFunction(Mmin = 9, Mmax = 18, dlog10m = 0.1, lnk_min = -7.35, lnk_max = 8.2,  dlnk=0.005, z=z, hmf_model = "Behroozi", sigma_8 = 0.8159, cosmo_params = {'Om0':OmegaM, 'H0': 100*h})
+            hmf_mass = hmf.m*h
+            hmf_dndm = hmf.dndm/h**4
+            hmf_nu   = hmf.nu
+            np.savetxt(FPATH, (hmf_mass, hmf_dndm, hmf_nu),  delimiter=',')
+            FPATH = FOLDERPATH+'redshift_'+str(int(z))+'_'+str(int(np.around(z%1, 2)*100))+'_PS.txt'
+            hmf_k    = hmf.k/h
+            hmf_PS   = hmf.power*h**3
+            np.savetxt(FPATH, (hmf_k, hmf_PS),  delimiter=',')
+        return hmf_mass, hmf_dndm, hmf_nu, hmf_k, hmf_PS
+    else: 
+        print(FOLDERPATH)
+        raise ValueError('Folder does not exist.')
+            
+########################################################################################################
+#### DEBUG FUNCTION ####################################################################################
+            
 def DEBUG_omega_inner_integral(theta, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G, 
                                 sigma_array, D_ratio, _PS_NORM_, ONLY_1H_TERM, VERBOSE):
     for k in np.array([0.0001, 0.001, 0.01, 0.1, 1, 10]):
@@ -218,60 +381,8 @@ def DEBUG_omega_inner_integral(theta, M_min, sigma_logM, M_sat, alpha, z, M_h_ar
         print(f' ------ ------ J Bessel : {special.j0(k * theta * cosmo.comoving_distance(z).value)}')
     pass
 
-def omega_inner_integral(theta, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G, 
-                                sigma_array, D_ratio, _PS_NORM_, ONLY_1H_TERM, VERBOSE):
-    k_array = np.logspace(-4, 4, 1000)
-    dlogk = np.log(k_array[1]/k_array[0])
-    intgrnd = np.zeros(0)
-    for k in k_array:
-        if(not ONLY_1H_TERM):
-            PS = PS_g(k, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G, sigma_array, D_ratio, _PS_NORM_) 
-        else:
-            PS = PS_1h(k, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G)
-        intgrnd = np.append(intgrnd, PS * k / (2*np.pi) * special.j0(k * theta * cosmo.comoving_distance(z).value))
-    return np.sum(k_array*intgrnd) * dlogk
-
-def omega(theta, M_min, sigma_logM, M_sat, alpha, z_array, ONLY_1H_TERM = True, VERBOSE = False):
-    N_z_NORM = get_norm_z_distr_gal(z_array, M_min, sigma_logM, M_sat, alpha)
-    intg = np.zeros(0)
-    for iz, z in enumerate(z_array):
-        M_h_array, HMF_array = init_lookup_table(z)
-        sigma_array, D_ratio, _PS_NORM_ = np.zeros(0), 1, 1
-        if(not ONLY_1H_TERM):
-            _PS_NORM_ = norm_power_spectrum()
-            D_ratio   = (D_growth_factor(z)/D_growth_factor(0))**2 if z != 0 else 1
-            for M_h in M_h_array:
-                r = np.power(3.0 * M_h / (4.0 * np.pi * rho_m(z)), 1/3)
-                sigma_array = np.append(sigma_array, _sigma(r, z, D_ratio, _PS_NORM_))
-        N_G  = n_g(M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array)
-        if(VERBOSE):
-            print(f' -- At z : {z}')
-            print(f' ------ N(z)^2 : {np.power(N_z_NORM[iz], 2)}')
-            print(f' ------ c/H(z) : {c / cosmo.H(z).value}')
-        in_K = omega_inner_integral(theta, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G, 
-                                    sigma_array, D_ratio, _PS_NORM_, ONLY_1H_TERM, VERBOSE)
-        if(VERBOSE): print(f' ------ innr I : {in_K}')
-        intg = np.append(intg, np.power(N_z_NORM[iz], 2) * (c / cosmo.H(z).value) * in_K)
-    return integrate.simps(intg, z_array)
-
-def init_lookup_table(z):
-    FOLDERPATH = os.path.split(os.path.dirname(os.path.abspath('')))[0]+'/GALESS/galess/data/HMF_tables/'
-    if os.path.exists(FOLDERPATH):
-        FPATH = FOLDERPATH+'redshift_'+str(int(z))+'_'+str(int(np.around(z%1, 2)*100))+'.txt'
-        if os.path.isfile(FPATH):
-            M_h_l, hmf_p = np.loadtxt(FPATH, delimiter=',')
-        else:
-            print(f'Calculating HMF table at redshift {z:.2f}')
-            M_h_l = np.logspace(10 , 16, 25)
-            hmf_p = np.zeros(0)
-            for M_h in M_h_l:
-                hmf_p = np.append(hmf_p, HMF(M_h, z))
-            np.savetxt(FPATH, (M_h_l, hmf_p),  delimiter=',')
-        return M_h_l, hmf_p
-    else: 
-        print(FOLDERPATH)
-        raise ValueError('Folder does not exist.')
-
+########################################################################################################
+    
 if __name__ == "__main__":
     print('################# DEGUGGING CODE #################')
     import matplotlib.pyplot as plt
@@ -300,7 +411,7 @@ if __name__ == "__main__":
 
     N_z_NORM = get_norm_z_distr_gal(np.array([0,0.5]), M_min, sigma_logM, M_sat, alpha)
     N_G_AVG = get_N_avg(np.array([0,0.5]), N_z_NORM, M_min, sigma_logM, M_sat, alpha)
-    log_M_h_array, HMF_array = init_lookup_table(z)
+    log_M_h_array, HMF_array, nu_array, hmf_k, hmf_PS = init_lookup_table(z)
     M_h_array = np.power(10, log_M_h_array)
     for k in k_arr:
         PS = PS_1h(k, M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array, N_G_AVG)

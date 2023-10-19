@@ -1,0 +1,10 @@
+title: JADES Deep F115W
+limit: 29.82
+cut: 28.82
+area: 0.007
+seeing: 0.04
+exp_time_sec: 12368
+pixel_arcsec: 0.03
+zero_point_m: 28.0865
+sky_bckgnd_m: 22
+photo_band: ukirt_wfcam_Y

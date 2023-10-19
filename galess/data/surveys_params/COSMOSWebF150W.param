@@ -1,0 +1,10 @@
+title: COSMOS Web F150W
+limit: 27.35
+cut: 26.35
+area: 0.54
+seeing: 0.05
+exp_time_sec: 516
+pixel_arcsec: 0.03
+zero_point_m: 28.0865
+sky_bckgnd_m: 22
+photo_band: ukirt_wfcam_H

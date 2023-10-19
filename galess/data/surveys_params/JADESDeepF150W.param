@@ -1,0 +1,10 @@
+title: JADES Deep F150W
+limit: 29.74
+cut: 28.74
+area: 0.007
+seeing: 0.05
+exp_time_sec: 24737
+pixel_arcsec: 0.03
+zero_point_m: 28.0865
+sky_bckgnd_m: 22
+photo_band: ukirt_wfcam_H
