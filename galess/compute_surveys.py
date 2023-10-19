@@ -4,6 +4,7 @@ sys.path.append("../galess")
 import lens_stat as ls
 import ls_utils as utils
 import numpy as np
+from tqdm import tqdm 
 
 M_array     = np.linspace(-13 , -25 , 25)
 sigma_array = np.linspace(100 , 400 , 31)
@@ -22,7 +23,7 @@ surveys_titles = [
      'LSST i band', 
      'SUBARU HSC SuGOHI i band',]
 
-for title in surveys_titles:
+for title in tqdm(surveys_titles):
      survey_params = utils.read_survey_params(title, VERBOSE = 0)
 
      limit    = survey_params['limit']
