@@ -12,10 +12,10 @@ zl_array    = np.linspace(0.  , 2.5 , 26)
 zs_array    = np.linspace(0.  , 10  , 21)
 min_SNR     = 20
 arc_mu_thr  = 3
-#'JADES Deep F115W', 'JADES Deep F150W', 'JADES Deep F277W',
 surveys_titles = [
      'COSMOS Web F115W', 'COSMOS Web F150W', 'COSMOS Web F277W', 
      'PEARLS NEP F115W', 'PEARLS NEP F150W', 'PEARLS NEP F277W',
+     'JADES Deep F115W', 'JADES Deep F150W', 'JADES Deep F277W',
      'COSMOS HST i band',
      'EUCLID Wide VIS', 
      'Roman HLWA J', 
