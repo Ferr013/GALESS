@@ -654,8 +654,8 @@ def Check_R_from_sigma_FP(sigma, zl, zs, m_array, M_array_UV, obs_photo_band, n_
 __dP_dmu_SIE1,__dP_dmu_SIE2,__dP_dmu_SIE3,__dP_dmu_SIE4,__dP_dmu_SIE1_3,__dP_dmu_SIE3_3,__dP_dmu_SIE1_4,__w1,__w2,__w3,__w4 = load_weights_dP_dmu_SIE()
 
 def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, app_magn_limit, survey_area_sq_degrees,
-                                  seeing_arcsec, SNR, exp_time_sec, sky_bckgnd_m_per_arcsec_sq, zero_point_m, pixel_arcsec,  
-                                  photo_band, mag_cut = None, arc_mu_threshold = 3, seeing_trsh = 1.5, readout_noise = 0, num_exposures = 1, 
+                                  seeing_arcsec, SNR, exp_time_sec, sky_bckgnd_m_per_arcsec_sq, zero_point_m,  
+                                  photo_band, mag_cut = None, arc_mu_threshold = 3, seeing_trsh = 1.5, num_exposures = 1, 
                                   LENS_LIGHT_FLAG = False, SIE_FLAG = True, FLAG_KCORRECTION = True, DEBUG = False, dbg_izs = 3, dbg_izl = 2):
     supported_Lens_Light_photo_bands = ['sdss_g0', 'sdss_r0', 'sdss_i0', 'sdss_z0', 'ukirt_wfcam_Y', 'ukirt_wfcam_J', 'ukirt_wfcam_H', 'ukirt_wfcam_K']
     if ((photo_band not in supported_Lens_Light_photo_bands) and (LENS_LIGHT_FLAG==True)): 
@@ -702,8 +702,8 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
                     prob_lens      = get_prob_lensed_bckgnd(sigma, zl, zs, M_array_UV, dzs = _dzs, SIE_FLAG = SIE_FLAG)
                     number_of_ETGs = Lens_cone_volume_diff(zl, survey_area_sq_degrees, dz=_dzl)*(Phi_vel_disp_Mason(sigma-_dsg/2, zl)+Phi_vel_disp_Mason(sigma+_dsg/2, zl))*_dsg/2
                     #We approximate the selection of the arc strect OR the second image above M_lim with the max (eval at each mag bin)
-                    SNR_1img = Signal_to_noise_ratio(m_array-2.5*np.log10(3), Source_size_arcsec(M_array_UV, zs), sky_bckgnd_m_per_arcsec_sq, zero_point_m, exp_time_sec)>=SNR
-                    SNR_2img = Signal_to_noise_ratio(m_array, Source_size_arcsec(M_array_UV, zs),  sky_bckgnd_m_per_arcsec_sq, zero_point_m, exp_time_sec)>=SNR
+                    SNR_1img = Signal_to_noise_ratio(m_array-2.5*np.log10(3), Source_size_arcsec(M_array_UV, zs), sky_bckgnd_m_per_arcsec_sq, zero_point_m, exp_time_sec, num_exposures = num_exposures)>=SNR
+                    SNR_2img = Signal_to_noise_ratio(m_array, Source_size_arcsec(M_array_UV, zs),  sky_bckgnd_m_per_arcsec_sq, zero_point_m, exp_time_sec, num_exposures = num_exposures)>=SNR
                     weight_1img, weight_2img      = Check_R_from_sigma_FP(sigma, zl, zs, m_array, M_array_UV, photo_band) if LENS_LIGHT_FLAG else (1,1)
                     weighted_prob_lens            = prob_lens*np.max(np.vstack((frac_arc*weight_1img*SNR_1img, frac_2nd_img*weight_2img*SNR_2img)), axis=0)
                     Ngal_tensor[izs][isg][izl][:] = weighted_prob_lens*number_of_ETGs

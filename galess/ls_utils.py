@@ -88,5 +88,5 @@ def print_summary_surveys(surveys_selection):
             N_LL, N_noLL = f'{np.sum(matrix_LL):.1e}', f'{np.sum(matrix_noLL):.1e}'
         else:
             N_LL, N_noLL = f'{np.sum(matrix_LL):.0f}', f'{np.sum(matrix_noLL):.0f}'
-        print(f'|{title:^25}|{seeing:16.3f}|{area:14.2f}|{cut:13.1f}|{limit:13.1f}|{N_noLL:>9} ({N_LL:>9})')
+        print(f'|{title:^25}|{seeing:16.3f}|{area:14.3f}|{cut:13.1f}|{limit:13.1f}|{N_noLL:>9} ({N_LL:>9})')
         print() 
