@@ -7,7 +7,7 @@ import numpy as np
 from tqdm import tqdm 
 
 M_array     = np.linspace(-13 , -25 , 25)
-sigma_array = np.linspace(100 , 400 , 61)
+sigma_array = np.linspace(100 , 400 , 31)
 zl_array    = np.linspace(0.  , 2.5 , 26)
 zs_array    = np.linspace(0.  , 7.4 , 75)
 min_SNR     = 20
