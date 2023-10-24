@@ -3,10 +3,12 @@ from scipy import integrate as integral
 from scipy import signal
 from scipy import stats
 import os.path
-from astropy.cosmology import FlatLambdaCDM
 
+from astropy.cosmology import FlatLambdaCDM
 cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
 cosmo, cosmo.Ok0
+
+import ls_utils as utils
 
 def schechter_LF(M_int,zs, phi_0=0, Mstar=0):  ### Param from Bouwens 2022
     zt = 2.42
@@ -31,6 +33,12 @@ def Theta_E(sigma, zl, zs):
     Ds = cosmo.angular_diameter_distance(zs).value
     Dds = cosmo.angular_diameter_distance_z1z2(zl,zs).value
     return 0.9*Dds/Ds*np.power(sigma/v_ref,2) #arcsec
+
+def sigma_from_R_Ein(zs, zl, R_E):
+    v_ref = 161 #km/s per SIE = 0.9 arcsec
+    Ds = cosmo.angular_diameter_distance(zs).value
+    Dds = cosmo.angular_diameter_distance_z1z2(zl,zs).value
+    return v_ref*np.power(R_E / 0.9 * Ds / Dds, 0.5)
 
 def Phi_vel_disp_SDSS(sigma):
     from scipy.special import gamma as gammafunc
@@ -723,12 +731,38 @@ def get_N_and_P_projections(N_gal_matrix, sigma_array, zl_array, zs_array, SMOOT
     P_zs          = np.sum(N_gal_matrix, axis=(1,2))/np.sum(N_gal_matrix)*(1/(zs_array[1]-zs_array[0]))
     P_zl          = np.sum(N_gal_matrix, axis=(0,1))/np.sum(N_gal_matrix)*(1/(zl_array[1]-zl_array[0]))
     P_sg          = np.sum(N_gal_matrix, axis=(0,2))/np.sum(N_gal_matrix)*(1/(sigma_array[1]-sigma_array[0]))
-    if SMOOTH:### ROLLING AVERAGE #######################################################################
+    if SMOOTH:### ROLLING AVERAGE ###
         Ngal_zl_sigma = signal.convolve2d(Ngal_zl_sigma, np.ones((3,3))/9, mode='same')
         Ngal_zl_zs    = signal.convolve2d(Ngal_zl_zs   , np.ones((3,3))/9, mode='same')
         Ngal_sigma_zs = signal.convolve2d(Ngal_sigma_zs, np.ones((3,3))/9, mode='same')
         P_zs          = np.convolve(P_zs, np.ones(3)/3, mode='same')
         P_zl          = np.convolve(P_zl, np.ones(3)/3, mode='same')
         P_sg          = np.convolve(P_sg, np.ones(3)/3, mode='same')
-    ######################################################################################################
     return Ngal_zl_sigma, Ngal_sigma_zs, Ngal_zl_zs, P_zs, P_zl, P_sg
+
+def get_param_space_idx_from_obs_constraints(CW_ER_zl, CW_ER_zs, E_ring_rad, zs_array, zl_array, sigma_array):
+    m_sg = np.zeros((len(zs_array), len(zl_array)))
+    for izs, _zs in enumerate(zs_array):
+        for izl, _zl in enumerate(zl_array):
+            if((_zs>_zl) and (_zs>CW_ER_zs[0]-CW_ER_zs[2]) and (_zs<CW_ER_zs[0]+CW_ER_zs[1])):
+                if((_zl>CW_ER_zl[0]-CW_ER_zl[2]) and (_zl<CW_ER_zl[0]+CW_ER_zl[1])):
+                    m_sg[izs][izl] = sigma_from_R_Ein(_zs, _zl, E_ring_rad)
+    sig_nozero_idx = np.zeros(0).astype(int)
+    for sg_from_RE in m_sg[np.where(m_sg > 0)]:
+            sig_nozero_idx = np.append(sig_nozero_idx, int(np.argmin(np.abs(sigma_array-sg_from_RE))))
+    zs_nozero_idx, zl_nozero_idx = np.where(m_sg > 0)[0], np.where(m_sg > 0)[1]
+    return zl_nozero_idx, zs_nozero_idx, sig_nozero_idx
+
+def prob_for_obs_conf_in_param_space_per_sq_degree(survey_title, 
+                                                    CW_ER_zl, CW_ER_zs, E_ring_rad,
+                                                    zs_array, zl_array, sigma_array, CHECK_LL = True):
+    survey_params = utils.read_survey_params(survey_title, VERBOSE = 0)
+    area     = survey_params['area']
+    matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(survey_title)
+    Ngal_zl_sigma_LL, Ngal_zs_sigma_LL, Ngal_zs_zl_LL, _ , __ , ___ = get_N_and_P_projections(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH=1)
+    mat = matrix_LL if CHECK_LL else matrix_noLL
+    res = 0
+    zl_nozero_idx, zs_nozero_idx, sig_nozero_idx = get_param_space_idx_from_obs_constraints(CW_ER_zl, CW_ER_zs, E_ring_rad, zs_array, zl_array, sigma_array)
+    for src, sig, lns in zip(zs_nozero_idx, sig_nozero_idx, zl_nozero_idx):
+        res = res + mat[src][sig][lns]
+    return res/area

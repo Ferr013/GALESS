@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib import colors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.patches import Rectangle
 import os.path
 
 import lens_stat as ls
@@ -265,7 +266,11 @@ def plot_Harikane_ACF_small_scale():
     ax.set_xlim((1,20))
     plt.show()
     
-def plot_angular_separation(survey_title, zs_array, cmap_c = cm.cool, SPLIT_REDSHIFTS = 0, PLOT_ACF = 0, A_w = 0.4, beta = 0.6):
+def plot_angular_separation(survey_title, zs_array, omega, cmap_c = cm.cool, 
+                            SPLIT_REDSHIFTS = 0, PLOT_ACF = 0, PLOT_FOR_KEYNOTE = 1, 
+                            A_w = 0.4, beta = 0.6):
+    set_plt_param(PLOT_FOR_KEYNOTE = PLOT_FOR_KEYNOTE)
+    
     survey_params = utils.read_survey_params(survey_title, VERBOSE = 0)
     limit    = survey_params['limit']
     cut      = survey_params['cut']
@@ -311,17 +316,22 @@ def plot_angular_separation(survey_title, zs_array, cmap_c = cm.cool, SPLIT_REDS
         CR = 2*np.pi*intgr
         P_Rgalpos = np.cumsum(RR+CR)/np.sum(RR+CR) 
         P_rnd_rnd = np.cumsum(RR)/np.sum(RR) 
-    
-    _PLOT_FOR_KEYNOTE = 1
-    set_plt_param(PLOT_FOR_KEYNOTE = _PLOT_FOR_KEYNOTE)
+
+    _theta_arcsec = np.logspace(-1,3.333334,14)
+    omega[_theta_arcsec<1]  = 0
+    omega[_theta_arcsec>10] = 0
+    dPdt = 2 * np.pi * _theta_arcsec * np.diff(_theta_arcsec)[0] * (omega + 1)
+    cPdt = np.cumsum(dPdt)/np.cumsum(dPdt)[6]
 
     fig, ax = plt.subplots(1, 2, figsize=(12, 5), sharex=False, sharey=False)
     plt.subplots_adjust(wspace=.15, hspace=.2)   
     ax[0].set_ylabel(r'$P(<\theta$)', fontsize=20)
     ax[0].set_xlabel(r'$\theta$ [arcsec]', fontsize=20)
     ax[1].set_xlabel(r'$\theta$ [arcsec]', fontsize=20)
-    ax[0].set_xlim((0,12))
-    ax[1].set_xlim((0,12))
+    ax[0].set_xlim((0,10))
+    ax[1].set_xlim((0,10))
+    ax[0].set_ylim((0,1.1))
+    ax[1].set_ylim((0,1.1))
     if(SPLIT_REDSHIFTS):
         iterabel_zs_array = np.asarray((1, 3, 5, 7, 9))
         color = iter(cmap_c(np.linspace(0, 1, len(iterabel_zs_array)+1)))
@@ -344,7 +354,124 @@ def plot_angular_separation(survey_title, zs_array, cmap_c = cm.cool, SPLIT_REDS
         ax[1].plot(th_r_array, P_Rgalpos, 'g:')
         ax[0].plot(th_r_array, P_rnd_rnd, 'y:')
         ax[1].plot(th_r_array, P_rnd_rnd, 'y:')
+    ax[0].plot(_theta_arcsec, cPdt, 'r:')
+    ax[1].plot(_theta_arcsec, cPdt, 'r:')
 
     plt.legend(fontsize=15, loc='lower right')
     plt.tight_layout()
+    plt.show()
+
+
+
+
+
+
+def compare_COSMOS_Web_Ering(zl_array, zs_array, sigma_array, PLOT_FOR_KEYNOTE = 1):
+    E_ring_rad     = 1.54/2 #" 
+    zl, spzl, smzl = 1.94,   0.13,   0.17
+    zs, spzs, smzs = 2.98,   0.42,   0.47
+    Ml, spMl, smMl = 6.5e11, 3.7e11, 1.5e11
+    sg, spsg, smsg = 336   , 145   , 55
+    CW_ER_rd, CW_ER_zl, CW_ER_zs, CW_ER_Ml, CW_ER_sg =  E_ring_rad, [zl, spzl, smzl], [zs, spzs, smzs], [Ml, spMl, smMl], [sg, spsg, smsg]
+
+    zl_nozero_idx, zs_nozero_idx, sig_nozero_idx = ls.get_param_space_idx_from_obs_constraints(CW_ER_zl, CW_ER_zs, E_ring_rad, zs_array, zl_array, sigma_array)
+    zl_param_space = zl_array[zl_nozero_idx]
+    zs_param_space = zs_array[zs_nozero_idx]
+    sg_param_space = sigma_array[sig_nozero_idx]
+
+    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
+
+    fig, ax = plt.subplots(1, 3, figsize=(17, 5), sharex=False, sharey=False)
+    plt.subplots_adjust(wspace=.23, hspace=.2)
+    #COSMOS_JWST_surveys = ['COSMOS Web F115W', 'COSMOS Web F150W', 'COSMOS Web F277W']
+    COSMOS_JWST_surveys = ['COSMOS Web F115W']
+    _col_  = iter(cmap_c(np.linspace(0, 1, len(COSMOS_JWST_surveys)+1)))
+    for title in COSMOS_JWST_surveys:
+        ccc = next(_col_)
+        matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+        _ , __  , ___, P_zs_LL  , P_zl_LL  , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=1)
+        ax[0].plot(zl_array, P_zl_LL, c=ccc, ls='-', label=title)
+        ax[0].plot(zs_array, P_zs_LL, c=ccc, ls='--')
+        ax[0].set_xlabel(r'$z$', fontsize=20) 
+        ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
+        ax[0].set_xlim((0,5.2))
+        ax[1].plot(sigma_array, P_sg_LL  , c=ccc, ls = '-', label=title)
+        ax[1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+        ax[1].set_ylabel(r'$dP/d\sigma$', fontsize=20)
+        ax[1].set_xlim((100,400))
+        ax[2].hist(np.ravel(Theta_E_LL), weights=np.ravel(matrix_LL), bins = np.arange(0, 4, 0.2), 
+                   range=(0, 3), density=True, histtype='step', color=ccc, ls = '-', label=title)
+        ax[2].set_xlabel(r'$\Theta_E$ ["]', fontsize=20)
+        ax[2].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
+        ax[2].set_xlim((0,4))
+    ER_col = 'orange' if PLOT_FOR_KEYNOTE else 'forestgreen'
+    ax[0].axvline(CW_ER_zl[0], color=ER_col)
+    ax[0].axvspan(CW_ER_zl[0]-CW_ER_zl[2], CW_ER_zl[0]+CW_ER_zl[1], alpha=0.25, color=ER_col)
+    ax[0].axvline(CW_ER_zs[0], color=ER_col, ls='--')
+    ax[0].axvspan(CW_ER_zs[0]-CW_ER_zs[2], CW_ER_zs[0]+CW_ER_zs[1], alpha=0.25, facecolor="none", edgecolor=ER_col, hatch='x')
+    ax[1].axvline(CW_ER_sg[0], color=ER_col)
+    ax[1].axvspan(CW_ER_sg[0]-CW_ER_sg[2], CW_ER_sg[0]+CW_ER_sg[1], alpha=0.25, color=ER_col)
+    ax[2].axvline(CW_ER_rd, color=ER_col, label='E-Ring (van Dokkum+23)')
+    #ax[0].legend()
+    #ax[1].legend()
+    ax[2].legend(fontsize=10)
+    plt.show()
+
+    ################################################################################################################################################################
+
+    fig, ax = plt.subplots(1, 3, figsize=(17, 5), sharex=False, sharey=False)
+    plt.subplots_adjust(wspace=.23, hspace=.2)
+    COSMOS_JWST_surveys = ['COSMOS Web F115W', 'COSMOS Web F150W', 'COSMOS Web F277W']
+    _col_  = iter(cmap_c(np.linspace(0, 1, len(COSMOS_JWST_surveys)+1)))
+    title = COSMOS_JWST_surveys[0]
+    ccc = next(_col_)
+    matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+    Ngal_zl_sigma_LL, Ngal_zs_sigma_LL, Ngal_zs_zl_LL, _ , __ , ___ = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=1)
+
+    _sigma, _zl = np.meshgrid(sigma_array, zl_array)
+    levels   = np.asarray([0.01, 0.1, 0.5, 1, 2, 3, 5])*(np.power(10,np.ceil(np.log10(np.max(Ngal_zl_sigma_LL))-1)))
+    contours = ax[0].contour(_sigma, _zl, Ngal_zl_sigma_LL.T, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(Ngal_zl_sigma_LL), vmax=np.max(Ngal_zl_sigma_LL)), linestyles='-')
+    ax[0].clabel(contours, inline=True, fontsize=8)
+    ax[0].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+    ax[0].set_ylabel(r'$z_l$', fontsize=20)
+
+    _sigma, _zs = np.meshgrid(sigma_array, zs_array)
+    levels   = np.asarray([0.01, 0.1, 0.5, 1, 2, 3, 5])*(np.power(10,np.ceil(np.log10(np.max(Ngal_zs_sigma_LL))-1)))
+    contours = ax[1].contour(_sigma, _zs, Ngal_zs_sigma_LL, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(Ngal_zs_sigma_LL), vmax=np.max(Ngal_zs_sigma_LL)), linestyles='-')
+    ax[1].clabel(contours, inline=True, fontsize=8)
+    ax[1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+    ax[1].set_ylabel(r'$z_s$', fontsize=20)
+
+    _zs, _zl = np.meshgrid(zs_array, zl_array)
+    levels   = np.asarray([0.01, 0.1, 0.5, 1, 2, 3, 5])*(np.power(10,np.ceil(np.log10(np.max(Ngal_zs_zl_LL))-1)))
+    contours = ax[2].contour(_zs, _zl, Ngal_zs_zl_LL.T, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(Ngal_zs_zl_LL), vmax=np.max(Ngal_zs_zl_LL)), linestyles='-')
+    ax[2].clabel(contours, inline=True, fontsize=8)
+    ax[2].set_xlabel(r'$z_s$', fontsize=20)
+    ax[2].set_ylabel(r'$z_l$', fontsize=20)
+
+    ER_col = 'orange' if PLOT_FOR_KEYNOTE else 'forestgreen'
+    ax[0].scatter(CW_ER_sg[0], CW_ER_zl[0], color=ER_col, marker='*')
+    ax[1].scatter(CW_ER_sg[0], CW_ER_zs[0], color=ER_col, marker='*')    
+    ax[2].scatter(CW_ER_zs[0], CW_ER_zl[0], color=ER_col, marker='*')
+
+    ax[0].axvline(CW_ER_sg[0]-CW_ER_sg[2], alpha=0.25, color=ER_col)
+    ax[0].axvline(CW_ER_sg[0]+CW_ER_sg[1], alpha=0.25, color=ER_col)
+    ax[1].axvline(CW_ER_sg[0]-CW_ER_sg[2], alpha=0.25, color=ER_col)
+    ax[1].axvline(CW_ER_sg[0]+CW_ER_sg[1], alpha=0.25, color=ER_col)
+    ax[2].axvline(CW_ER_zs[0]-CW_ER_zs[2], alpha=0.25, color=ER_col)
+    ax[2].axvline(CW_ER_zs[0]+CW_ER_zs[1], alpha=0.25, color=ER_col)
+
+    ax[0].axhline(CW_ER_zl[0]-CW_ER_zl[2], alpha=0.25, color=ER_col)
+    ax[0].axhline(CW_ER_zl[0]+CW_ER_zl[1], alpha=0.25, color=ER_col)
+    ax[1].axhline(CW_ER_zs[0]-CW_ER_zs[2], alpha=0.25, color=ER_col)
+    ax[1].axhline(CW_ER_zs[0]+CW_ER_zs[1], alpha=0.25, color=ER_col)
+    ax[2].axhline(CW_ER_zl[0]-CW_ER_zl[2], alpha=0.25, color=ER_col)
+    ax[2].axhline(CW_ER_zl[0]+CW_ER_zl[1], alpha=0.25, color=ER_col)
+    
+    
+    _dzl, _dzs, _dsg = np.diff(zl_array)[0] / 2, np.diff(zs_array)[0] / 2, np.diff(sigma_array)[0] / 2
+    for _zl_, _zs_, _sg_ in zip(zl_param_space, zs_param_space, sg_param_space):
+        ax[0].add_patch(Rectangle((_sg_ - _dsg, _zl_ - _dzl), 2 * _dsg, 2 * _dzl, facecolor = ER_col, alpha = 0.25))
+        ax[1].add_patch(Rectangle((_sg_ - _dsg, _zs_ - _dzs), 2 * _dsg, 2 * _dzs, facecolor = ER_col, alpha = 0.25))
+        ax[2].add_patch(Rectangle((_zs_ - _dzs, _zl_ - _dzl), 2 * _dzs, 2 * _dzl, facecolor = ER_col, alpha = 0.25))
     plt.show()
