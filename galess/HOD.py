@@ -297,6 +297,7 @@ def get_norm_z_distr_gal(z_array, M_min, sigma_logM, M_sat, alpha, z_cen, z_sigm
     # cumtrpz = integrate.cumtrapz(N_Garray, shift_z_array)
     # Num = cumtrpz-np.append(0, cumtrpz[:-1])
     # return Num / integrate.trapz(N_Garray, shift_z_array) 
+    if(z_cen == 4.9): return np.array([0.7, 1.4, 1.5, 1.4])
     return norm_gaussian(z_cen, z_sigma, z_array)
         
 def get_N_dens_avg(z_array, M_min, sigma_logM, M_sat, alpha, z_cen, z_sigma):

@@ -693,7 +693,8 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
         m_array = M_array_UV + obs_band_to_intr_UV_corr if FLAG_KCORRECTION else M_array_UV + 5 * np.log10(cosmo.luminosity_distance(zs).value * 1e5) 
         M_lim_b = app_magn_limit - 5 * np.log10(cosmo.luminosity_distance(zs).value * 1e5)
         M_lim   = M_lim_b - K_correction_from_UV(zs, photo_band, M_lim_b) if FLAG_KCORRECTION else M_lim_b
-        idxM_matrix[izs][:][:] = int(np.argmin(np.power(m_array-mag_cut,2)))
+        #Account for average magnification of mu = 3
+        idxM_matrix[izs][:][:] = int(np.argmin(np.power((m_array-2.5*np.log10(3))-mag_cut,2)))
         #Calculate the probability (at each mag bin) that the first image arc is stretched at least arc_mu_threshold
         frac_arc     = Fraction_1st_image_arc_SIE(arc_mu_threshold, M_array_UV, schechter_LF, zs) if SIE_FLAG else Fraction_1st_image_arc(arc_mu_threshold, M_array_UV, schechter_LF, zs) 
         #Calculate the probability (at each mag bin) that the second image is brighter than M_lim
@@ -717,14 +718,12 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
                     Ngal_tensor[izs][isg][izl][:] = weighted_prob_lens*number_of_ETGs
                     Ngal_matrix[izs][isg][izl]    = np.cumsum(Ngal_tensor, axis=3)[izs][isg][izl][idxM_matrix[izs][isg][izl]]
                     Theta_E_mat[izs][isg][izl]    = Theta_E(sigma, zl, zs)
-                    if(DEBUG and sigma == 200 and izs == dbg_izs and izl == dbg_izl): 
-                        return izs, isg, izl, m_array, Ngal_matrix[izs][isg][izl], Theta_E_mat[izs][isg][izl], Ngal_tensor[izs][isg][izl][:], m_array[idxM_matrix[izs][isg][izl]], idxM_matrix[izs][isg][izl]
         #for i_ttt, m_ttt in enumerate(m_array):
         #    id_marray = int(((m_ttt//0.5)*0.5+np.around((m_ttt%0.5)*2,0)/2-15)//0.5)
         #    if(id_marray>=0 and id_marray<=41): m_zs_matrix[izs][id_marray] = np.tensordot(Ngal_tensor[izs][:][:][i_ttt], Ngal_matrix[izs][:][:], axes=([1,2],[1,2]))
     return Ngal_matrix, Theta_E_mat, Ngal_tensor #m_zs_matrix
     
-def get_N_and_P_projections(N_gal_matrix, sigma_array, zl_array, zs_array, SMOOTH=False):
+def get_N_and_P_projections(N_gal_matrix, sigma_array, zl_array, zs_array, SMOOTH=True):
     Ngal_zl_sigma = np.sum(N_gal_matrix, axis=0)
     Ngal_zl_zs    = np.sum(N_gal_matrix, axis=1)
     Ngal_sigma_zs = np.sum(N_gal_matrix, axis=2)
@@ -766,3 +765,31 @@ def prob_for_obs_conf_in_param_space_per_sq_degree(survey_title,
     for src, sig, lns in zip(zs_nozero_idx, sig_nozero_idx, zl_nozero_idx):
         res = res + mat[src][sig][lns]
     return res/area
+
+def get_src_magnitude_distr(m_obs, zs_array, prob, M_array_UV, ___src_scale___ = 1, MAG_OVER_ARCSEC_SQ = 1):
+    m_num = np.zeros(len(m_obs))
+    M_array_UV   = M_array_UV[::-1] if (M_array_UV[0]>M_array_UV[-1]) else M_array_UV
+    for izs, zs in enumerate(zs_array):
+        obs_band_to_intr_UV_corr = 5 * np.log10(cosmo.luminosity_distance(zs).value * 1e5) + K_correction_from_UV(zs, 'sdss_i0', M_array_UV) 
+        m_array_i = M_array_UV + obs_band_to_intr_UV_corr
+        N_per_M = np.sum(prob, axis=(1,2))[izs][:]
+        #if plotting Mag arcsec^-2 correct for the source size, otherwise for magnication (lensing preserves surface brightness)
+        #TODO: ___src_scale___ is for testing purposes
+        correct = 2.5*np.log10(np.pi*np.power(___src_scale___*Source_size_arcsec(M_array_UV, zs),2)) if MAG_OVER_ARCSEC_SQ else -2.5 * np.log10(3)
+        for imu, mu in enumerate(m_array_i + correct):
+            m_idx = np.argmin(np.abs(m_obs - mu))
+            m_num[m_idx] = m_num[m_idx]+N_per_M[imu]
+    return m_num
+
+def get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix):
+    m_num = np.zeros(len(m_obs))
+    for izl, zl in enumerate(zl_array):
+        #https://ui.adsabs.harvard.edu/abs/2019ApJ...887...10S/abstract
+        M_array_V = -2.5 * (4.86 * np.log10(sigma_array / 200) + 8.52)
+        obs_band_to_intr_UV_corr = 5 * np.log10(cosmo.luminosity_distance(zl).value * 1e5) + K_correction(zl, 'sdss_i0', 'sdss_g0', M_array_V) 
+        m_array_i = M_array_V + obs_band_to_intr_UV_corr
+        N_per_sg = np.sum(matrix, axis=(0))[:, izl]
+        for imu, mu in enumerate(m_array_i):
+            m_idx = np.argmin(np.abs(m_obs - mu))
+            m_num[m_idx] = m_num[m_idx]+N_per_sg[imu]
+    return m_num

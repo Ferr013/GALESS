@@ -1,13 +1,20 @@
+import os.path
 import numpy as np
+import pandas as pd
+from scipy import integrate
+
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib import colors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.patches import Rectangle
-import os.path
+
+from astropy.cosmology import FlatLambdaCDM
+cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
 
 import lens_stat as ls
 import ls_utils as utils
+
 
 
 def set_plt_param(PLOT_FOR_KEYNOTE = 1):
@@ -230,41 +237,10 @@ def compare_sigma_distributions_surveys(surveys_selection, sigma_array, zl_array
     ax[0].legend()
     plt.show()
 
-def get_Harikane_ACF_small_scale(z=3):
-    if(z==1):
-        return [[1.9963236274483052, 0.4783824964943629 ],
-                [2.896634936533222 , 0.37413962607747775],
-                [4.202972824736602 , 0.32034502042509283],
-                [5.970098880561779 , 0.24414084840368558],
-                [8.5708797932537   , 0.18367284109722465],
-                [12.304650542654327, 0.11380983017100621],
-                [17.85385904050169 , 0.08025911785892756],
-                [26.182665465840035, 0.07236866510323885]]
-    if(z==3):
-        return np.array([[1.9716086603186689, 2.7345961868755966],
-                        [2.8456616883636414 , 1.5292060917860244],
-                        [4.107199672835568  , 0.8177515184528737],
-                        [6.037769010610303  , 0.47820228886038607],
-                        [8.714431166023571  , 0.29903922282111883],
-                        [12.34904764254925  , 0.22867742907131222],
-                        [17.823624166116165 , 0.20449354873797368],
-                        [25.72518850120658  , 0.1462340619871049],
-                        [37.12967224032399  , 0.11958312623948672]])
-    return 0
 
-def plot_Harikane_ACF_small_scale():
-    data = get_Harikane_ACF_small_scale()
-    x, y = data[:,0], data[:,1]
-    fit  = np.polyfit(x, y, 3)
-    pol  = np.poly1d(fit)
-    xp   = np.linspace(1, 20, 100)
-    fig, ax = plt.subplots(1, 1, figsize=(4, 4), sharex=False, sharey=False)
-    ax.scatter(x, y)
-    ax.plot(xp, pol(xp), c='g')
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-    ax.set_xlim((1,20))
-    plt.show()
+
+
+
     
 def plot_angular_separation(survey_title, zs_array, omega, cmap_c = cm.cool, 
                             SPLIT_REDSHIFTS = 0, PLOT_ACF = 0, PLOT_FOR_KEYNOTE = 1, 
@@ -291,32 +267,6 @@ def plot_angular_separation(survey_title, zs_array, omega, cmap_c = cm.cool,
     Theta_pos_noLL, Theta_pos_LL = Theta_pos_noLL/intsteps, Theta_pos_LL/intsteps
 
     rad_to_arcsec = 1/206265
-    th_r_array    = np.linspace(0,12,100) #arcsec
-    th_r_radar    = th_r_array*rad_to_arcsec
-
-    data = get_Harikane_ACF_small_scale()
-    x, y = data[:,0], data[:,1]
-    fit  = np.polyfit(x, y, 3)
-    pol  = np.poly1d(fit) # A_w theta^-beta
-        
-    if(PLOT_ACF):        
-        #ACF Integral definition - See [Eq.1] https://articles.adsabs.harvard.edu/pdf/1977ApJ...217..385G
-        RR = np.pi*(np.power(th_r_array+np.diff(th_r_array)[0],2)-np.power(th_r_array,2))#/(np.pi*10**2)
-        ''' THIS WORKS ONLY AT LARGE SCALE >100"
-        #Barone_Nugent angualr two point correlation function 
-        #https://iopscience.iop.org/article/10.1088/0004-637X/793/1/17/pdf
-        CR = 2*np.pi*A_w*(np.power(th_r_radar+np.diff(th_r_radar)[0], 2-beta)-np.power(th_r_radar, 2-beta))/(2-beta)
-        '''
-        dth_r = np.diff(th_r_array)[0]
-        intgr = np.zeros(0)
-        for th_r in th_r_array:
-            xint  = np.array([th_r, th_r+dth_r])
-            yint  = np.array([pol(xint[0])*xint[0], pol(xint[1])*(xint[1])])
-            intgr = np.append(intgr, np.trapz(yint, xint))
-        CR = 2*np.pi*intgr
-        P_Rgalpos = np.cumsum(RR+CR)/np.sum(RR+CR) 
-        P_rnd_rnd = np.cumsum(RR)/np.sum(RR) 
-
     _theta_arcsec = np.logspace(-1,3.333334,14)
     omega[_theta_arcsec<1]  = 0
     omega[_theta_arcsec>10] = 0
@@ -364,8 +314,6 @@ def plot_angular_separation(survey_title, zs_array, omega, cmap_c = cm.cool,
 
 
 
-
-
 def compare_COSMOS_Web_Ering(zl_array, zs_array, sigma_array, PLOT_FOR_KEYNOTE = 1):
     E_ring_rad     = 1.54/2 #" 
     zl, spzl, smzl = 1.94,   0.13,   0.17
@@ -383,8 +331,8 @@ def compare_COSMOS_Web_Ering(zl_array, zs_array, sigma_array, PLOT_FOR_KEYNOTE =
 
     fig, ax = plt.subplots(1, 3, figsize=(17, 5), sharex=False, sharey=False)
     plt.subplots_adjust(wspace=.23, hspace=.2)
-    #COSMOS_JWST_surveys = ['COSMOS Web F115W', 'COSMOS Web F150W', 'COSMOS Web F277W']
-    COSMOS_JWST_surveys = ['COSMOS Web F115W']
+    COSMOS_JWST_surveys = ['COSMOS Web F115W', 'COSMOS Web F150W', 'COSMOS Web F277W']
+    #COSMOS_JWST_surveys = ['COSMOS Web F115W']
     _col_  = iter(cmap_c(np.linspace(0, 1, len(COSMOS_JWST_surveys)+1)))
     for title in COSMOS_JWST_surveys:
         ccc = next(_col_)
@@ -475,3 +423,126 @@ def compare_COSMOS_Web_Ering(zl_array, zs_array, sigma_array, PLOT_FOR_KEYNOTE =
         ax[1].add_patch(Rectangle((_sg_ - _dsg, _zs_ - _dzs), 2 * _dsg, 2 * _dzs, facecolor = ER_col, alpha = 0.25))
         ax[2].add_patch(Rectangle((_zs_ - _dzs, _zl_ - _dzl), 2 * _dzs, 2 * _dzl, facecolor = ER_col, alpha = 0.25))
     plt.show()
+
+
+
+def compare_COSMOS_HST_Faure(zl_array, zs_array, sigma_array, M_array_UV, mag_cut,  ___src_scale___ = 1, LENS_LIGHT = 1, __MAG_OVER_ARCSEC_SQ__ = 1, PLOT_FOR_KEYNOTE = 1):
+    ### FAURE DATA #################################################################################
+    ### from FAURE+(2008) --- selection of high grade lenses from COSMOS-HST
+    FAURE_title=['Name'       ,'zl' , 'zs', 'sig', 'Rein', 'mag_814W_len', 'mag_814W_src_arcsec_sq']
+    FAURE_data =[['0012 + 2015', 0.41, 0.95, 215.3, 0.67 , 19.28         , 21.6],
+                ['0018 + 3845', 0.71, 1.93, 303.1, 1.32  , 23.60         , 22.7],
+                ['0038 + 4133', 0.89, 2.70, 225.3, 0.73  , 20.39         , 20.5],
+                ['0047 + 5023', 0.85, 2.51, 313.0, 1.41  , 20.65         , 22.8],
+                ['0049 + 5128', 0.33, 0.74, 380.0, 2.09  , 19.61         , 23.3],
+                ['0050 + 4901', 1.01, 3.34, 342.3, 1.69  , 21.72         , 22.7],
+                ['0056 + 1226', 0.44, 1.03, 337.4, 1.64  , 18.70         , 23.3],
+                ['0124 + 5121', 0.84, 2.47, 245.0, 0.86  , 22.43         , 23.2],
+                ['0211 + 1139', 0.90, 2.76, 466.3, 3.14  , 21.09         , 21.6],
+                ['0216 + 2955', 0.67, 1.77, 348.5, 1.75  , 19.98         , 22.0],
+                ['0227 + 0451', 0.89, 2.70, 428.3, 2.64  , 21.94         , 22.3],
+                ['5857 + 5949', 0.39, 0.89, 398.1, 2.28  , 20.05         , 21.9],
+                ['5914 + 1219', 1.05, 3.57, 338.6, 1.65  , 23.25         , 22.8],
+                ['5921 + 0638', 0.45, 1.06, 221.0, 0.70  , 20.34         , 20.6],
+                ['5941 + 3628', 0.90, 2.76, 285.0, 1.17  , 20.91         , 22.8],
+                ['5947 + 4752', 0.28, 0.61, 370.0, 1.97  , 19.83         , 22.8]]
+    FAURE_data  = np.asarray(FAURE_data)
+    FAURE_names = FAURE_data[:,0]
+    FAURE_zl,   FAURE_zs    = np.asarray(FAURE_data[:,1], dtype='float'), np.asarray(FAURE_data[:,2], dtype='float')
+    FAURE_sig,  FAURE_Rein  = np.asarray(FAURE_data[:,3], dtype='float'), np.asarray(FAURE_data[:,4], dtype='float')
+    FAURE_m_Ib, FAURE_m_src = np.asarray(FAURE_data[:,5], dtype='float'), np.asarray(FAURE_data[:,6], dtype='float')
+
+    FAURE_A_data  = pd.read_csv('../galess/data/FAURE_2008/FAURE_A.csv')
+    FAURE_A_names = FAURE_A_data['Cosmos Name'].to_numpy()
+    FAURE_A_zl    = FAURE_A_data['z_l'].to_numpy()
+    FAURE_A_Rarc  = FAURE_A_data['R_arc'].to_numpy()
+    FAURE_A_Reff  = FAURE_A_data['Reff'].to_numpy()
+    FAURE_A_m_Ib  = FAURE_A_data['mag_814W'].to_numpy()
+    FAURE_A_ell   = FAURE_A_data['ell'].to_numpy()
+    FAURE_A_m_src = FAURE_A_data['mag_814W_src'].to_numpy()
+
+    FAURE_B_data  = pd.read_csv('../galess/data/FAURE_2008/FAURE_B.csv')
+    FAURE_B_names = FAURE_B_data['Cosmos Name'].to_numpy()
+    FAURE_B_zl    = FAURE_B_data['z_l'].to_numpy()
+    FAURE_B_Rarc  = FAURE_B_data['R_arc'].to_numpy()
+    FAURE_B_Reff  = FAURE_B_data['Reff'].to_numpy()
+    FAURE_B_m_Ib  = FAURE_B_data['mag_814W'].to_numpy()
+    FAURE_B_ell   = FAURE_B_data['ell'].to_numpy()
+    FAURE_B_m_src = FAURE_B_data['mag_814W_src'].to_numpy()
+    ### PLOT DATA #################################################################################
+    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
+    fig, ax = plt.subplots(1, 3, figsize=(17, 5), sharex=False, sharey=False)
+    plt.subplots_adjust(wspace=.23, hspace=.2)
+
+    ccc = 'w' if PLOT_FOR_KEYNOTE else 'k'
+    title = 'COSMOS HST i band FAURE'
+    matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+    _ , __  , ___, P_zs_LL  , P_zl_LL  , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH=1)
+    _ , __  , ___, P_zs_noLL  , P_zl_noLL  , P_sg_noLL   = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
+
+    if LENS_LIGHT:
+        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
+    else:
+        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
+    
+    ax[0].plot(zl_array, P_zl, c=ccc, ls='-', label=title)
+    ax[0].plot(zs_array, P_zs, c=ccc, ls='--')
+    ax[0].set_xlabel(r'$z$', fontsize=20) 
+    ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
+    ax[0].set_xlim((0,5.2))
+    ax[1].hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins = np.arange(0, 4, 0.2), 
+                range=(0, 3), density=True, histtype='step', color=ccc, ls = '-', label=title)
+    ax[1].set_xlabel(r'$\Theta_E$ ["]', fontsize=20)
+    ax[1].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
+    ax[1].set_xlim((0,4))
+
+
+    m_obs = np.linspace(15, 30, 31)
+    if __MAG_OVER_ARCSEC_SQ__:         
+        m_num = ls.get_src_magnitude_distr(m_obs, zs_array, prob, M_array_UV, ___src_scale___ = ___src_scale___, MAG_OVER_ARCSEC_SQ = __MAG_OVER_ARCSEC_SQ__)
+        ax[2].plot(m_obs, m_num, color=ccc)
+        ax[2].set_xlabel(r'$m_\text{I814W}^\text{src}$ [mag arcsec$^{-2}$]', fontsize=20)
+        ax[2].set_ylabel(r'$N_\text{gal}$', fontsize=20)
+        ax[2].set_xlim((19,mag_cut-1))
+        ax[2].set_ylim((0,50))
+    else:
+        # ax[2].axvline(mag_cut, color=ccc, ls = '--', alpha=0.75)
+        # ax[2].set_xlabel(r'$m_\text{I814W}^\text{src}$ [mag]', fontsize=20)
+        # ax[2].set_ylabel(r'$N_\text{gal}$', fontsize=20)
+        # ax[2].set_xlim((19,mag_cut+1))
+        m_lens = ls.get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix)
+        norm = integrate.simps(m_lens, m_obs)
+        ax[2].plot(m_obs, m_lens/norm, color=ccc)
+        ax[2].set_xlabel(r'$m_\text{I814W}^\text{len}$ [mag]', fontsize=20)
+        ax[2].set_ylabel(r'$dP/dm$', fontsize=20)
+        ax[2].set_xlim((15,25))
+        ax[2].set_ylim((0,0.5))
+    
+
+    _nbins_zl = np.arange(0.0, 1.6, 0.2 )
+    _nbins_zs = np.arange(0.0, 5  , 0.5 )
+    _nbins_sg = np.arange(100, 400, 25  )
+    _nbins_Re = np.arange(0  , 4  , 0.25)
+    if PLOT_FOR_KEYNOTE:
+        ER_col1, ER_col2  = 'darkorange', 'lime'
+    else:
+        ER_col1, ER_col2  = 'forestgreen', 'firebrick'
+    ### FULL SAMPLE ###
+    ax[0].hist( np.append(FAURE_A_zl,  FAURE_B_zl)          , bins=_nbins_zl, density=True, histtype='step', color=ER_col1, label='Faure Full Sample (67)')
+    ax[1].hist( np.append(FAURE_A_Rarc/1.5,FAURE_B_Rarc/1.5), bins=_nbins_Re, density=True, histtype='step', color=ER_col1)
+    if __MAG_OVER_ARCSEC_SQ__:        
+        ax[2].hist( np.append(FAURE_A_m_src, FAURE_B_m_src)       , bins=m_obs  , density=False, histtype='step', color=ER_col1)
+    else:
+        ax[2].hist( np.append(FAURE_A_m_Ib, FAURE_B_m_Ib)       , bins=m_obs  , density=True, histtype='step', color=ER_col1)
+    ### BEST SAMPLE ###
+    ax[0].hist( FAURE_zl      , bins=_nbins_zl, density=True, histtype='step', color=ER_col2, label='Faure Best Sample (16)')
+    ax[0].hist( FAURE_zs      , bins=_nbins_zs, density=True, histtype='step', color=ER_col2, ls='--')
+    ax[1].hist( FAURE_Rein    , bins=_nbins_Re, density=True, histtype='step', color=ER_col2)
+    if __MAG_OVER_ARCSEC_SQ__:        
+        ax[2].hist( FAURE_m_src   , bins=m_obs    , density=False, histtype='step', color=ER_col2)
+    else:
+        ax[2].hist( FAURE_m_Ib, bins=m_obs  , density=True, histtype='step', color=ER_col2)
+
+    ax[0].legend(fontsize=10)
+    plt.show()
+
