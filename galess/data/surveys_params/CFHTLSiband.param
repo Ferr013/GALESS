@@ -1,0 +1,10 @@
+title: CFHTLS i band
+limit: 25.08
+cut: 23.0         
+area: 170
+seeing: 0.62
+exp_time_sec: 5500
+pixel_arcsec: 0.18 
+zero_point_m: 25.5 
+sky_bckgnd_m: 19.7
+photo_band: sdss_i0

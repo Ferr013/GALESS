@@ -72,6 +72,7 @@ def save_pickled_files(
 def print_summary_surveys(surveys_selection):
     print(f'|     Survey - Filter     | PSF/Seeing ["] | Area [deg^2] | m_cut [mag] | m_lim [mag] | N [deg^-1] | N_lenses (LL)      |')
     print() 
+    if hasattr(surveys_selection, '__len__') == False: surveys_selection = [surveys_selection]
     for title in surveys_selection:
         survey_params = read_survey_params(title, VERBOSE = 0)
         limit    = survey_params['limit']
@@ -90,3 +91,4 @@ def print_summary_surveys(surveys_selection):
             N_LL, N_noLL = f'{np.sum(matrix_LL):.0f}', f'{np.sum(matrix_noLL):.0f}'
         print(f'|{title:^25}|{seeing:16.3f}|{area:14.3f}|{cut:13.1f}|{limit:13.1f}|{(np.sum(matrix_noLL)/area):12.0f}|{N_noLL:>9} ({N_LL:>9})')
         print() 
+

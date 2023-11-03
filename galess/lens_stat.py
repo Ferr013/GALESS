@@ -687,7 +687,7 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
     ##################################################################################################################
     for izs, zs in enumerate(zs_array):
         _dzs = zs_array[1]-zs_array[0] if (izs==0) else (zs-zs_array[izs-1])
-        if(zs==0): zs = zs + 1e-3 #avoid division by 0
+        if(zs==0): continue #avoid division by 0
         #correcting for distance modulus and K-correction
         obs_band_to_intr_UV_corr = 5 * np.log10(cosmo.luminosity_distance(zs).value * 1e5) + K_correction_from_UV(zs, photo_band, M_array_UV) 
         m_array = M_array_UV + obs_band_to_intr_UV_corr if FLAG_KCORRECTION else M_array_UV + 5 * np.log10(cosmo.luminosity_distance(zs).value * 1e5) 
@@ -704,7 +704,7 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
             _dsg = sigma_array[1]-sigma_array[0] if (isg==0) else (sigma-sigma_array[isg-1])
             for izl, zl in enumerate(zl_array):
                 _dzl = zl_array[1]-zl_array[0] if (izl==0) else (zl-zl_array[izl-1])
-                if(zl==0): zl = zl + 1e-4 #avoid division by 0
+                if(zl==0): continue #avoid division by 0
                 #The (\Theta_e > c*seeing) condition is a first order approximation that works well in the JWST/EUCLID cases (small seeing).
                 #TODO: A complete treatment would involve finding which lensed sources can be seen after the deconvolution of the seeing
                 if((zs>zl) and (Theta_E(sigma, zl, zs)>seeing_trsh*seeing_arcsec)):
@@ -788,7 +788,7 @@ def get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix):
         M_array_V = -2.5 * (4.86 * np.log10(sigma_array / 200) + 8.52)
         obs_band_to_intr_UV_corr = 5 * np.log10(cosmo.luminosity_distance(zl).value * 1e5) + K_correction(zl, 'sdss_i0', 'sdss_g0', M_array_V) 
         m_array_i = M_array_V + obs_band_to_intr_UV_corr
-        N_per_sg = np.sum(matrix, axis=(0))[:, izl]
+        N_per_sg = np.sum(matrix, axis=0)[:, izl]
         for imu, mu in enumerate(m_array_i):
             m_idx = np.argmin(np.abs(m_obs - mu))
             m_num[m_idx] = m_num[m_idx]+N_per_sg[imu]

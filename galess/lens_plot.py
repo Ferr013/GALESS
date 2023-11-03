@@ -426,7 +426,7 @@ def compare_COSMOS_Web_Ering(zl_array, zs_array, sigma_array, PLOT_FOR_KEYNOTE =
 
 
 
-def compare_COSMOS_HST_Faure(zl_array, zs_array, sigma_array, M_array_UV, mag_cut,  ___src_scale___ = 1, LENS_LIGHT = 1, __MAG_OVER_ARCSEC_SQ__ = 1, PLOT_FOR_KEYNOTE = 1):
+def compare_COSMOS_HST_Faure(zl_array, zs_array, sigma_array, M_array_UV, mag_cut,  ___src_scale___ = 1, ONLY_FULL_SAMPLE = 0, LENS_LIGHT = 1, __MAG_OVER_ARCSEC_SQ__ = 1, PLOT_FOR_KEYNOTE = 1):
     ### FAURE DATA #################################################################################
     ### from FAURE+(2008) --- selection of high grade lenses from COSMOS-HST
     FAURE_title=['Name'       ,'zl' , 'zs', 'sig', 'Rein', 'mag_814W_len', 'mag_814W_src_arcsec_sq']
@@ -487,9 +487,10 @@ def compare_COSMOS_HST_Faure(zl_array, zs_array, sigma_array, M_array_UV, mag_cu
     
     ax[0].plot(zl_array, P_zl, c=ccc, ls='-', label=title)
     ax[0].plot(zs_array, P_zs, c=ccc, ls='--')
+    ax[0].set_xlim((0,5.2))
     ax[0].set_xlabel(r'$z$', fontsize=20) 
     ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
-    ax[0].set_xlim((0,5.2))
+    
     ax[1].hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins = np.arange(0, 4, 0.2), 
                 range=(0, 3), density=True, histtype='step', color=ccc, ls = '-', label=title)
     ax[1].set_xlabel(r'$\Theta_E$ ["]', fontsize=20)
@@ -525,24 +526,103 @@ def compare_COSMOS_HST_Faure(zl_array, zs_array, sigma_array, M_array_UV, mag_cu
     _nbins_Re = np.arange(0  , 4  , 0.25)
     if PLOT_FOR_KEYNOTE:
         ER_col1, ER_col2  = 'darkorange', 'lime'
+        _ALPHA_ = 1
     else:
         ER_col1, ER_col2  = 'forestgreen', 'firebrick'
+        _ALPHA_ = 1
     ### FULL SAMPLE ###
-    ax[0].hist( np.append(FAURE_A_zl,  FAURE_B_zl)          , bins=_nbins_zl, density=True, histtype='step', color=ER_col1, label='Faure Full Sample (67)')
-    ax[1].hist( np.append(FAURE_A_Rarc/1.5,FAURE_B_Rarc/1.5), bins=_nbins_Re, density=True, histtype='step', color=ER_col1)
+    ax[0].hist( np.append(FAURE_A_zl,  FAURE_B_zl)          , bins=_nbins_zl, density=True, histtype='step', color=ER_col1, alpha = _ALPHA_, label='Faure 2008 - Full Sample (53)')
+    ax[1].hist( np.append(FAURE_A_Rarc/1.5,FAURE_B_Rarc/1.5), bins=_nbins_Re, density=True, histtype='step', color=ER_col1, alpha = _ALPHA_)
     if __MAG_OVER_ARCSEC_SQ__:        
-        ax[2].hist( np.append(FAURE_A_m_src, FAURE_B_m_src)       , bins=m_obs  , density=False, histtype='step', color=ER_col1)
+        ax[2].hist( np.append(FAURE_A_m_src, FAURE_B_m_src)       , bins=m_obs  , density=False, histtype='step', color=ER_col1, alpha = _ALPHA_)
     else:
-        ax[2].hist( np.append(FAURE_A_m_Ib, FAURE_B_m_Ib)       , bins=m_obs  , density=True, histtype='step', color=ER_col1)
-    ### BEST SAMPLE ###
-    ax[0].hist( FAURE_zl      , bins=_nbins_zl, density=True, histtype='step', color=ER_col2, label='Faure Best Sample (16)')
-    ax[0].hist( FAURE_zs      , bins=_nbins_zs, density=True, histtype='step', color=ER_col2, ls='--')
-    ax[1].hist( FAURE_Rein    , bins=_nbins_Re, density=True, histtype='step', color=ER_col2)
-    if __MAG_OVER_ARCSEC_SQ__:        
-        ax[2].hist( FAURE_m_src   , bins=m_obs    , density=False, histtype='step', color=ER_col2)
-    else:
-        ax[2].hist( FAURE_m_Ib, bins=m_obs  , density=True, histtype='step', color=ER_col2)
+        ax[2].hist( np.append(FAURE_A_m_Ib, FAURE_B_m_Ib)       , bins=m_obs  , density=True, histtype='step', color=ER_col1, alpha = _ALPHA_)
+    if not ONLY_FULL_SAMPLE:
+        ### BEST SAMPLE ###
+        ax[0].hist( FAURE_zl      , bins=_nbins_zl, density=True, histtype='step', color=ER_col2, alpha = _ALPHA_, label='Faure 2008 - Best Sample (16)')
+        ax[0].hist( FAURE_zs      , bins=_nbins_zs, density=True, histtype='step', color=ER_col2, alpha = _ALPHA_, ls='--')
+        ax[1].hist( FAURE_Rein    , bins=_nbins_Re, density=True, histtype='step', color=ER_col2, alpha = _ALPHA_)
+        if __MAG_OVER_ARCSEC_SQ__:        
+            ax[2].hist( FAURE_m_src   , bins=m_obs    , density=False, histtype='step', color=ER_col2, alpha = _ALPHA_)
+        else:
+            ax[2].hist( FAURE_m_Ib, bins=m_obs  , density=True, histtype='step', color=ER_col2, alpha = _ALPHA_)
 
     ax[0].legend(fontsize=10)
     plt.show()
 
+
+def compare_Sl2S(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 1):
+    SL2S_data       = pd.read_csv('../galess/data/SL2S_Sonnenfeld/redshifts_sigma.csv')
+    SL2S_data_names = SL2S_data['Name'].to_numpy()
+    SL2S_data_zl    = SL2S_data['z_l'].to_numpy()
+    SL2S_data_zs    = SL2S_data['z_s'].to_numpy()
+    SL2S_data_sigma = SL2S_data['sigma'].to_numpy()
+    id = np.where(SL2S_data['Name'].notnull())
+    SL2S_data_sigma = SL2S_data_sigma[id[0]]
+    SL2S_dataB      = pd.read_csv('../galess/data/SL2S_Sonnenfeld/data.csv')
+    SL2S_data_nameB = SL2S_dataB['Name'].to_numpy()
+    SL2S_data_Rein  = SL2S_dataB['R_Ein'].to_numpy()
+    SL2S_data_msrc  = SL2S_dataB['mag_src'].to_numpy()
+
+    ### PLOT DATA #################################################################################
+    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
+    ccc = 'w' if PLOT_FOR_KEYNOTE else 'k'
+    if PLOT_FOR_KEYNOTE: 
+        ER_col1, ER_col2, _ALPHA_  = 'darkorange', 'lime', 1
+    else: 
+        ER_col1, ER_col2, _ALPHA_  = 'forestgreen', 'firebrick', 1
+
+    title = 'CFHTLS i band'
+    matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+    _ , __  , ___, P_zs_LL   , P_zl_LL   , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=1)
+    _ , __  , ___, P_zs_noLL , P_zl_noLL , P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
+
+    if LENS_LIGHT:
+        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
+    else:
+        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
+    
+    fig, ax = plt.subplots(1, 3, figsize=(17, 5), sharex=False, sharey=False)
+    plt.subplots_adjust(wspace=.23, hspace=.2)
+    ax[0].plot(zl_array, P_zl, c=ccc, ls='-', label=title)
+    ax[0].plot(zs_array, P_zs, c=ccc, ls='--')
+    ax[0].set_xlim((0,5.2))
+    ax[0].set_xlabel(r'$z$', fontsize=20) 
+    ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
+
+    ax[1].plot(sigma_array, P_sg_noLL, c=ccc, ls = '-', label=title)
+    ax[1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+    ax[1].set_ylabel(r'$dP/d\sigma$', fontsize=20)
+
+    ax[2].hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins = np.arange(0, 4, 0.2), 
+                range=(0, 3), density=True, histtype='step', color=ccc, ls = '-', label=title)
+    ax[2].set_xlabel(r'$\Theta_E$ ["]', fontsize=20)
+    ax[2].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
+    ax[2].set_xlim((0,4))
+
+    _nbins_zl = np.arange(0.0, 1.2, 0.3 )
+    _nbins_zs = np.arange(0.5, 4  , 0.5 )
+    _nbins_sg = np.arange(100, 400, 25  )
+    _nbins_Re = np.arange(0  , 4  , 0.25)
+
+    ### BEST SAMPLE ###
+    ax[0].hist( SL2S_data_zl    , bins=_nbins_zl, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_, label='Sonnenfeld 2013 - Full Sample (53)')
+    ax[0].hist( SL2S_data_zs    , bins=_nbins_zs, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_, ls='--')
+    ax[1].hist( SL2S_data_sigma , bins=_nbins_sg, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_)
+    ax[2].hist( SL2S_data_Rein  , bins=_nbins_Re, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_)
+
+    # ax[0].hist( SL2S_data_zl    , bins=5, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_, label='Sonnenfeld 2013')
+    # ax[0].hist( SL2S_data_zs    , bins=5, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_, ls='--')
+    # ax[1].hist( SL2S_data_sigma , bins=5, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_)
+    # ax[2].hist( SL2S_data_Rein  , bins=5, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_)
+
+    ax[0].legend(fontsize=10)
+    plt.show()
+
+
+def compare_CASSOWARY(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 1):
+    CASS_data       = pd.read_csv('../galess/data/CASSOWARY/cassowary.csv')
+    CASS_data_names = CASS_data['Name'].to_numpy()
+    CASS_data_zl    = CASS_data['z_l'].to_numpy()
+    CASS_data_zs    = CASS_data['z_s'].to_numpy()
+    CASS_data_sigma = CASS_data['sigma'].to_numpy()
