@@ -1,0 +1,10 @@
+title: DES i band
+limit: 24.7
+cut: 23
+area: 5000
+seeing: 0.96
+exp_time_sec: 900
+pixel_arcsec: 0.263
+zero_point_m: 25.5
+sky_bckgnd_m: 19.4
+photo_band: sdss_i0

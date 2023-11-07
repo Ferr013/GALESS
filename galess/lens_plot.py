@@ -314,6 +314,62 @@ def plot_angular_separation(survey_title, zs_array, omega, cmap_c = cm.cool,
 
 
 
+def plot_lens_src_magnitudes(survey_titles, zl_array, zs_array, sigma_array, M_array_UV, AVG_MAGNIF_3 = 0, LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 1):
+    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
+    fig, ax = plt.subplots(1, 2, figsize=(11, 5), sharex=False, sharey=False)
+    plt.subplots_adjust(wspace=.23, hspace=.2)
+    
+    color = iter(cmap_c(np.linspace(0, 1, len(survey_titles)+1)))
+    for iit, title in enumerate(survey_titles):
+        ccc = next(color)
+        survey_params = utils.read_survey_params(title, VERBOSE = 0)
+        photo_band   = survey_params['photo_band']
+        limit        = survey_params['limit']
+        cut          = survey_params['cut']
+
+        matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+        _ , __  , ___, P_zs_LL  , P_zl_LL  , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH=1)
+        _ , __  , ___, P_zs_noLL  , P_zl_noLL  , P_sg_noLL   = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
+
+        if LENS_LIGHT:
+            matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
+        else:
+            matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
+    
+        m_obs = np.arange(15, 35, 0.75)
+        
+        m_lens = ls.get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix, obs_band = photo_band)
+        norm_lens = integrate.simps(m_lens, m_obs)
+        ax[0].plot(m_obs, m_lens/norm_lens, color=ccc, label = title)
+        ax[0].set_xlabel(r'$m_\text{len}$ [mag]', fontsize=20)
+        ax[0].set_ylabel(r'$dP/dm_\text{lens}$', fontsize=20)
+        ax[0].set_xlim((15,30))
+        ax[0].set_ylim((0,0.5))
+        ax[0].legend(fontsize = 12)
+
+        m_src = ls.get_src_magnitude_distr(m_obs, cut, zs_array, prob, M_array_UV, obs_band = photo_band)
+        norm_src = integrate.simps(m_src, m_obs)
+        ax[1].plot(m_obs, m_src/norm_src, color=ccc)
+        ax[1].set_xlabel(r'$m_\text{src}$ [mag]', fontsize=20)
+        ax[1].set_ylabel(r'$dP/dm_\text{src}$', fontsize=20)
+        ax[1].set_xlim((20,30))
+
+        print(np.sum(m_lens), np.sum(m_src))
+
+        if AVG_MAGNIF_3 :
+            ax[0].axvline(float(cut-2.5*np.log10(3)), color=ccc, ls = '--')
+            ax[1].axvline(float(cut-2.5*np.log10(3)), color=ccc, ls = '--')
+        else:
+            ax[0].axvline(float(cut), color=ccc, ls = '--')
+            ax[1].axvline(float(cut), color=ccc, ls = '--')
+        
+    plt.show()
+
+
+
+
+
+
 def compare_COSMOS_Web_Ering(zl_array, zs_array, sigma_array, PLOT_FOR_KEYNOTE = 1):
     E_ring_rad     = 1.54/2 #" 
     zl, spzl, smzl = 1.94,   0.13,   0.17
@@ -426,7 +482,7 @@ def compare_COSMOS_Web_Ering(zl_array, zs_array, sigma_array, PLOT_FOR_KEYNOTE =
 
 
 
-def compare_COSMOS_HST_Faure(zl_array, zs_array, sigma_array, M_array_UV, mag_cut,  ___src_scale___ = 1, ONLY_FULL_SAMPLE = 0, LENS_LIGHT = 1, __MAG_OVER_ARCSEC_SQ__ = 1, PLOT_FOR_KEYNOTE = 1):
+def compare_COSMOS_HST_Faure(zl_array, zs_array, sigma_array, M_array_UV, mag_cut, ONLY_FULL_SAMPLE = 0, LENS_LIGHT = 1, __MAG_OVER_ARCSEC_SQ__ = 0, PLOT_FOR_KEYNOTE = 1):
     ### FAURE DATA #################################################################################
     ### from FAURE+(2008) --- selection of high grade lenses from COSMOS-HST
     FAURE_title=['Name'       ,'zl' , 'zs', 'sig', 'Rein', 'mag_814W_len', 'mag_814W_src_arcsec_sq']
@@ -499,9 +555,8 @@ def compare_COSMOS_HST_Faure(zl_array, zs_array, sigma_array, M_array_UV, mag_cu
 
 
     m_obs = np.linspace(15, 30, 31)
+    #ax[2].plot(m_obs, m_num, color=ccc)
     if __MAG_OVER_ARCSEC_SQ__:         
-        m_num = ls.get_src_magnitude_distr(m_obs, zs_array, prob, M_array_UV, ___src_scale___ = ___src_scale___, MAG_OVER_ARCSEC_SQ = __MAG_OVER_ARCSEC_SQ__)
-        ax[2].plot(m_obs, m_num, color=ccc)
         ax[2].set_xlabel(r'$m_\text{I814W}^\text{src}$ [mag arcsec$^{-2}$]', fontsize=20)
         ax[2].set_ylabel(r'$N_\text{gal}$', fontsize=20)
         ax[2].set_xlim((19,mag_cut-1))

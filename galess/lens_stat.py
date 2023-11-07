@@ -421,7 +421,9 @@ def Fraction_1st_image_arc_SIE(mu_arc, M_int, LF_func, zs):
     return np.nan_to_num((res)/Lensing_Bias_SIE(1, M_int, LF_func, zs))
     
 # TODO: Add Check_R_from_sigma_FP for SIE -> the image position is not trivial (at least at first glance), use a dP/dtheta computed from the .c script
+
 ########################################################################################################################################################
+
 def get_prob_lensed_bckgnd_integrated_over_zs(sigma, zl, zs, M_int, steps=50):
     zsi_arr = np.linspace(zl, zs, steps)
     dzs = (zsi_arr[1]-zsi_arr[0])/2
@@ -766,27 +768,26 @@ def prob_for_obs_conf_in_param_space_per_sq_degree(survey_title,
         res = res + mat[src][sig][lns]
     return res/area
 
-def get_src_magnitude_distr(m_obs, zs_array, prob, M_array_UV, ___src_scale___ = 1, MAG_OVER_ARCSEC_SQ = 1):
+def get_src_magnitude_distr(m_obs, m_cut, zs_array, prob, M_array_UV, obs_band = 'sdss_i0'):
     m_num = np.zeros(len(m_obs))
     M_array_UV   = M_array_UV[::-1] if (M_array_UV[0]>M_array_UV[-1]) else M_array_UV
-    for izs, zs in enumerate(zs_array):
-        obs_band_to_intr_UV_corr = 5 * np.log10(cosmo.luminosity_distance(zs).value * 1e5) + K_correction_from_UV(zs, 'sdss_i0', M_array_UV) 
-        m_array_i = M_array_UV + obs_band_to_intr_UV_corr
-        N_per_M = np.sum(prob, axis=(1,2))[izs][:]
-        #if plotting Mag arcsec^-2 correct for the source size, otherwise for magnication (lensing preserves surface brightness)
-        #TODO: ___src_scale___ is for testing purposes
-        correct = 2.5*np.log10(np.pi*np.power(___src_scale___*Source_size_arcsec(M_array_UV, zs),2)) if MAG_OVER_ARCSEC_SQ else -2.5 * np.log10(3)
-        for imu, mu in enumerate(m_array_i + correct):
-            m_idx = np.argmin(np.abs(m_obs - mu))
-            m_num[m_idx] = m_num[m_idx]+N_per_M[imu]
+    for izs, zs in enumerate(zs_array[zs_array>0]):
+        obs_band_to_intr_UV_corr = 5 * np.log10(cosmo.luminosity_distance(zs).value * 1e5) + K_correction_from_UV(zs, obs_band, M_array_UV) 
+        m_array_i = M_array_UV + obs_band_to_intr_UV_corr + 2.5 * np.log10(3)
+        idcut = int(np.argmin(np.power(m_array_i-m_cut,2)))
+        N_per_M = np.sum(prob,axis=(1,2))[izs][:]
+        for imu, mu in enumerate(m_array_i):
+            m_idx = int(np.argmin(np.abs(m_obs - mu)))
+            if(imu <= idcut):
+                m_num[m_idx] = m_num[m_idx]+np.sum(N_per_M[imu])
     return m_num
 
-def get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix):
+def get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix, obs_band = 'sdss_i0'):
     m_num = np.zeros(len(m_obs))
-    for izl, zl in enumerate(zl_array):
+    for izl, zl in enumerate(zl_array[zl_array>0]):
         #https://ui.adsabs.harvard.edu/abs/2019ApJ...887...10S/abstract
         M_array_V = -2.5 * (4.86 * np.log10(sigma_array / 200) + 8.52)
-        obs_band_to_intr_UV_corr = 5 * np.log10(cosmo.luminosity_distance(zl).value * 1e5) + K_correction(zl, 'sdss_i0', 'sdss_g0', M_array_V) 
+        obs_band_to_intr_UV_corr = 5 * np.log10(cosmo.luminosity_distance(zl).value * 1e5) + K_correction(zl, obs_band, 'sdss_g0', M_array_V) 
         m_array_i = M_array_V + obs_band_to_intr_UV_corr
         N_per_sg = np.sum(matrix, axis=0)[:, izl]
         for imu, mu in enumerate(m_array_i):
