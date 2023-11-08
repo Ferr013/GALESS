@@ -336,7 +336,7 @@ def plot_lens_src_magnitudes(survey_titles, zl_array, zs_array, sigma_array, M_a
         else:
             matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
     
-        m_obs = np.arange(15, 35, 0.75)
+        m_obs = np.arange(15, 35, 0.25)
         
         m_lens = ls.get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix, obs_band = photo_band)
         norm_lens = integrate.simps(m_lens, m_obs)
@@ -353,8 +353,6 @@ def plot_lens_src_magnitudes(survey_titles, zl_array, zs_array, sigma_array, M_a
         ax[1].set_xlabel(r'$m_\text{src}$ [mag]', fontsize=20)
         ax[1].set_ylabel(r'$dP/dm_\text{src}$', fontsize=20)
         ax[1].set_xlim((20,30))
-
-        print(np.sum(m_lens), np.sum(m_src))
 
         if AVG_MAGNIF_3 :
             ax[0].axvline(float(cut-2.5*np.log10(3)), color=ccc, ls = '--')

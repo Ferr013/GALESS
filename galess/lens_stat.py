@@ -696,7 +696,8 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
         M_lim_b = app_magn_limit - 5 * np.log10(cosmo.luminosity_distance(zs).value * 1e5)
         M_lim   = M_lim_b - K_correction_from_UV(zs, photo_band, M_lim_b) if FLAG_KCORRECTION else M_lim_b
         #Account for average magnification of mu = 3
-        idxM_matrix[izs][:][:] = int(np.argmin(np.power((m_array-2.5*np.log10(3))-mag_cut,2)))
+        m_array = m_array - 2.5 * np.log10(3)
+        idxM_matrix[izs][:][:] = int(np.argmin(np.power(m_array-mag_cut,2)))
         #Calculate the probability (at each mag bin) that the first image arc is stretched at least arc_mu_threshold
         frac_arc     = Fraction_1st_image_arc_SIE(arc_mu_threshold, M_array_UV, schechter_LF, zs) if SIE_FLAG else Fraction_1st_image_arc(arc_mu_threshold, M_array_UV, schechter_LF, zs) 
         #Calculate the probability (at each mag bin) that the second image is brighter than M_lim
@@ -718,7 +719,7 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
                     weight_1img, weight_2img      = Check_R_from_sigma_FP(sigma, zl, zs, m_array, M_array_UV, photo_band) if LENS_LIGHT_FLAG else (1,1)
                     weighted_prob_lens            = prob_lens*np.max(np.vstack((frac_arc*weight_1img*SNR_1img, frac_2nd_img*weight_2img*SNR_2img)), axis=0)
                     Ngal_tensor[izs][isg][izl][:] = weighted_prob_lens*number_of_ETGs
-                    Ngal_matrix[izs][isg][izl]    = np.cumsum(Ngal_tensor, axis=3)[izs][isg][izl][idxM_matrix[izs][isg][izl]]
+                    Ngal_matrix[izs][isg][izl]    = np.cumsum(Ngal_tensor[izs][isg][izl][:])[idxM_matrix[izs][isg][izl]]
                     Theta_E_mat[izs][isg][izl]    = Theta_E(sigma, zl, zs)
         #for i_ttt, m_ttt in enumerate(m_array):
         #    id_marray = int(((m_ttt//0.5)*0.5+np.around((m_ttt%0.5)*2,0)/2-15)//0.5)
@@ -773,9 +774,12 @@ def get_src_magnitude_distr(m_obs, m_cut, zs_array, prob, M_array_UV, obs_band =
     M_array_UV   = M_array_UV[::-1] if (M_array_UV[0]>M_array_UV[-1]) else M_array_UV
     for izs, zs in enumerate(zs_array[zs_array>0]):
         obs_band_to_intr_UV_corr = 5 * np.log10(cosmo.luminosity_distance(zs).value * 1e5) + K_correction_from_UV(zs, obs_band, M_array_UV) 
-        m_array_i = M_array_UV + obs_band_to_intr_UV_corr + 2.5 * np.log10(3)
+        m_array_i = M_array_UV + obs_band_to_intr_UV_corr - 2.5 * np.log10(3)
         idcut = int(np.argmin(np.power(m_array_i-m_cut,2)))
         N_per_M = np.sum(prob,axis=(1,2))[izs][:]
+        # N_per_M = prob[izs][:][:][:]
+        # N_per_M[:][:][idcut-1:] = 0
+        # N_per_M = np.sum(N_per_M, axis=(0,1))
         for imu, mu in enumerate(m_array_i):
             m_idx = int(np.argmin(np.abs(m_obs - mu)))
             if(imu <= idcut):
