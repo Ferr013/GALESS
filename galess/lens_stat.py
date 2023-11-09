@@ -782,8 +782,8 @@ def get_src_magnitude_distr(m_obs, m_cut, zs_array, prob, M_array_UV, obs_band =
         # N_per_M = np.sum(N_per_M, axis=(0,1))
         for imu, mu in enumerate(m_array_i):
             m_idx = int(np.argmin(np.abs(m_obs - mu)))
-            if(imu <= idcut):
-                m_num[m_idx] = m_num[m_idx]+np.sum(N_per_M[imu])
+            #if(imu < idcut):
+            m_num[m_idx] = m_num[m_idx]+np.sum(N_per_M[imu])
     return m_num
 
 def get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix, obs_band = 'sdss_i0'):

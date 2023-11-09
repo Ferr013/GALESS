@@ -268,100 +268,16 @@ def omega(theta, M_min, sigma_logM, M_sat, alpha, z_cen, N_z_nrm, z_array, ONLY_
     NCEN = N_cen(M_h_array, M_min, sigma_logM)
     NSAT = N_sat(M_h_array, M_sat, alpha, M_min, sigma_logM)
     H_z = [cosmo.H(z).value for z in z_array]
-    factor_z = (c / np.array(H_z)) * np.power(N_z_nrm, 2)
+    factor_z =  np.power(np.array(N_z_nrm), 2) / (c / np.array(H_z))
     intg1 = [omega_z_component_1(z, theta, M_min, sigma_logM, M_sat, alpha, N_z_nrm, NCEN, NSAT, _PS_NORM_, ONLY_1H_TERM = ONLY_1H_TERM, VERBOSE = VERBOSE, USE_MY_PS = USE_MY_PS, REWRITE_TBLS = REWRITE_TBLS) for z in z_array]    
     intg2 = [omega_z_component_2(z, theta, M_min, sigma_logM, M_sat, alpha, N_z_nrm, NCEN, NSAT, _PS_NORM_, ONLY_1H_TERM = ONLY_1H_TERM, VERBOSE = VERBOSE, USE_MY_PS = USE_MY_PS, REWRITE_TBLS = REWRITE_TBLS) for z in z_array]    
-    return np.trapz(intg1 / factor_z, z_array), np.trapz(intg2 / factor_z, z_array)
+    return np.trapz(np.array(intg1) * factor_z, z_array), np.trapz(np.array(intg2) * factor_z, z_array)
 
 def omega_array(theta, M_min, sigma_logM, M_sat, alpha, z_cen, N_z_nrm, z_array, ONLY_1H_TERM = False, VERBOSE = False, USE_MY_PS = True, REWRITE_TBLS = False):
     omega1h, omega2h = np.zeros(0), np.zeros(0)
     for tht in tqdm(theta):
         o_1h, o_2h = omega(tht, M_min, sigma_logM, M_sat, alpha, z_cen, N_z_nrm, z_array, ONLY_1H_TERM = ONLY_1H_TERM, VERBOSE= VERBOSE, USE_MY_PS = USE_MY_PS, REWRITE_TBLS=REWRITE_TBLS)
         omega1h, omega2h = np.append(omega1h, o_1h), np.append(omega2h, o_2h)
-        REWRITE_TBLS = False
-    omega1h[omega1h<0] = 0
-    omega1h[(theta/(1/206265))>30] = 0
-    return omega1h, omega2h
-
-################################################################################################################################
-
-def omega_inner_integral_SLOW(theta, M_min, sigma_logM, M_sat, alpha, z, comoving_distance_z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT, 
-                                nu_array, hmf_k, hmf_PS, _PS_NORM_, D_ratio, ONLY_1H_TERM, VERBOSE, USE_MY_PS):
-    if (USE_MY_PS): 
-        k_array = np.logspace(-3, 3, 2000)
-        dlogk = np.log(k_array[1]/k_array[0])
-        intgrnd1, intgrnd2 = np.zeros(0), np.zeros(0)
-        for k in k_array:
-            if(not ONLY_1H_TERM):
-                PS_1, PS_2 = PS_g(k, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, nu_array,  hmf_k, hmf_PS, D_ratio, _PS_NORM_, USE_MY_PS)
-            else:
-                PS_1, PS_2 = PS_1h(k, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G), 0
-            factor =  k / (2*np.pi) * special.j0(k * theta * comoving_distance_z)
-            intgrnd1 = np.append(intgrnd1, (PS_1) * factor)
-            intgrnd2 = np.append(intgrnd2, (PS_2) * factor)
-        return np.sum(k_array*intgrnd1) * dlogk, np.sum(k_array*intgrnd2) * dlogk
-    else:
-        PS_1, PS_2, INTG = np.zeros(0), np.zeros(0), np.zeros(0)
-        for k in hmf_k:
-            if(not ONLY_1H_TERM):
-                PS1, PS2 = PS_g(k, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, nu_array, hmf_k, hmf_PS, _PS_NORM_, D_ratio, USE_MY_PS) 
-            else:
-                PS1, PS2 = PS_1h(k, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G), 0
-            PS_1 = np.append(PS_1, PS1)
-            PS_2 = np.append(PS_2, PS2)
-            INTG = np.append(INTG, k / (2*np.pi) * special.j0(k * theta * comoving_distance_z))
-        intgrnd1 = (PS_1)*INTG
-        intgrnd2 = (hmf_PS*PS_2)*INTG
-        #return np.trapz(intgrnd, hmf_k)
-        dlogk = np.log(hmf_k[1]/hmf_k[0])
-        return np.sum(hmf_k*intgrnd1) * dlogk, np.sum(hmf_k*intgrnd2) * dlogk
-
-def omega_SLOW(theta, M_min, sigma_logM, M_sat, alpha, z_cen, N_z_nrm, z_array, ONLY_1H_TERM = False, VERBOSE = False, USE_MY_PS = True, REWRITE_TBLS = False):
-    if hasattr(z_array, '__len__'):
-        intg1, intg2 = np.zeros(0), np.zeros(0)
-        _PS_NORM_ = norm_power_spectrum()
-        for iz, z in enumerate(z_array):
-            M_h_array, HMF_array, nu_array, hmf_k, hmf_PS = init_lookup_table(z, REWRITE_TBLS)
-            D_ratio   = (D_growth_factor(z)/D_growth_factor(0))**2 if z != 0 else 1
-            N_G  = n_g(M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array)
-            NCEN = N_cen(M_h_array, M_min, sigma_logM)
-            NSAT = N_sat(M_h_array, M_sat, alpha, M_min, sigma_logM)
-            comoving_distance_z = cosmo.comoving_distance(z).value
-            H_z = cosmo.H(z).value
-            crit_dens_rescaled = (4/3*np.pi*cosmo.critical_density(z).value*200*2e40)
-            if(VERBOSE):
-                print(f' -- At z : {z}')
-                print(f' ------ N(z)^2 : {np.power(N_z_nrm[iz], 2)}')
-                print(f' ------ c/H(z) : {c / H_z}')
-            in_K1, in_K2 = omega_inner_integral(theta, M_min, sigma_logM, M_sat, alpha, z, comoving_distance_z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT, 
-                                        nu_array, hmf_k, hmf_PS, _PS_NORM_, D_ratio, ONLY_1H_TERM, VERBOSE, USE_MY_PS)
-            if(VERBOSE): print(f' ------ innr I : {in_K1} | {in_K2}')
-            intg1 = np.append(intg1, in_K1 / (c / H_z) * np.power(N_z_nrm[iz], 2))
-            intg2 = np.append(intg2, in_K2 / (c / H_z) * np.power(N_z_nrm[iz], 2))
-        return np.trapz(intg1, z_array), np.trapz(intg2, z_array)
-    else:
-        z, dz = z_cen, 1/N_z_nrm
-        comoving_distance_z = cosmo.comoving_distance(z).value
-        H_z = cosmo.H(z).value
-        crit_dens_rescaled = (4/3*np.pi*cosmo.critical_density(z).value*200*2e40)
-        M_h_array, HMF_array, nu_array, hmf_k, hmf_PS = init_lookup_table(z, REWRITE_TBLS)
-        _PS_NORM_ = norm_power_spectrum()
-        D_ratio   = (D_growth_factor(z)/D_growth_factor(0))**2 if z != 0 else 1
-        N_G  = n_g(M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array)
-        NCEN = N_cen(M_h_array, M_min, sigma_logM)
-        NSAT = N_sat(M_h_array, M_sat, alpha, M_min, sigma_logM)
-        in_K1, in_K2 = omega_inner_integral(theta, M_min, sigma_logM, M_sat, alpha, z, comoving_distance_z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT,
-                                    nu_array, hmf_k, hmf_PS, _PS_NORM_, D_ratio, ONLY_1H_TERM, VERBOSE, USE_MY_PS)
-        intg1 = in_K1 / (c / H_z) * np.power(N_z_nrm, 2)
-        intg2 = in_K2 / (c / H_z) * np.power(N_z_nrm, 2)
-        return intg1 * dz, intg2 * dz
-
-def omega_array_SLOW(theta, M_min, sigma_logM, M_sat, alpha, z_cen, N_z_nrm, z_array, ONLY_1H_TERM = False, VERBOSE = False, USE_MY_PS = True, REWRITE_TBLS = False):
-    omega1h, omega2h = np.zeros(0), np.zeros(0)
-    for tht in tqdm(theta):
-        o_1h, o_2h = omega(tht, M_min, sigma_logM, M_sat, alpha, z_cen, N_z_nrm, z_array, ONLY_1H_TERM = ONLY_1H_TERM, VERBOSE= VERBOSE, USE_MY_PS = USE_MY_PS, REWRITE_TBLS=REWRITE_TBLS)
-        omega1h, omega2h = np.append(omega1h, o_1h), np.append(omega2h, o_2h)
-        REWRITE_TBLS = False
     omega1h[omega1h<0] = 0
     omega1h[(theta/(1/206265))>30] = 0
     return omega1h, omega2h
@@ -471,3 +387,5 @@ N_z_nrm = np.array([0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0])
 _theta_arcsec = np.logspace(0,1,3)
 theta = _theta_arcsec * 1/206265 # 1 arcsec in rad
 omega1h, omega2h = omega_array(theta, M_min, sigma_logM, M_sat, alpha, z, N_z_nrm, z_array, USE_MY_PS = True)
+
+print(omega1h)
