@@ -3,6 +3,7 @@ import numpy as np
 from scipy import integrate
 from scipy import special
 from scipy.interpolate import InterpolatedUnivariateSpline as _spline
+import mpmath
 
 from tqdm.notebook import tqdm
 
@@ -18,7 +19,7 @@ OmegaC = OmegaM-OmegaB
 H0 = cosmo.H(0).value
 h  = H0/100
 s8 = 0.9
-c  = 299792.458 #speed of light km/s
+c_light  = 299792.458 #speed of light km/s
 G  = 4.3009e-9  #Mpc/Msolar*(km/s)^2
 Theta=2.728/2.7 #Eisenstein_Hu_98
 zeq=2.5*10**4*OmegaM*h**2*Theta**(-4) #Eisenstein_Hu_98
@@ -55,7 +56,7 @@ def norm_power_spectrum():
     n = 0.96
     N = n-1
     deltah = 1.94*10**(-5)*OmegaM**(-0.785-0.05*np.log(OmegaM))*np.exp(-0.95*N-0.169*N**2)
-    intgr_n = lambda x: (2*(np.pi*deltah*T(x))**2*(c*x/H0)**(3+n)/(x**3))/(2*np.pi**2)*np.power(x,2)*W_F_transf(x, 8/h)**2
+    intgr_n = lambda x: (2*(np.pi*deltah*T(x))**2*(c_light*x/H0)**(3+n)/(x**3))/(2*np.pi**2)*np.power(x,2)*W_F_transf(x, 8/h)**2
     norm = integrate.quad(intgr_n, 0, 1000)[0]
     return (s8**2)/norm
     
@@ -63,7 +64,7 @@ def power_spectrum(k, z, D_ratio, _PS_NORM_):
     n = 0.96
     N = n-1
     deltah = 1.94*10**(-5)*OmegaM**(-0.785-0.05*np.log(OmegaM))*np.exp(-0.95*N-0.169*N**2)
-    return 2*(np.pi*deltah*T(k))**2*(c*k/H0)**(3+n)/(k**3)*D_ratio*_PS_NORM_
+    return 2*(np.pi*deltah*T(k))**2*(c_light*k/H0)**(3+n)/(k**3)*D_ratio*_PS_NORM_
 
 #############################################################################################
 ### HALO MASS FUNCTION ######################################################################
@@ -222,7 +223,18 @@ def omega_inner_integral(theta, M_min, sigma_logM, M_sat, alpha, z, comoving_dis
     factor = [factor_k(k, theta, comoving_distance_z) for k in k_array]
     PS_2_corr =  np.array(PS_2) if USE_MY_PS else hmf_PS * np.array(PS_2)
     return np.sum(k_array * np.array(PS_1) * factor) * dlogk, np.sum(k_array * PS_2_corr * factor) * dlogk
-    
+
+def F_k_hmf_func_1(k, theta, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT, comoving_distance_z):
+    PS_1 = PS_1h(k, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT) 
+    factor = factor_k(k, theta, comoving_distance_z)
+    return float(PS_1 * factor)
+
+def F_k_hmf_func_2(k, theta, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT, bias, hmf_k, hmf_PS, D_ratio, _PS_NORM_, comoving_distance_z, USE_MY_PS):
+    PS_2 = PS_2h(k, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT, bias, hmf_k, hmf_PS, D_ratio, _PS_NORM_, USE_MY_PS)
+    PS_2_corr =  PS_2 if USE_MY_PS else hmf_PS * PS_2
+    factor = factor_k(k, theta, comoving_distance_z)
+    return float(PS_2_corr * factor)
+
 def omega_inner_integral_1(theta, M_min, sigma_logM, M_sat, alpha, z, comoving_distance_z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT, 
                                 bias, hmf_k, hmf_PS, _PS_NORM_, D_ratio, USE_MY_PS):
     if (USE_MY_PS): 
@@ -231,10 +243,12 @@ def omega_inner_integral_1(theta, M_min, sigma_logM, M_sat, alpha, z, comoving_d
     else:
         k_array = hmf_k
         dlogk = np.log(hmf_k[1]/hmf_k[0])
-    PS_1 = [PS_1h(k, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT) for k in k_array]
-    factor = [factor_k(k, theta, comoving_distance_z) for k in k_array]
+    # PS_1 = [PS_1h(k, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT) for k in k_array]
+    # factor = [factor_k(k, theta, comoving_distance_z) for k in k_array]
     # return np.sum(k_array * np.array(PS_1) * factor) * dlogk
-    return np.trapz(np.array(PS_1) * factor, k_array)
+    # return np.trapz(np.array(PS_1) * factor, k_array)
+    # return integrate.quad(np.array(PS_1) * factor, np.min(k_array), np.max(k_array))
+    return integrate.quad(F_k_hmf_func_1, 1e-3, 1e5, limit=10000, epsabs=5e-5, args = (theta, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT, comoving_distance_z))[0]
 
 def omega_inner_integral_2(theta, M_min, sigma_logM, M_sat, alpha, z, comoving_distance_z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT, 
                                 bias, hmf_k, hmf_PS, _PS_NORM_, D_ratio, USE_MY_PS):
@@ -244,11 +258,13 @@ def omega_inner_integral_2(theta, M_min, sigma_logM, M_sat, alpha, z, comoving_d
     else:
         k_array = hmf_k
         dlogk = np.log(hmf_k[1]/hmf_k[0])
-    PS_2 = [PS_2h(k, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT, bias, hmf_k, hmf_PS, D_ratio, _PS_NORM_, USE_MY_PS) for k in k_array]
-    factor = [factor_k(k, theta, comoving_distance_z) for k in k_array]
-    PS_2_corr =  np.array(PS_2) if USE_MY_PS else hmf_PS * np.array(PS_2)
+    # PS_2 = [PS_2h(k, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT, bias, hmf_k, hmf_PS, D_ratio, _PS_NORM_, USE_MY_PS) for k in k_array]
+    # factor = [factor_k(k, theta, comoving_distance_z) for k in k_array]
+    # PS_2_corr =  np.array(PS_2) if USE_MY_PS else hmf_PS * np.array(PS_2)
     # return np.sum(k_array * PS_2_corr * factor) * dlogk
-    return np.trapz(np.array(PS_2_corr) * factor, k_array)
+    # return np.trapz(np.array(PS_2_corr) * factor, k_array)
+    # return integrate.quad(np.array(PS_2_corr) * factor, np.min(k_array), np.max(k_array))
+    return integrate.quad(F_k_hmf_func_2, 1e-3, 1e5, limit=10000, epsabs=5e-5, args = (theta, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT, bias, hmf_k, hmf_PS, D_ratio, _PS_NORM_, comoving_distance_z, USE_MY_PS))[0]
 
 def omega_z_component_1(z, theta, M_min, sigma_logM, M_sat, alpha, NCEN, NSAT, _PS_NORM_, USE_MY_PS = True, REWRITE_TBLS = False):
     M_h_array, HMF_array, nu_array, hmf_k, hmf_PS = init_lookup_table(z, REWRITE_TBLS)
@@ -275,7 +291,7 @@ def omega(theta, M_min, sigma_logM, M_sat, alpha, N_z_nrm, z_array, USE_MY_PS = 
     NCEN = N_cen(M_h_array, M_min, sigma_logM)
     NSAT = N_sat(M_h_array, M_sat, alpha, M_min, sigma_logM)
     H_z = [cosmo.H(z).value for z in z_array]
-    factor_z =  np.power(np.array(N_z_nrm), 2) / (c / np.array(H_z))
+    factor_z =  np.power(np.array(N_z_nrm), 2) / (c_light / np.array(H_z))
     intg1 = [omega_z_component_1(z, theta, M_min, sigma_logM, M_sat, alpha, NCEN, NSAT, _PS_NORM_, USE_MY_PS = USE_MY_PS, REWRITE_TBLS = REWRITE_TBLS) for z in z_array]    
     intg2 = [omega_z_component_2(z, theta, M_min, sigma_logM, M_sat, alpha, NCEN, NSAT, _PS_NORM_, USE_MY_PS = USE_MY_PS, REWRITE_TBLS = REWRITE_TBLS) for z in z_array]    
     return np.trapz(np.array(intg1) * factor_z, z_array), np.trapz(np.array(intg2) * factor_z, z_array)
@@ -296,7 +312,7 @@ def get_N_dens_avg(z_array, M_min, sigma_logM, M_sat, alpha, z_cen, N_z_nrm):
     for z in z_array:
         M_h_array, HMF_array, nu_array, hmf_k, hmf_PS = init_lookup_table(z)
         _N_G  = np.append(_N_G, n_g(M_min, sigma_logM, M_sat, alpha, z, M_h_array, HMF_array))
-        _dVdz = np.append(_dVdz, cosmo.comoving_distance(z).value**2 * c / cosmo.H(z).value)
+        _dVdz = np.append(_dVdz, cosmo.comoving_distance(z).value**2 * c_light / cosmo.H(z).value)
     return np.trapz(_N_G * _dVdz * N_z_nrm, z_array)/np.trapz(_dVdz * N_z_nrm, z_array)
 
 def get_AVG_N_tot(M_min, sigma_logM, M_sat, alpha, z, LOG_INTGR = False):
