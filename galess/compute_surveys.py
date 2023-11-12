@@ -8,8 +8,8 @@ from tqdm import tqdm
 
 M_array     = np.linspace(-13 , -25 , 25)
 sigma_array = np.linspace(100 , 400 , 31)
-zl_array    = np.linspace(0.  , 2.5 , 26)
-zs_array    = np.linspace(0.  , 7.4 , 75)
+zl_array    = np.arange(0.  , 2.5 , 0.1)
+zs_array    = np.arange(0.  , 5.4 , 0.2)
 min_SNR     = 20
 arc_mu_thr  = 3
 surveys_titles = [
