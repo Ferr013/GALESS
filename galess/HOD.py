@@ -243,12 +243,11 @@ def omega_inner_integral_1(theta, M_min, sigma_logM, M_sat, alpha, z, comoving_d
     else:
         k_array = hmf_k
         dlogk = np.log(hmf_k[1]/hmf_k[0])
-    # PS_1 = [PS_1h(k, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT) for k in k_array]
-    # factor = [factor_k(k, theta, comoving_distance_z) for k in k_array]
+    PS_1 = [PS_1h(k, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT) for k in k_array]
+    factor = [factor_k(k, theta, comoving_distance_z) for k in k_array]
     # return np.sum(k_array * np.array(PS_1) * factor) * dlogk
     # return np.trapz(np.array(PS_1) * factor, k_array)
-    # return integrate.quad(np.array(PS_1) * factor, np.min(k_array), np.max(k_array))
-    return integrate.quad(F_k_hmf_func_1, 1e-3, 1e5, limit=10000, epsabs=5e-5, args = (theta, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT, comoving_distance_z))[0]
+    return integrate.quad(F_k_hmf_func_1, 1e-3, 1e5, limit=10000, epsabs=1e-3, args = (theta, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT, comoving_distance_z))[0]
 
 def omega_inner_integral_2(theta, M_min, sigma_logM, M_sat, alpha, z, comoving_distance_z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT, 
                                 bias, hmf_k, hmf_PS, _PS_NORM_, D_ratio, USE_MY_PS):
@@ -258,13 +257,12 @@ def omega_inner_integral_2(theta, M_min, sigma_logM, M_sat, alpha, z, comoving_d
     else:
         k_array = hmf_k
         dlogk = np.log(hmf_k[1]/hmf_k[0])
-    # PS_2 = [PS_2h(k, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT, bias, hmf_k, hmf_PS, D_ratio, _PS_NORM_, USE_MY_PS) for k in k_array]
-    # factor = [factor_k(k, theta, comoving_distance_z) for k in k_array]
-    # PS_2_corr =  np.array(PS_2) if USE_MY_PS else hmf_PS * np.array(PS_2)
+    PS_2 = [PS_2h(k, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT, bias, hmf_k, hmf_PS, D_ratio, _PS_NORM_, USE_MY_PS) for k in k_array]
+    factor = [factor_k(k, theta, comoving_distance_z) for k in k_array]
+    PS_2_corr =  np.array(PS_2) if USE_MY_PS else hmf_PS * np.array(PS_2)
     # return np.sum(k_array * PS_2_corr * factor) * dlogk
     # return np.trapz(np.array(PS_2_corr) * factor, k_array)
-    # return integrate.quad(np.array(PS_2_corr) * factor, np.min(k_array), np.max(k_array))
-    return integrate.quad(F_k_hmf_func_2, 1e-3, 1e5, limit=10000, epsabs=5e-5, args = (theta, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT, bias, hmf_k, hmf_PS, D_ratio, _PS_NORM_, comoving_distance_z, USE_MY_PS))[0]
+    return integrate.quad(F_k_hmf_func_2, 1e-3, 1e5, limit=10000, epsabs=1e-3, args = (theta, M_min, sigma_logM, M_sat, alpha, z, crit_dens_rescaled, M_h_array, HMF_array, N_G, NCEN, NSAT, bias, hmf_k, hmf_PS, D_ratio, _PS_NORM_, comoving_distance_z, USE_MY_PS))[0]
 
 def omega_z_component_1(z, theta, M_min, sigma_logM, M_sat, alpha, NCEN, NSAT, _PS_NORM_, USE_MY_PS = True, REWRITE_TBLS = False):
     M_h_array, HMF_array, nu_array, hmf_k, hmf_PS = init_lookup_table(z, REWRITE_TBLS)

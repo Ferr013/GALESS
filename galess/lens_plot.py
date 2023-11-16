@@ -242,8 +242,8 @@ def compare_sigma_distributions_surveys(surveys_selection, sigma_array, zl_array
 
 
     
-def plot_angular_separation(survey_title, zs_array, omega, cmap_c = cm.cool, 
-                            SPLIT_REDSHIFTS = 0, PLOT_ACF = 0, PLOT_FOR_KEYNOTE = 1, 
+def plot_angular_separation(survey_title, _theta_arcsec, omega, cmap_c = cm.cool, 
+                            FRAC_LENS = 0, PLOT_FOR_KEYNOTE = 1, 
                             A_w = 0.4, beta = 0.6):
     set_plt_param(PLOT_FOR_KEYNOTE = PLOT_FOR_KEYNOTE)
     
@@ -266,12 +266,10 @@ def plot_angular_separation(survey_title, zs_array, omega, cmap_c = cm.cool,
         Theta_pos_LL   = Theta_pos_LL   + Theta_E_LL*_m
     Theta_pos_noLL, Theta_pos_LL = Theta_pos_noLL/intsteps, Theta_pos_LL/intsteps
 
-    rad_to_arcsec = 1/206265
-    _theta_arcsec = np.logspace(-1,3.333334,14)
     omega[_theta_arcsec<1]  = 0
     omega[_theta_arcsec>10] = 0
     dPdt = 2 * np.pi * _theta_arcsec * np.diff(_theta_arcsec)[0] * (omega + 1)
-    cPdt = np.cumsum(dPdt)/np.cumsum(dPdt)[6]
+    cPdt = np.cumsum(dPdt)/np.sum(dPdt)
 
     fig, ax = plt.subplots(1, 2, figsize=(12, 5), sharex=False, sharey=False)
     plt.subplots_adjust(wspace=.15, hspace=.2)   
@@ -282,31 +280,18 @@ def plot_angular_separation(survey_title, zs_array, omega, cmap_c = cm.cool,
     ax[1].set_xlim((0,10))
     ax[0].set_ylim((0,1.1))
     ax[1].set_ylim((0,1.1))
-    if(SPLIT_REDSHIFTS):
-        iterabel_zs_array = np.asarray((1, 3, 5, 7, 9))
-        color = iter(cmap_c(np.linspace(0, 1, len(iterabel_zs_array)+1)))
-        for zs in iterabel_zs_array:
-            ccc = next(color)
-            izs = np.argmin(np.abs(zs_array-zs))
-            lw = 3 if (zs==1 or zs==9) else 1
-            ax[0].hist(np.ravel(Theta_pos_noLL[izs][:][:]), weights=np.ravel(matrix_noLL[izs][:][:]), bins=200, range=(0, 12), 
-            density=True, histtype='step', color=ccc, label=str(zs), lw=lw, cumulative=True)
-            ax[1].hist(np.ravel(Theta_pos_LL[izs][:][:]), weights=np.ravel(matrix_LL[izs][:][:]), bins=200, range=(0, 12), 
-            density=True, histtype='step', color=ccc, label=str(zs), lw=lw, cumulative=True)
-    else:
-        color = iter(cmap_c(np.linspace(0, 1, 2)))
-        ax[0].hist(np.ravel(Theta_pos_noLL), weights=np.ravel(matrix_noLL), bins=200, range=(0, 12), 
-            density=True, histtype='step', color=next(color), label='no LL', cumulative=True)
-        ax[1].hist(np.ravel(Theta_pos_LL), weights=np.ravel(matrix_LL), bins=200, range=(0, 12), 
-            density=True, histtype='step', color=next(color), label='w/ LL', cumulative=True)
-    if(PLOT_ACF): 
-        ax[0].plot(th_r_array, P_Rgalpos, 'g:')
-        ax[1].plot(th_r_array, P_Rgalpos, 'g:')
-        ax[0].plot(th_r_array, P_rnd_rnd, 'y:')
-        ax[1].plot(th_r_array, P_rnd_rnd, 'y:')
+    color = iter(cmap_c(np.linspace(0, 1, 2)))
+    ax[0].hist(np.ravel(Theta_pos_noLL), weights=np.ravel(matrix_noLL), bins=200, range=(0, 12), 
+        density=True, histtype='step', color=next(color), label='no LL', cumulative=True)
+    ax[1].hist(np.ravel(Theta_pos_LL), weights=np.ravel(matrix_LL), bins=200, range=(0, 12), 
+        density=True, histtype='step', color=next(color), label='w/ LL', cumulative=True)
     ax[0].plot(_theta_arcsec, cPdt, 'r:')
     ax[1].plot(_theta_arcsec, cPdt, 'r:')
-
+    if FRAC_LENS != 0: #TODO: Plot a weighted fraction of the lens model nd the HOD results.
+        pass
+        # ax[0].hist(np.ravel(Theta_pos_noLL), weights=np.ravel(matrix_noLL), bins=200, range=(0, 12), 
+        #     density=True, histtype='step', color=next(color), label='no LL', cumulative=True)
+ 
     plt.legend(fontsize=15, loc='lower right')
     plt.tight_layout()
     plt.show()
@@ -592,7 +577,7 @@ def compare_COSMOS_HST_Faure(zl_array, zs_array, sigma_array, M_array_UV, mag_cu
         ax[2].hist( np.append(FAURE_A_m_Ib, FAURE_B_m_Ib)       , bins=m_obs  , density=True, histtype='step', color=ER_col1, alpha = _ALPHA_)
     if not ONLY_FULL_SAMPLE:
         ### BEST SAMPLE ###
-        ax[0].hist( FAURE_zl      , bins=_nbins_zl, density=True, histtype='step', color=ER_col2, alpha = _ALPHA_, label='Faure 2008 - Best Sample (16)')
+        ax[0].hist( FAURE_zl      , bins=_nbins_zl, density=True, histtype='step', color=ER_col2, alpha = _ALPHA_, label='Faure et al. 2008 - Best Sample (16)')
         ax[0].hist( FAURE_zs      , bins=_nbins_zs, density=True, histtype='step', color=ER_col2, alpha = _ALPHA_, ls='--')
         ax[1].hist( FAURE_Rein    , bins=_nbins_Re, density=True, histtype='step', color=ER_col2, alpha = _ALPHA_)
         if __MAG_OVER_ARCSEC_SQ__:        
@@ -659,7 +644,7 @@ def compare_Sl2S(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNO
     _nbins_Re = np.arange(0  , 4  , 0.25)
 
     ### BEST SAMPLE ###
-    ax[0].hist( SL2S_data_zl    , bins=_nbins_zl, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_, label='Sonnenfeld 2013 - Full Sample (53)')
+    ax[0].hist( SL2S_data_zl    , bins=_nbins_zl, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_, label='Sonnenfeld et al. 2013 - Full Sample (53)')
     ax[0].hist( SL2S_data_zs    , bins=_nbins_zs, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_, ls='--')
     ax[1].hist( SL2S_data_sigma , bins=_nbins_sg, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_)
     ax[2].hist( SL2S_data_Rein  , bins=_nbins_Re, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_)
@@ -679,3 +664,237 @@ def compare_CASSOWARY(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_
     CASS_data_zl    = CASS_data['z_l'].to_numpy()
     CASS_data_zs    = CASS_data['z_s'].to_numpy()
     CASS_data_sigma = CASS_data['sigma'].to_numpy()
+    return 0
+
+
+
+def compare_JACOBS_CNN_DES(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 1):
+    JAC_DES_data       = pd.read_csv('../galess/data/Jacobs_CNN/JACOBS_2019_DES_CNN.tsv', sep=';')
+    JAC_DES_data_zl    = JAC_DES_data['z'].to_numpy()
+    JAC_DES_data_imag  = JAC_DES_data['imag'].to_numpy()
+
+    ### PLOT DATA #################################################################################
+    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
+    ccc = 'w' if PLOT_FOR_KEYNOTE else 'k'
+    if PLOT_FOR_KEYNOTE: 
+        ER_col1, ER_col2, _ALPHA_  = 'darkorange', 'lime', 1
+    else: 
+        ER_col1, ER_col2, _ALPHA_  = 'forestgreen', 'firebrick', 1
+
+    title = 'DES i band'
+    matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+    _ , __  , ___, P_zs_LL   , P_zl_LL   , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=1)
+    _ , __  , ___, P_zs_noLL , P_zl_noLL , P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
+
+    if LENS_LIGHT:
+        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
+    else:
+        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
+    m_obs = np.linspace(15, 30, 31)
+    
+    fig, ax = plt.subplots(1, 2, figsize=(11, 5), sharex=False, sharey=False)
+    plt.subplots_adjust(wspace=.23, hspace=.2)
+    ax[0].plot(zl_array, P_zl, c=ccc, ls='-', label=title)
+    ax[0].plot(zs_array, P_zs, c=ccc, ls='--', label=title)
+    ax[0].set_xlim((0,3.2))
+    ax[0].set_xlabel(r'$z$', fontsize=20) 
+    ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
+
+    m_lens = ls.get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix, obs_band = 'sdss_i0')
+    norm = integrate.simps(m_lens, m_obs)
+    ax[1].plot(m_obs, m_lens/norm, color=ccc)
+    ax[1].set_xlabel(r'$m_\text{I814W}^\text{len}$ [mag]', fontsize=20)
+    ax[1].set_ylabel(r'$dP/dm$', fontsize=20)
+    ax[1].set_xlim((15,25))
+    ax[1].set_ylim((0,0.5))
+
+    _nbins_zl = np.arange(0.0, 2.2, 0.1 )
+    ### BEST SAMPLE ###
+    ax[0].hist( JAC_DES_data_zl    , bins=_nbins_zl, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_, label='Jacobs et al. 2019 (511)')
+    ax[1].hist( JAC_DES_data_imag, bins=m_obs  , density=True, histtype='step', color=ER_col1, alpha = _ALPHA_)
+    ax[0].legend(fontsize=10)
+    plt.show()
+
+
+
+def compare_GRILLO_SLACS(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 1):
+    ### from Grillo+(2009) --- selection of grade A lenses from Bolton+2008
+    SLACS_title=['SDSS Name' , 'zl' , 'zs' ,'REi','t_e', 'u_mag', 'g_mag','r_mag' ,'i_mag' ,'z_mag']
+    SLACS_data=[['J0008-0004', 0.440, 1.192, 1.16, 1.71, 22.632 , 20.655 , 19.294 , 18.654 , 18.082],
+                ['J0029-0055', 0.227, 0.931, 0.96, 2.16, 20.479 , 18.792 , 17.546 ,	17.072 , 16.728],
+                ['J0037-0942', 0.196, 0.632, 1.53, 2.19, 19.780 , 18.038 , 16.807 ,	16.340 , 15.993],
+                ['J0044+0113', 0.120, 0.197, 0.79, 2.61, 18.701 , 17.120 , 16.195 ,	15.771 , 15.461],
+                ['J0109+1500', 0.294, 0.525, 0.69, 1.38, 22.867 , 19.753 , 18.204 ,	17.641 , 17.261],
+                ['J0157-0056', 0.513, 0.924, 0.79, 1.06, 22.722 , 21.258 , 19.670 ,	18.702 , 18.280],
+                ['J0216-0813', 0.332, 0.523, 1.16, 2.67, 21.075 , 19.124 , 17.456 ,	16.860 , 16.573],
+                ['J0252+0039', 0.280, 0.982, 1.04, 1.39, 21.331 , 20.061 , 18.813 ,	18.237 , 17.916],
+                ['J0330-0020', 0.351, 1.071, 1.10, 1.20, 20.714 , 19.947 , 18.462 ,	17.919 , 17.564],
+                ['J0405-0455', 0.075, 0.810, 0.80, 1.36, 19.504 , 17.618 , 16.771 ,	16.365 , 16.060],
+                ['J0728+3835', 0.206, 0.688, 1.25, 1.78, 20.404 , 18.623 , 17.356 ,	16.887 , 16.583],
+                ['J0737+3216', 0.322, 0.581, 1.00, 2.82, 21.239 , 19.400 , 17.834 ,	17.214 , 16.872],
+                ['J0822+2652', 0.241, 0.594, 1.17, 1.82, 20.548 , 18.899 , 17.501 ,	16.986 , 16.627],
+                ['J0903+4116', 0.430, 1.065, 1.29, 1.78, 21.401 , 20.302 , 18.646 ,	17.967 , 17.540],
+                ['J0912+0029', 0.164, 0.324, 1.63, 3.87, 19.327 , 17.410 , 16.229 ,	15.746 , 15.379],
+                ['J0935-0003', 0.347, 0.467, 0.87, 4.24, 21.331 , 19.193 , 17.515 ,	16.915 , 16.554],
+                ['J0936+0913', 0.190, 0.588, 1.09, 2.11, 20.073 , 18.218 , 17.002 ,	16.555 , 16.226],
+                ['J0946+1006', 0.222, 0.609, 1.38, 2.35, 20.465 , 18.899 , 17.578 ,	17.102 , 16.744],
+                ['J0956+5100', 0.240, 0.470, 1.33, 2.19, 20.175 , 18.475 , 17.129 ,	16.633 , 16.247],
+                ['J0959+4416', 0.237, 0.531, 0.96, 1.98, 20.452 , 18.850 , 17.510 ,	17.016 , 16.698],
+                ['J0959+0410', 0.126, 0.535, 0.99, 1.39, 20.403 , 18.697 , 17.639 ,	17.168 , 16.763],
+                ['J1016+3859', 0.168, 0.439, 1.09, 1.46, 20.388 , 18.434 , 17.265 ,	16.827 , 16.502],
+                ['J1020+1122', 0.282, 0.553, 1.20, 1.59, 21.470 , 19.508 , 18.003 ,	17.465 , 17.172],
+                ['J1023+4230', 0.191, 0.696, 1.41, 1.77, 20.390 , 18.664 , 17.366 ,	16.871 , 16.548],
+                ['J1029+0420', 0.104, 0.615, 1.01, 1.56, 19.340 , 17.556 , 16.629 ,	16.224 , 15.884],
+                ['J1100+5329', 0.317, 0.858, 1.52, 2.24, 21.003 , 19.161 , 17.704 ,	17.103 , 16.869],
+                ['J1106+5228', 0.096, 0.407, 1.23, 1.68, 18.841 , 16.940 , 16.001 ,	15.612 , 15.287],
+                ['J1112+0826', 0.273, 0.629, 1.49, 1.50, 21.775 , 19.375 , 17.809 ,	17.243 , 16.906],
+                ['J1134+6027', 0.153, 0.474, 1.10, 2.02, 19.936 , 18.085 , 17.024 ,	16.538 , 16.192],
+                ['J1142+1001', 0.222, 0.504, 0.98, 1.91, 20.711 , 18.836 , 17.495 ,	17.002 , 16.723],
+                ['J1143-0144', 0.106, 0.402, 1.68, 4.80, 18.635 , 16.845 , 15.827 ,	15.405 , 15.062],
+                ['J1153+4612', 0.180, 0.875, 1.05, 1.16, 20.575 , 18.793 , 17.680 ,	17.218 , 16.895],
+                ['J1204+0358', 0.164, 0.631, 1.31, 1.47, 20.330 , 18.544 , 17.399 ,	16.936 , 16.661],
+                ['J1205+4910', 0.215, 0.481, 1.22, 2.59, 20.744 , 18.541 , 17.234 ,	16.718 , 16.343],
+                ['J1213+6708', 0.123, 0.640, 1.42, 3.23, 19.054 , 17.176 , 16.159 ,	15.731 , 15.377],
+                ['J1218+0830', 0.135, 0.717, 1.45, 3.18, 19.223 , 17.394 , 16.343 ,	15.893 , 15.543],
+                ['J1250+0523', 0.232, 0.795, 1.13, 1.81, 19.983 , 18.500 , 17.256 ,	16.733 , 16.464],
+                ['J1402+6321', 0.205, 0.481, 1.35, 2.70, 20.393 , 18.293 , 16.952 ,	16.444 , 16.077],
+                ['J1403+0006', 0.189, 0.473, 0.83, 1.46, 20.371 , 18.687 , 17.506 ,	17.028 , 16.721],
+                ['J1416+5136', 0.299, 0.811, 1.37, 1.43, 21.225 , 19.592 , 18.080 ,	17.521 , 17.171],
+                ['J1420+6019', 0.063, 0.535, 1.04, 2.06, 18.196 , 16.386 , 15.541 ,	15.153 , 14.869],
+                ['J1430+4105', 0.285, 0.575, 1.52, 2.55, 20.331 , 18.974 , 17.706 ,	17.196 , 16.851],
+                ['J1436-0000', 0.285, 0.805, 1.12, 2.24, 21.250 , 19.216 , 17.801 ,	17.229 , 16.876],
+                ['J1443+0304', 0.134, 0.419, 0.81, 0.94, 20.607 , 18.524 , 17.483 ,	17.034 , 16.696],
+                ['J1451-0239', 0.125, 0.520, 1.04, 2.48, 19.240 , 17.538 , 16.480 ,	16.129 , 15.673],
+                ['J1525+3327', 0.358, 0.717, 1.31, 2.90, 20.936 , 19.446 , 17.877 ,	17.247 , 16.935],
+                ['J1531-0105', 0.160, 0.744, 1.71, 2.50, 19.475 , 17.519 , 16.362 ,	15.915 , 15.591],
+                ['J1538+5817', 0.143, 0.531, 1.00, 1.58, 19.495 , 18.174 , 17.173 ,	16.741 , 16.429],
+                ['J1621+3931', 0.245, 0.602, 1.29, 2.14, 20.502 , 18.780 , 17.380 ,	16.859 , 16.553],
+                ['J1627-0053', 0.208, 0.524, 1.23, 1.98, 20.623 , 18.588 , 17.286 ,	16.805 , 16.490],
+                ['J1630+4520', 0.248, 0.793, 1.78, 1.96, 20.594 , 18.877 , 17.396 ,	16.862 , 16.541],
+                ['J1636+4707', 0.228, 0.674, 1.09, 1.68, 20.980 , 19.005 , 17.665 ,	17.174 , 16.877],
+                ['J2238-0754', 0.137, 0.713, 1.27, 2.33, 19.716 , 17.803 , 16.766 ,	16.309 , 15.963],
+                ['J2300+0022', 0.229, 0.464, 1.24, 1.83, 20.517 , 19.007 , 17.647 ,	17.127 , 16.783],
+                ['J2303+1422', 0.155, 0.517, 1.62, 3.28, 19.467 , 17.562 , 16.385 ,	15.907 , 15.585],
+                ['J2321-0939', 0.082, 0.532, 1.60, 4.11, 18.085 , 16.145 , 15.200 ,	14.771 , 14.458],
+                ['J2341+0000', 0.186, 0.807, 1.44, 3.15, 19.513 , 18.121 , 16.921 ,	16.381 , 16.010]]
+    SLACS_data  = np.asarray(SLACS_data)
+    SLACS_names = SLACS_data[:,0]
+    SLACS_zl, SLACS_zs   = np.asarray(SLACS_data[:,1], dtype='float'), np.asarray(SLACS_data[:,2], dtype='float')
+    SLACS_REin, SLACS_Te = np.asarray(SLACS_data[:,3], dtype='float'), np.asarray(SLACS_data[:,4], dtype='float')
+    SLACS_umag, SLACS_gmag = np.asarray(SLACS_data[:,5], dtype='float'), np.asarray(SLACS_data[:,6], dtype='float')
+    SLACS_rmag, SLACS_imag, SLACS_zmag = np.asarray(SLACS_data[:,7], dtype='float'), np.asarray(SLACS_data[:,8], dtype='float'), np.asarray(SLACS_data[:,9], dtype='float')
+
+    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
+    ccc = 'w' if PLOT_FOR_KEYNOTE else 'k'
+    if PLOT_FOR_KEYNOTE: 
+        ER_col1, ER_col2, _ALPHA_  = 'darkorange', 'lime', 1
+    else: 
+        ER_col1, ER_col2, _ALPHA_  = 'forestgreen', 'firebrick', 1
+
+    title = 'COSMOS HST i band'
+    matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+    _ , __  , ___, P_zs_LL   , P_zl_LL   , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=1)
+    _ , __  , ___, P_zs_noLL , P_zl_noLL , P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
+
+    if LENS_LIGHT:
+        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
+    else:
+        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
+    m_obs = np.linspace(15, 30, 31)
+    
+    fig, ax = plt.subplots(1, 3, figsize=(17, 5), sharex=False, sharey=False)
+    plt.subplots_adjust(wspace=.23, hspace=.2)
+    ax[0].plot(zl_array, P_zl, c=ccc, ls='-', label=title)
+    ax[0].plot(zs_array, P_zs, c=ccc, ls='--')
+    ax[0].set_xlim((0,3.2))
+    ax[0].set_xlabel(r'$z$', fontsize=20) 
+    ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
+
+    m_lens_i = ls.get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix, obs_band = 'sdss_i0')
+    m_lens_g = ls.get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix, obs_band = 'sdss_g0')
+    norm_i = integrate.simps(m_lens_i, m_obs)
+    norm_g = integrate.simps(m_lens_g, m_obs)
+    # ax[1].plot(m_obs, m_lens_i/norm_i, color=ccc)
+    ax[1].plot(m_obs, m_lens_g/norm_g, color=ccc)
+    ax[1].set_xlabel(r'$m_{g\text{-band}}^\text{len}$ [mag]', fontsize=20)
+    ax[1].set_ylabel(r'$dP/dm$', fontsize=20)
+    ax[1].set_xlim((15,25))
+    ax[1].set_ylim((0,0.75))
+
+    ax[2].hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins = np.arange(0, 4, 0.2), 
+                range=(0, 3), density=True, histtype='step', color=ccc, ls = '-', label=title)
+    ax[2].set_xlabel(r'$\Theta_E$ ["]', fontsize=20)
+    ax[2].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
+    ax[2].set_xlim((0,4))
+
+    _nbins_zl = np.arange(0.0, 1.2, 0.1 )
+    _nbins_zs = np.arange(0.0, 4  , 0.2 )
+    _nbins_sg = np.arange(100, 400, 25  )
+    _nbins_Re = np.arange(0  , 4  , 0.25)
+
+    ### BEST SAMPLE ###
+    ax[0].hist( SLACS_zl    , bins=_nbins_zl, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_, label=f'Grillo et al. ({len(SLACS_zl)})')
+    ax[0].hist( SLACS_zs    , bins=_nbins_zs, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_, ls = '--')
+    ax[1].hist( SLACS_gmag  , bins=m_obs    , density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_)
+    ax[2].hist( SLACS_REin  , bins=_nbins_Re, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_)
+    ax[0].legend(fontsize=10)
+    plt.show()
+
+
+def compare_SUGOHI(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 1):
+    SUGOHI_upto_2020      = pd.read_csv('../galess/data/SUGOHI/SUGOHI_SONNENFELD_2020.tsv', sep=';')
+    SUGOHI_SONN_2018      = SUGOHI_upto_2020[SUGOHI_upto_2020['Ref'] == 'c']
+    SUGOHI_SONN_2020      = SUGOHI_upto_2020[SUGOHI_upto_2020['Ref'] == 'i']
+    SUGOHI_W_data_AB      = pd.read_csv('../galess/data/SUGOHI/SUGOHI_Wong_A_B.tsv', sep=';')
+    SUGOHI_W_data_C       = pd.read_csv('../galess/data/SUGOHI/SUGOHI_Wong_C.tsv', sep=';')
+    
+    SUGOHI_SONN_2018_zl    = SUGOHI_SONN_2018['zl'].to_numpy().astype('float')
+    # SUGOHI_SONN_2018_zs    = SUGOHI_SONN_2018['zs'].to_numpy().astype('float')
+    # SUGOHI_SONN_2020_zl    = SUGOHI_SONN_2020['zl'].to_numpy().astype('float')
+    # SUGOHI_SONN_2020_zs    = SUGOHI_SONN_2020['zs'].to_numpy().astype('float')
+    SUGOHI_W_data_AB_zl    = SUGOHI_W_data_AB['zL'].to_numpy().astype('float')
+    # SUGOHI_W_data_AB_zs    = SUGOHI_W_data_AB['zS'].to_numpy().astype('float')
+    SUGOHI_W_data_C_zl     = SUGOHI_W_data_C['zL'].to_numpy().astype('float')
+
+    ### PLOT DATA #################################################################################
+    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
+    ccc = 'w' if PLOT_FOR_KEYNOTE else 'k'
+    if PLOT_FOR_KEYNOTE: 
+        ER_col1, ER_col2, ER_col3, ER_col4, _ALPHA_  = 'darkorange', 'lime', 'magenta', 'cyan', 1
+    else: 
+        ER_col1, ER_col2, ER_col3, ER_col4, _ALPHA_  = 'forestgreen', 'firebrick', 'orange', 'teal', 1
+
+    title = 'SUBARU HSC SuGOHI i band'
+    matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+    _ , __  , ___, P_zs_LL   , P_zl_LL   , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=1)
+    _ , __  , ___, P_zs_noLL , P_zl_noLL , P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
+
+    if LENS_LIGHT:
+        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
+    else:
+        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
+    
+    _nbins_zl = np.arange(0.0, 1.5, 0.1 )
+    _nbins_zs = np.arange(0.0, 5  , 0.2 )
+
+    fig, ax = plt.subplots(1, 1, figsize=(6, 5), sharex=False, sharey=False)
+    plt.subplots_adjust(wspace=.23, hspace=.2)
+    ax.plot(zl_array, P_zl, c=ccc, ls='-', label=title)
+    ax.hist( SUGOHI_SONN_2018_zl, bins=_nbins_zl, density=True, histtype='step', color=ER_col3, alpha = _ALPHA_, label=f'Sonnenfeld et al. 2018 ({len(SUGOHI_SONN_2018_zl)})')
+    # ax[0].hist( SUGOHI_SONN_2020_zl, bins=_nbins_zl, density=True, histtype='step', color=ER_col4, alpha = _ALPHA_, label=f'Sonnenfeld et al. 2020 ({len(SUGOHI_SONN_2020_zl)})')
+    ax.hist( SUGOHI_W_data_AB_zl, bins=_nbins_zl, density=True, histtype='step', color=ER_col1, alpha = _ALPHA_, label=f'Wong et al. 2022 - Grade A+B ({len(SUGOHI_W_data_AB_zl)})')
+    ax.hist( SUGOHI_W_data_C_zl , bins=_nbins_zl, density=True, histtype='step', color=ER_col2, alpha = _ALPHA_, label=f'Wong et al. 2022 - Grade C ({len(SUGOHI_W_data_C_zl)})')
+    ax.set_xlim((0,2.0))
+    ax.set_ylim((0,6.5))
+    ax.set_xlabel(r'$z_l$', fontsize=20) 
+    ax.set_ylabel(r'$dP/dz$', fontsize=20)
+    ax.legend(fontsize=10, loc=1)
+    if(0):
+        ax[1].plot(zs_array, P_zs, c=ccc, ls='-')   
+        # ax[1].hist(SUGOHI_SONN_2018_zs, bins=_nbins_zs, density=True, histtype='step', color=ER_col3, alpha = _ALPHA_)
+        # ax[1].hist(SUGOHI_SONN_2020_zs, bins=_nbins_zs, density=True, histtype='step', color=ER_col4, alpha = _ALPHA_)
+        # ax[1].hist(SUGOHI_W_data_AB_zs, bins=_nbins_zs, density=True, histtype='step', color=ER_col1, alpha = _ALPHA_)
+        ax[1].set_xlabel(r'$z_s$', fontsize=20)
+        ax[1].set_ylabel(r'$dP/dz$', fontsize=20)
+        ax[1].set_xlim((0,5.2))
+    plt.show()
