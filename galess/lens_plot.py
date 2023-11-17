@@ -67,21 +67,23 @@ def set_plt_param(PLOT_FOR_KEYNOTE = 1):
 
 def plot_z_sigma_distributions(fig, ax, title, zl_array, zs_array, sigma_array,
                                Theta_E_LL, matrix_LL, Theta_E_noLL, matrix_noLL,
-                               PLOT_FOR_KEYNOTE = 1, CONTOUR = 1, LOG = 0, SMOOTH = 0, SAVE = 0):
-
+                               PLOT_FOR_KEYNOTE = 1, CONTOUR = 1, LOG = 0, SMOOTH = 0, SAVE = 0, 
+                               LEGEND = 1, DOUBLE_LENS = 1):
     line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
-    Ngal_zl_sigma_noLL, Ngal_zs_sigma_noLL, Ngal_zs_zl_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
-    Ngal_zl_sigma_LL, Ngal_zs_sigma_LL, Ngal_zs_zl_LL, P_zs_LL, P_zl_LL, P_sg_LL = ls.get_N_and_P_projections(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH)
+    if DOUBLE_LENS:
+        Ngal_zl_sigma_noLL, Ngal_zl_sigma_noLL, Ngal_zl_zs1_noLL, Ngal_zl_zs2_noLL, Ngal_sigma_zs1_noLL, Ngal_sigma_zs2_noLL, Ngal_zs1_zs2_noLL, P_zs_noLL, P_zs2_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections_double_lens(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
+        Ngal_zl_sigma_LL, Ngal_zl_sigma_LL, Ngal_zl_zs1_LL, Ngal_zl_zs2_LL, Ngal_sigma_zs1_LL, Ngal_sigma_zs2_LL, Ngal_zs1_zs2_LL, P_zs_LL, P_zs2_LL, P_zl_LL, P_sg_LL = ls.get_N_and_P_projections_double_lens(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH)
+    else:
+        Ngal_zl_sigma_noLL, Ngal_zs_sigma_noLL, Ngal_zs_zl_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
+        Ngal_zl_sigma_LL, Ngal_zs_sigma_LL, Ngal_zs_zl_LL, P_zs_LL, P_zl_LL, P_sg_LL = ls.get_N_and_P_projections(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH)
     _nbins_Re = np.arange(0  , 4  , 0.25)
     fig.suptitle(title, fontsize=25)
-
     if LOG:
         CONTOUR = 0
         ax[0,0].set_yscale('log')
         ax[0,1].set_yscale('log')
         ax[0,0].set_ylim((1e-3,2))
         ax[0,1].set_ylim((1e-3,2))   
-
     if CONTOUR:
         _zs, _zl = np.meshgrid(zs_array, zl_array)
         levels   = np.asarray([0.01, 0.1, 0.5, 1, 2, 3, 5])*(np.power(10,np.ceil(np.log10(np.max(Ngal_zs_zl_LL))-1)))
@@ -96,23 +98,30 @@ def plot_z_sigma_distributions(fig, ax, title, zl_array, zs_array, sigma_array,
         ax[0,0].set_ylabel(r'$z_s$', fontsize=20)
         ax[0,0].set_xlim((0,3.2))
         ax[0,0].set_ylim((0,6.2))
-
     else:
         ax[0,0].plot(zl_array, P_zl_LL, c=col_A, ls=':')
         ax[0,0].plot(zs_array, P_zs_LL, c=col_B, ls=':' , label='w/ lens light')
         ax[0,0].plot(zl_array, P_zl_noLL, c=col_A, ls='-')
         ax[0,0].plot(zs_array, P_zs_noLL, c=col_B, ls='-', label='No lens light')
+        if DOUBLE_LENS:
+            ax[0,0].plot(zs_array, P_zs2_LL, c=col_C, ls=':' , label='w/ lens light')
+            ax[0,0].plot(zs_array, P_zs2_noLL, c=col_C, ls='-', label='No lens light')
         ax[0,0].set_ylabel(r'$P$', fontsize=20)
         ax[0,0].set_xlabel(r'$z$', fontsize=20)
         ax[0,0].set_xlim((0,5.2))
-        
-
-
     ax[1,1].plot(sigma_array, P_sg_LL, c=col_C, ls = ':')
     ax[1,1].plot(sigma_array, P_sg_noLL, c=col_C, ls = '-')
     ax[1,1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
-    ax[0,1].hist(np.ravel(Theta_E_LL), weights=np.ravel(matrix_LL), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=col_D, ls = ':')
-    ax[0,1].hist(np.ravel(Theta_E_noLL), weights=np.ravel(matrix_noLL), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=col_D, ls = '-')
+
+    if DOUBLE_LENS:
+        pass
+        # ax[0,1].hist(np.ravel(Theta_E_LL[0]), weights=np.ravel(matrix_LL), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=col_C, ls = ':')
+        # ax[0,1].hist(np.ravel(Theta_E_noLL[0]), weights=np.ravel(matrix_noLL), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=col_C, ls = '-')
+        # ax[0,1].hist(np.ravel(Theta_E_LL[1]), weights=np.ravel(matrix_LL), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=col_D, ls = ':')
+        # ax[0,1].hist(np.ravel(Theta_E_noLL[1]), weights=np.ravel(matrix_noLL), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=col_D, ls = '-')
+    else:
+        ax[0,1].hist(np.ravel(Theta_E_LL), weights=np.ravel(matrix_LL), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=col_D, ls = ':')
+        ax[0,1].hist(np.ravel(Theta_E_noLL), weights=np.ravel(matrix_noLL), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=col_D, ls = '-')
     ax[0,1].set_xlabel(r'$\Theta_E$ [arcsec]', fontsize=20)
 
     _sigma, _zl = np.meshgrid(sigma_array, zl_array)
@@ -128,23 +137,55 @@ def plot_z_sigma_distributions(fig, ax, title, zl_array, zs_array, sigma_array,
     ax[1,0].clabel(contours, inline=True, fontsize=8)
     ax[1,0].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
     ax[1,0].set_ylabel(r'$z_l$', fontsize=20)
-
-    if(np.sum(matrix_noLL))>10_000:
-        ax[1,0].legend([f'#Lenses w/ LL: {np.sum(matrix_LL):.1e}', f'#Lenses no LL: {np.sum(matrix_noLL):.1e}'], fontsize=20)
-    else:
-        ax[1,0].legend([f'#Lenses w/ LL: {np.sum(matrix_LL):.0f}', f'#Lenses no LL: {np.sum(matrix_noLL):.0f}'], fontsize=20)
-    
-
+    if LEGEND:
+        if(np.sum(matrix_noLL))>10_000:
+            ax[1,0].legend([f'#Lenses w/ LL: {np.sum(matrix_LL):.1e}', f'#Lenses no LL: {np.sum(matrix_noLL):.1e}'], fontsize=20)
+        else:
+            ax[1,0].legend([f'#Lenses w/ LL: {np.sum(matrix_LL):.0f}', f'#Lenses no LL: {np.sum(matrix_noLL):.0f}'], fontsize=20)
     ax[1,1].set_xlim((100,400))
     ax[1,0].set_xlim((100,400))
     ax[1,0].set_ylim((0,2.5))
-
     plt.tight_layout()
     if (SAVE):
         folderpath = 'img/'+utils.remove_spaces_from_string(title)
         if not os.path.exists(folderpath): os.makedirs(folderpath)
         plt.savefig(folderpath+'/'+fn_prefix+'corner_plts.jpg', dpi=200)
 
+
+def plot_effect_vel_disp_function(zl_array, zs_array, sigma_array, PLOT_FOR_KEYNOTE = 1, LENS_LIGHT = 1, SMOOTH = 0, SAVE = 0):
+    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
+    fig, ax = plt.subplots(1, 3, figsize=(17, 5), sharex=False, sharey=False)
+    plt.subplots_adjust(wspace=.15, hspace=.2)
+    for title, lstyle, label in zip(['EUCLID Wide VIS', 'EUCLID Wide VIS VDF Choi', 'EUCLID Wide VIS VDF Geng'], 
+                                ['-', '--', ':'], 
+                                ['VDF Mason et al. 2015', 'VDF Choi et al. 2007', 'VDF Geng et al. 2021']):
+        try:
+            matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+        except ValueError:
+            print('FILE do NOT exist')
+        if LENS_LIGHT:
+            Ngal_zl_sigma_noLL, Ngal_zs_sigma_noLL, Ngal_zs_zl_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH)
+        else:
+            Ngal_zl_sigma_noLL, Ngal_zs_sigma_noLL, Ngal_zs_zl_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
+        ax[0].plot(zl_array, P_zl_noLL, c=col_A, ls=lstyle, label=f'{label}')
+        ax[0].plot(zs_array, P_zs_noLL, c=col_B, ls=lstyle)
+        ax[0].set_ylabel(r'$P$', fontsize=20)
+        ax[0].set_xlabel(r'$z$', fontsize=20)
+        ax[0].set_xlim((0,5.2))
+        ax[1].plot(sigma_array, P_sg_noLL, c=col_C, ls = lstyle)
+        ax[1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+        _nbins_Re = np.arange(0  , 4  , 0.25)
+        ax[2].hist(np.ravel(Theta_E_noLL), weights=np.ravel(matrix_noLL), bins=_nbins_Re, range=(0, 3), 
+                   density=True, histtype='step', color=col_D, ls = lstyle, label=f'# Lenses: {np.sum(matrix_noLL):.1e}')
+        ax[2].set_xlabel(r'$\Theta_E$ [arcsec]', fontsize=20)
+    ax[0].legend(fontsize=14, frameon=False)
+    ax[2].legend(fontsize=14, frameon=False)
+    plt.tight_layout()
+    if (SAVE):
+        folderpath = 'img/'+utils.remove_spaces_from_string(title)
+        if not os.path.exists(folderpath): os.makedirs(folderpath)
+        plt.savefig(folderpath+'/VDF_effect_corner_plts.jpg', dpi=200)
+    plt.show()
 
 
 def compare_z_distributions_surveys(ax, title, color,
