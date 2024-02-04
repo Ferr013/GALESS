@@ -3,6 +3,7 @@ galess/HOD*
 galess/__pycache__
 galess/data/omega
 galess/data/HMF_tables
+examples/Requests
 profile.html
 profile.json
 tests
