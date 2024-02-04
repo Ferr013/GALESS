@@ -1,5 +1,5 @@
 title: LSST i band
-limit: 27.7
+limit: 26.8
 cut: 25
 area: 20000
 seeing: 0.75

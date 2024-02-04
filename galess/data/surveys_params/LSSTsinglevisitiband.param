@@ -1,0 +1,10 @@
+title: LSST i band
+limit: 24.0
+cut: 23
+area: 20000
+seeing: 0.75
+exp_time_sec: 6000
+pixel_arcsec: 0.18
+zero_point_m: 25.5
+sky_bckgnd_m: 20
+photo_band: sdss_i0

@@ -362,7 +362,8 @@ def init_lookup_table(z, REWRITE_TBLS = False):
             hmf_k, hmf_PS = np.loadtxt(FPATH, delimiter=',')
         else:
             print(f'Calculating HMF table at redshift {z:.2f}')
-            hmf = MassFunction(Mmin = 9, Mmax = 18, dlog10m = 0.1, lnk_min = -7.35, lnk_max = 8.2,  dlnk=0.005, z=z, hmf_model = "Behroozi", sigma_8 = 0.8159, cosmo_params = {'Om0':OmegaM, 'H0': 100*h})
+            hmf = MassFunction(Mmin = 9, Mmax = 18, dlog10m = 0.1, lnk_min = -11.1, lnk_max = 9.6,  dlnk=0.002, z=z, hmf_model = "Behroozi", sigma_8 = 0.8159, cosmo_params = {'Om0':OmegaM, 'H0': 100*h})
+
             hmf_mass = hmf.m / h
             hmf_dndm = hmf.dndm * h**4
             hmf_nu   = hmf.nu

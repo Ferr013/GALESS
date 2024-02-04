@@ -2,6 +2,7 @@ import os.path
 import numpy as np
 import pandas as pd
 from scipy import integrate
+from scipy.stats import kstest
 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -24,7 +25,8 @@ def set_plt_param(PLOT_FOR_KEYNOTE = 1):
         'xtick.labelsize': 10,
         'ytick.labelsize': 10,
         'text.usetex': False,
-        'figure.figsize': [6, 4]
+        'figure.figsize': [6, 4],
+        'legend.title_fontsize': 20
         }
     params_keynote = {
         "lines.color": "white",
@@ -39,7 +41,8 @@ def set_plt_param(PLOT_FOR_KEYNOTE = 1):
         "figure.facecolor": '#222222',
         "figure.edgecolor": 'lightgray',
         "savefig.facecolor":'#222222',
-        "savefig.edgecolor": 'lightgray'
+        "savefig.edgecolor": 'lightgray',
+        'legend.title_fontsize': 20
         }
     plt.rcParams.update(plt.rcParamsDefault)
     if(PLOT_FOR_KEYNOTE): 
@@ -58,17 +61,184 @@ def set_plt_param(PLOT_FOR_KEYNOTE = 1):
         line_c = 'k'
         cmap_c = cm.inferno
         _col_  = None
-        col_A  = 'r'
-        col_B  = 'k'
-        col_C  = 'k'
-        col_D  = 'k'
+        col_A  = 'k'
+        col_B  = 'r'
+        col_C  = 'm'
+        col_D  = 'orange'
         fn_prefix = ''
         return line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix
+    
+def plot_Lens_Fraction(m_lim = 28.5, mu_arc_SIE = 3, 
+                       M_array = 0, zs_array_plot = 0, schechter_plot = ls.schechter_LF, 
+                       PLOT_FOR_KEYNOTE = 1, SAVE = 0):
+    if zs_array_plot == 0: zs_array_plot = np.asarray((1,2,3,4,5,6,7,8,9))
+    if M_array == 0: M_array = np.linspace(-14,-26,37)
+    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
+    cmap_c = cm.viridis
+    f, ax = plt.subplots(2, 2, figsize=(12, 12), sharex=True, sharey=True, squeeze=True)
+    plt.subplots_adjust(wspace=.075, hspace=.075)
+    color = iter(cmap_c(np.linspace(0, 1, len(zs_array_plot))))
+    for zs in zs_array_plot:
+        _col = next(color)
+        M_lim = m_lim - 5 * np.log10(cosmo.luminosity_distance(zs).value * 1e5)
+        frl   = ls.Fraction_lensed_SIE(1, M_array, schechter_plot, zs)
+        ax[0, 0].plot(M_array, frl,        c=_col,  label = r'$z=$'+str(zs))
+        C = 0.8979070411803386 #Correction for elliptical caustic area averaged over axis ratio distribution
+        #ax[0, 0].axhline(Tau(zs)*C, c=_col, ls='--')
+        F_arc = ls.Fraction_1st_image_arc_SIE(mu_arc_SIE, M_array, schechter_plot, zs)
+        ax[0, 1].plot(M_array, frl*F_arc,  c=_col,  label = r'$z=$'+str(zs))
+        img_N = 2
+        F_Nth = ls.Fraction_Nth_image_above_Mlim_SIE(img_N, M_array, M_lim, schechter_plot, zs)
+        ax[1, 0].plot(M_array, frl*F_Nth,  c=_col,  label = r'$z=$'+str(zs))
+        img_N = 3
+        F_Nth = ls.Fraction_Nth_image_above_Mlim_SIE(img_N, M_array, M_lim, schechter_plot, zs)
+        ax[1, 1].plot(M_array, frl*F_Nth,  c=_col, ls=':')
+        img_N = 4
+        F_Nth = ls.Fraction_Nth_image_above_Mlim_SIE(img_N, M_array, M_lim, schechter_plot, zs)
+        ax[1, 1].plot(M_array, frl*F_Nth,  c=_col,  label = r'$z=$'+str(zs))    
+    # ax[0, 0].set_title(r'Fraction of lensed galaxies',                              fontsize=15)
+    # ax[0, 1].set_title(r'Fraction arcs stretched more than $\mu=$'+str(mu_arc_SIE), fontsize=15)
+    # ax[1, 0].set_title(r'Fraction of 2nd images above $M_{lim}$',                   fontsize=15)
+    # ax[1, 1].set_title(r'Fraction of cusp/quad images above $M_{lim}$',             fontsize=15)
+    ax[0, 0].set_ylabel(r'$F_{lens}$', fontsize=22)
+    ax[0, 1].set_ylabel(r'$F_{arc}$', fontsize=22)
+    ax[1, 0].set_ylabel(r'$F_\text{2nd}$', fontsize=22)
+    ax[1, 1].set_ylabel(r'$F_\text{cusp}$ | $F_\text{quad}$', fontsize=22)
+    for i in range(2):
+        for j in range(2):
+            ax[i, j].set_ylim((7e-4,1.2e0))
+            ax[i, j].set_xlabel(r'$M_{AB,1}$ ', fontsize=22)
+            ax[i, j].set_xlim((-24,-16))
+            ax[i, j].set_yscale('log')
+            ax[i, j].xaxis.set_major_locator(plt.MultipleLocator(2))
+            ax[i, j].xaxis.set_minor_locator(plt.MultipleLocator(1))
+            ax[i, j].tick_params(axis='both', which='major', direction='in', right=1, top=1, labelsize=15, length=8, width=1.5)
+            ax[i, j].tick_params(axis='both', which='minor', direction='in', right=1, top=1, labelsize=15, length=5, width=1)
+    ax[1, 1].legend(title=r'Source $z_s$', loc='upper right', fontsize=20)
+    plt.tight_layout()
+    if SAVE: plt.savefig('img/'+fn_prefix+'frac_lens_SIE.jpg', dpi=100)
+    plt.show()
+
+def plot_ALL_distributions(title, zl_array, zs_array, sigma_array,
+                               Theta_E_LL, matrix_LL, Theta_E_noLL, matrix_noLL,
+                               PLOT_FOR_KEYNOTE = 1, SMOOTH = 1, SAVE = 0, LEGEND = 0):
+    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
+    
+    Ngal_zl_sigma_noLL, Ngal_zs_sigma_noLL, Ngal_zs_zl_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
+    Ngal_zl_sigma_LL, Ngal_zs_sigma_LL, Ngal_zs_zl_LL, P_zs_LL, P_zl_LL, P_sg_LL = ls.get_N_and_P_projections(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH)
+    _nbins_Re = np.arange(0  , 4  , 0.25)
+
+    fig, ax = plt.subplots(2, 3, figsize=(17, 10), sharex=False, sharey=False)
+    plt.subplots_adjust(wspace=.15, hspace=.2)
+    fig.suptitle(title, fontsize=25)
+    ax[0,0].plot(zl_array, P_zl_LL, c=col_A, ls=':')
+    ax[0,0].plot(zs_array, P_zs_LL, c=col_B, ls=':' , label='w/ lens light')
+    ax[0,0].plot(zl_array, P_zl_noLL, c=col_A, ls='-')
+    ax[0,0].plot(zs_array, P_zs_noLL, c=col_B, ls='-', label='No lens light')
+    ax[0,0].set_ylabel(r'$P$', fontsize=20)
+    ax[0,0].set_xlabel(r'$z$', fontsize=20)
+    ax[0,0].set_xlim((0,5.2))
+    ax[0,1].plot(sigma_array, P_sg_LL, c=col_C, ls = ':')
+    ax[0,1].plot(sigma_array, P_sg_noLL, c=col_C, ls = '-')
+    ax[0,1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+    ax[0,2].hist(np.ravel(Theta_E_LL), weights=np.ravel(matrix_LL), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=col_D, ls = ':')
+    ax[0,2].hist(np.ravel(Theta_E_noLL), weights=np.ravel(matrix_noLL), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=col_D, ls = '-')
+    ax[0,2].set_xlabel(r'$\Theta_E$ [arcsec]', fontsize=20)
+
+    level_array = [0.01, 0.05, 0.2, 0.4, 0.8]
+    norm = np.sum(matrix_noLL)
+    plotting_now = Ngal_zs_zl_noLL/norm
+    _zs, _zl = np.meshgrid(zs_array, zl_array)
+    levels   = np.asarray(level_array)*(np.power(10,(np.log10(np.max(plotting_now)))))
+    contours = ax[1,0].contour(_zs, _zl, plotting_now.T, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(levels), vmax=np.max(plotting_now)), linestyles='-')
+    ax[1,0].clabel(contours, inline=True, fontsize=8, fmt='%.0e')
+    ax[1,0].set_xlabel(r'$z_s$', fontsize=20)
+    ax[1,0].set_ylabel(r'$z_l$', fontsize=20)
+    plotting_now = Ngal_zl_sigma_noLL/norm
+    _sigma, _zl = np.meshgrid(sigma_array, zl_array)
+    levels   = np.asarray(level_array)*(np.power(10,(np.log10(np.max(plotting_now)))))
+    contours = ax[1,1].contour(_sigma, _zl,plotting_now.T, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(levels), vmax=np.max(plotting_now)), linestyles='-')
+    ax[1,1].scatter(200,1.0, label='', alpha=0)
+    ax[1,1].clabel(contours, inline=True, fontsize=8, fmt='%.0e')
+    ax[1,1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+    ax[1,1].set_ylabel(r'$z_l$', fontsize=20)
+    plotting_now = Ngal_zs_sigma_noLL/norm
+    _sigma, _zs = np.meshgrid(sigma_array, zs_array)
+    levels   = np.asarray(level_array)*(np.power(10,(np.log10(np.max(plotting_now)))))
+    contours = ax[1,2].contour(_sigma, _zs, plotting_now, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(levels), vmax=np.max(plotting_now)), linestyles='-')
+    ax[1,2].clabel(contours, inline=True, fontsize=8, fmt='%.0e')
+    ax[1,2].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+    ax[1,2].set_ylabel(r'$z_s$', fontsize=20)
+
+    norm = np.sum(matrix_LL)
+    plotting_now = Ngal_zs_zl_LL/norm
+    _zs, _zl = np.meshgrid(zs_array, zl_array)
+    levels   = np.asarray(level_array)*(np.power(10,(np.log10(np.max(plotting_now)))))
+    contours = ax[1,0].contour(_zs, _zl, plotting_now.T, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(levels), vmax=np.max(plotting_now)), linestyles=':')
+    # ax[1,0].clabel(contours, inline=True, fontsize=8)
+    ax[1,0].set_xlabel(r'$z_s$', fontsize=20)
+    ax[1,0].set_ylabel(r'$z_l$', fontsize=20)
+    plotting_now = Ngal_zl_sigma_LL/norm
+    _sigma, _zl = np.meshgrid(sigma_array, zl_array)
+    levels   = np.asarray(level_array)*(np.power(10,(np.log10(np.max(plotting_now)))))
+    contours = ax[1,1].contour(_sigma, _zl,plotting_now.T, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(levels), vmax=np.max(plotting_now)), linestyles=':')
+    ax[1,1].scatter(200,1.0, label='', alpha=0)
+    # ax[1,1].clabel(contours, inline=True, fontsize=8)
+    ax[1,1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+    ax[1,1].set_ylabel(r'$z_l$', fontsize=20)
+    plotting_now = Ngal_zs_sigma_LL/norm
+    _sigma, _zs = np.meshgrid(sigma_array, zs_array)
+    levels   = np.asarray(level_array)*(np.power(10,(np.log10(np.max(plotting_now)))))
+    contours = ax[1,2].contour(_sigma, _zs, plotting_now, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(levels), vmax=np.max(plotting_now)), linestyles=':')
+    # ax[1,2].clabel(contours, inline=True, fontsize=8)
+    ax[1,2].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+    ax[1,2].set_ylabel(r'$z_s$', fontsize=20)
+
+    if LEGEND:
+        if(np.sum(matrix_noLL))>10_000:
+            ax[1,0].legend([f'#Lenses w/ LL: {np.sum(matrix_LL):.1e}', f'#Lenses no LL: {np.sum(matrix_noLL):.1e}'], fontsize=20)
+        else:
+            ax[1,0].legend([f'#Lenses w/ LL: {np.sum(matrix_LL):.0f}', f'#Lenses no LL: {np.sum(matrix_noLL):.0f}'], fontsize=20)
+    # ax[1,1].set_xlim((100,400))
+    # ax[1,0].set_xlim((100,400))
+    # ax[1,0].set_ylim((0,2.5))
+    plt.tight_layout()
+    if (SAVE):
+        folderpath = 'img/'+utils.remove_spaces_from_string(title)
+        if not os.path.exists(folderpath): os.makedirs(folderpath)
+        plt.savefig(folderpath+'/'+fn_prefix+'all_plts.jpg', dpi=200)
+    plt.show()
+
+def plot_z_sigma_distributions_double_lenses(title, zl_array, zs_array, sigma_array, matrix_LL, matrix_noLL,
+                               PLOT_FOR_KEYNOTE = 1, SMOOTH = 1, SAVE = 0):
+    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
+    fig, ax = plt.subplots(1, 2, figsize=(11, 5), sharex=False, sharey=False)
+    plt.subplots_adjust(wspace=.25, hspace=.2)
+    Ngal_zl_sigma_noLL, Ngal_zl_sigma_noLL, Ngal_zl_zs1_noLL, Ngal_zl_zs2_noLL, Ngal_sigma_zs1_noLL, Ngal_sigma_zs2_noLL, Ngal_zs1_zs2_noLL, P_zs_noLL, P_zs2_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections_double_lens(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
+    Ngal_zl_sigma_LL, Ngal_zl_sigma_LL, Ngal_zl_zs1_LL, Ngal_zl_zs2_LL, Ngal_sigma_zs1_LL, Ngal_sigma_zs2_LL, Ngal_zs1_zs2_LL, P_zs_LL, P_zs2_LL, P_zl_LL, P_sg_LL = ls.get_N_and_P_projections_double_lens(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH)
+    ax[0].plot(zl_array, P_zl_noLL, c=col_A, ls='-')
+    ax[0].plot(zl_array, P_zl_LL,   c=col_A, ls=':')
+    ax[0].plot(zs_array, P_zs_noLL, c=col_B, ls='-' , label='No lens light')
+    ax[0].plot(zs_array, P_zs_LL,   c=col_B, ls=':' , label='w/ lens light')
+    ax[0].plot(zs_array, P_zs2_noLL,c=col_C, ls='-' )
+    ax[0].plot(zs_array, P_zs2_LL,  c=col_C, ls=':' )
+    ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
+    ax[0].set_xlabel(r'$z$', fontsize=20)
+    ax[0].set_xlim((0,5.2))
+    ax[1].plot(sigma_array, P_sg_noLL, c=col_A, ls = '-')   
+    ax[1].plot(sigma_array, P_sg_LL  , c=col_A, ls = ':')
+    ax[1].set_ylabel(r'$dP/d\sigma$', fontsize=20)
+    ax[1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+    if (SAVE):
+        folderpath = 'img/'+utils.remove_spaces_from_string(title)
+        if not os.path.exists(folderpath): os.makedirs(folderpath)
+        plt.savefig(folderpath+'/'+fn_prefix+'corner_plts.jpg', dpi=200)
+    plt.show()
 
 def plot_z_sigma_distributions(fig, ax, title, zl_array, zs_array, sigma_array,
                                Theta_E_LL, matrix_LL, Theta_E_noLL, matrix_noLL,
                                PLOT_FOR_KEYNOTE = 1, CONTOUR = 1, LOG = 0, SMOOTH = 0, SAVE = 0, 
-                               LEGEND = 1, DOUBLE_LENS = 1):
+                               LEGEND = 1, DOUBLE_LENS = 0):
     line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
     if DOUBLE_LENS:
         Ngal_zl_sigma_noLL, Ngal_zl_sigma_noLL, Ngal_zl_zs1_noLL, Ngal_zl_zs2_noLL, Ngal_sigma_zs1_noLL, Ngal_sigma_zs2_noLL, Ngal_zs1_zs2_noLL, P_zs_noLL, P_zs2_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections_double_lens(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
@@ -169,14 +339,16 @@ def plot_effect_vel_disp_function(zl_array, zs_array, sigma_array, PLOT_FOR_KEYN
             Ngal_zl_sigma_noLL, Ngal_zs_sigma_noLL, Ngal_zs_zl_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
         ax[0].plot(zl_array, P_zl_noLL, c=col_A, ls=lstyle, label=f'{label}')
         ax[0].plot(zs_array, P_zs_noLL, c=col_B, ls=lstyle)
-        ax[0].set_ylabel(r'$P$', fontsize=20)
+        ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
         ax[0].set_xlabel(r'$z$', fontsize=20)
         ax[0].set_xlim((0,5.2))
         ax[1].plot(sigma_array, P_sg_noLL, c=col_C, ls = lstyle)
+        ax[1].set_ylabel(r'$dP/d\sigma$', fontsize=20)
         ax[1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
         _nbins_Re = np.arange(0  , 4  , 0.25)
         ax[2].hist(np.ravel(Theta_E_noLL), weights=np.ravel(matrix_noLL), bins=_nbins_Re, range=(0, 3), 
                    density=True, histtype='step', color=col_D, ls = lstyle, label=f'# Lenses: {np.sum(matrix_noLL):.1e}')
+        ax[2].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
         ax[2].set_xlabel(r'$\Theta_E$ [arcsec]', fontsize=20)
     ax[0].legend(fontsize=14, frameon=False)
     ax[2].legend(fontsize=14, frameon=False)
@@ -188,45 +360,104 @@ def plot_effect_vel_disp_function(zl_array, zs_array, sigma_array, PLOT_FOR_KEYN
     plt.show()
 
 
-def compare_z_distributions_surveys(ax, title, color,
-                                        zl_array, zs_array, sigma_array, matrix_LL, matrix_noLL,
-                                        PLOT_FOR_KEYNOTE = 1, SMOOTH = 0):
+def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, zs_array, LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 1, SMOOTH = 1):
     line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
-    _n, __n, ___n, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
-    _ , __  , ___, P_zs_LL  , P_zl_LL  , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH)
-    ax[0].plot(zl_array, P_zl_noLL, c=color, ls='-' , label=title)
-    ax[0].plot(zs_array, P_zs_noLL, c=color, ls=':')
-    ax[1].plot(zl_array, P_zl_LL, c=color, ls='--', label=title)
-    ax[1].plot(zs_array, P_zs_LL, c=color, ls=':')
-    ax[0].set_ylabel(r'$P$', fontsize=20)
+    _col_  = iter(cmap_c(np.linspace(0, 1, len(surveys_selection)+1)))
+    fig, ax = plt.subplots(1, 3, figsize=(17, 5), sharex=False, sharey=False)
+    plt.subplots_adjust(wspace=.235, hspace=.2)
+    for title in surveys_selection:
+        survey_params = utils.read_survey_params(title, VERBOSE = 0)
+        limit    = survey_params['limit']
+        cut      = survey_params['cut']
+        area     = survey_params['area']
+        seeing   = survey_params['seeing']
+        exp_time_sec = survey_params['exp_time_sec']
+        pixel_arcsec = survey_params['pixel_arcsec']
+        zero_point_m = survey_params['zero_point_m']
+        sky_bckgnd_m = survey_params['sky_bckgnd_m']
+        photo_band   = survey_params['photo_band']
+        matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+        matrix  = matrix_LL  if LENS_LIGHT else matrix_noLL
+        Theta_E = Theta_E_LL if LENS_LIGHT else Theta_E_noLL
+        __col__ = next(_col_)
+        plot_z_distribution_in_ax(ax[0], title, __col__, zl_array, zs_array, sigma_array, matrix, SMOOTH = SMOOTH)
+        plot_s_distribution_in_ax(ax[1], title, __col__, zl_array, zs_array, sigma_array, matrix, SMOOTH = SMOOTH)
+        plot_R_distribution_in_ax(ax[2], title, __col__, np.arange(0  , 4  , 0.25), matrix, Theta_E, SMOOTH = SMOOTH)
+
     ax[0].set_xlabel(r'$z$', fontsize=20) 
-    ax[1].set_xlabel(r'$z$', fontsize=20)
+    ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
+    ax[1].set_xlabel(r'$\sigma$', fontsize=20) 
+    ax[1].set_ylabel(r'$dP/d\sigma$', fontsize=20)
+    ax[2].set_xlabel(r'$\Theta_E$ [arcsec]', fontsize=20) 
+    ax[2].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
+    ax[0].legend(fontsize=12)
+    plt.show()
+
+def plot_z_distribution_in_ax(ax, title, color, zl_array, zs_array, sigma_array, matrix, SMOOTH = 1):
+    _n, __n, ___n, P_zs, P_zl, P_sg = ls.get_N_and_P_projections(matrix, sigma_array, zl_array, zs_array, SMOOTH)
+    ax.plot(zl_array, P_zl, c=color, ls='-' , label=title)
+    ax.plot(zs_array, P_zs, c=color, ls=':' )
+def plot_s_distribution_in_ax(ax, title, color, zl_array, zs_array, sigma_array, matrix, SMOOTH = 1):
+    _n, __n, ___n, P_zs, P_zl, P_sg = ls.get_N_and_P_projections(matrix, sigma_array, zl_array, zs_array, SMOOTH)
+    ax.plot(sigma_array, P_sg, c=color, ls='-', label=title)
+def plot_R_distribution_in_ax(ax, title, color, _nbins_Re, matrix, Theta_E, SMOOTH = 1):
+    ax.hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=color, ls = '-', label=title)
+
 
 def single_compare_z_distributions_surveys(ax, title, color,
                                         zl_array, zs_array, sigma_array, matrix_LL, matrix_noLL,
-                                        PLOT_FOR_KEYNOTE = 1, SMOOTH = 1):
+                                        PLOT_FOR_KEYNOTE = 1, SMOOTH = 1, PLOT_ALL = 0):
     line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
     _n, __n, ___n, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
     _ , __  , ___, P_zs_LL  , P_zl_LL  , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH)
-    ax[0].plot(zl_array, P_zl_noLL, c=color, ls='-' , label=title)
-    ax[0].plot(zs_array, P_zs_noLL, c=color, ls=':')
-    ax[1].plot(zl_array, P_zl_LL, c=color, ls='--', label=title)
-    ax[1].plot(zs_array, P_zs_LL, c=color, ls=':')
-    ax[0].set_xlabel(r'$z$', fontsize=20) 
-    ax[1].set_xlabel(r'$z$', fontsize=20) 
-    ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
+    if PLOT_ALL:
+        ax.plot(zl_array, P_zl_noLL, c=color, ls='-' , label=title)
+        ax.plot(zs_array, P_zs_noLL, c=color, ls=':' )
+        ax.set_xlabel(r'$z$', fontsize=20) 
+        ax.set_ylabel(r'$dP/dz$', fontsize=20)
+    else:
+        ax[0].plot(zl_array, P_zl_noLL, c=color, ls='-' , label=title)
+        ax[0].plot(zs_array, P_zs_noLL, c=color, ls=':')
+        ax[1].plot(zl_array, P_zl_LL, c=color, ls='--', label=title)
+        ax[1].plot(zs_array, P_zs_LL, c=color, ls=':')
+        ax[0].set_xlabel(r'$z$', fontsize=20) 
+        ax[1].set_xlabel(r'$z$', fontsize=20) 
+        ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
 
 def single_compare_sigma_distributions_surveys(ax, title, color,
                                         zl_array, zs_array, sigma_array, matrix_LL, matrix_noLL,
-                                        PLOT_FOR_KEYNOTE = 1, SMOOTH = 1):
+                                        PLOT_FOR_KEYNOTE = 1, SMOOTH = 1, PLOT_ALL = 0):
     line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
     _n, __n, ___n, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
     _ , __  , ___, P_zs_LL  , P_zl_LL  , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH)
-    ax[0].plot(sigma_array, P_sg_noLL, c=color, ls = '-', label=title)
-    ax[1].plot(sigma_array, P_sg_LL  , c=color, ls = ':')
-    ax[0].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
-    ax[1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
-    ax[0].set_ylabel(r'$dP/d\sigma$', fontsize=20)
+    if PLOT_ALL:
+        ax.plot(sigma_array, P_sg_noLL, c=color, ls='-' , label=title)
+        ax.set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+        ax.set_ylabel(r'$dP/d\sigma$'   , fontsize=20)
+    else:
+        ax[0].plot(sigma_array, P_sg_noLL, c=color, ls = '-', label=title)
+        ax[1].plot(sigma_array, P_sg_LL  , c=color, ls = ':')
+        ax[0].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+        ax[1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+        ax[0].set_ylabel(r'$dP/d\sigma$', fontsize=20)
+
+
+def single_compare_EinRing_distributions_surveys(ax, title, color,
+                                        zl_array, zs_array, sigma_array, matrix_LL, matrix_noLL,
+                                        PLOT_FOR_KEYNOTE = 1, SMOOTH = 1, PLOT_ALL = 0):
+    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
+    _n, __n, ___n, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
+    _ , __  , ___, P_zs_LL  , P_zl_LL  , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH)
+    if PLOT_ALL:
+        ax.hist(np.ravel(Theta_E_noLL), weights=np.ravel(matrix_noLL), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=col_D, ls = '-')
+        ax.set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+        ax.set_ylabel(r'$dP/d\sigma$'   , fontsize=20)
+    else:
+        ax[0].plot(sigma_array, P_sg_noLL, c=color, ls = '-', label=title)
+        ax[1].plot(sigma_array, P_sg_LL  , c=color, ls = ':')
+        ax[0].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+        ax[1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+        ax[0].set_ylabel(r'$dP/d\sigma$', fontsize=20)
 
 def compare_z_distributions_surveys(surveys_selection, sigma_array, zl_array, zs_array, PLOT_FOR_KEYNOTE = 1):
     line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
@@ -284,7 +515,7 @@ def compare_sigma_distributions_surveys(surveys_selection, sigma_array, zl_array
 
     
 def plot_angular_separation(survey_title, _theta_arcsec, omega, cmap_c = cm.cool, 
-                            FRAC_LENS = 0, PLOT_FOR_KEYNOTE = 1, 
+                            frac_lens = 0.1, PLOT_FOR_KEYNOTE = 1,
                             A_w = 0.4, beta = 0.6):
     set_plt_param(PLOT_FOR_KEYNOTE = PLOT_FOR_KEYNOTE)
     
@@ -312,31 +543,60 @@ def plot_angular_separation(survey_title, _theta_arcsec, omega, cmap_c = cm.cool
     dPdt = 2 * np.pi * _theta_arcsec * np.diff(_theta_arcsec)[0] * (omega + 1)
     cPdt = np.cumsum(dPdt)/np.sum(dPdt)
 
-    fig, ax = plt.subplots(1, 2, figsize=(12, 5), sharex=False, sharey=False)
+    color = 'w' if PLOT_FOR_KEYNOTE else 'k'
+    c1 = 'c' if PLOT_FOR_KEYNOTE else 'k'
+    c2 = 'r' if PLOT_FOR_KEYNOTE else 'k'
+
+    fig, ax = plt.subplots(1, 1, figsize=(6, 5), sharex=False, sharey=False)
     plt.subplots_adjust(wspace=.15, hspace=.2)   
-    ax[0].set_ylabel(r'$P(<\theta$)', fontsize=20)
-    ax[0].set_xlabel(r'$\theta$ [arcsec]', fontsize=20)
-    ax[1].set_xlabel(r'$\theta$ [arcsec]', fontsize=20)
-    ax[0].set_xlim((0,10))
-    ax[1].set_xlim((0,10))
-    ax[0].set_ylim((0,1.1))
-    ax[1].set_ylim((0,1.1))
-    color = iter(cmap_c(np.linspace(0, 1, 2)))
-    ax[0].hist(np.ravel(Theta_pos_noLL), weights=np.ravel(matrix_noLL), bins=200, range=(0, 12), 
-        density=True, histtype='step', color=next(color), label='no LL', cumulative=True)
-    ax[1].hist(np.ravel(Theta_pos_LL), weights=np.ravel(matrix_LL), bins=200, range=(0, 12), 
-        density=True, histtype='step', color=next(color), label='w/ LL', cumulative=True)
-    ax[0].plot(_theta_arcsec, cPdt, 'r:')
-    ax[1].plot(_theta_arcsec, cPdt, 'r:')
-    if FRAC_LENS != 0: #TODO: Plot a weighted fraction of the lens model nd the HOD results.
-        pass
-        # ax[0].hist(np.ravel(Theta_pos_noLL), weights=np.ravel(matrix_noLL), bins=200, range=(0, 12), 
-        #     density=True, histtype='step', color=next(color), label='no LL', cumulative=True)
- 
-    plt.legend(fontsize=15, loc='lower right')
+    ax.set_ylabel(r'$P(<\theta$)', fontsize=20)
+    ax.set_xlabel(r'$\theta$ [arcsec]', fontsize=20)
+    ax.set_xlim((0,10))
+    ax.set_ylim((0,1.1))
+    counts, bins, _ = ax.hist(np.ravel(Theta_pos_noLL), weights=np.ravel(matrix_noLL), bins=_theta_arcsec, range=(0, 12), density=True, histtype='step', alpha=0,
+                              color=color, ls = '--', cumulative=True)
+    counts = np.append(counts, 1)
+    ax.plot(_theta_arcsec, counts, c=c1, ls='--', label='Lenses only')
+    ax.plot(_theta_arcsec, cPdt, c=c2, ls=':', label='1 halo term HOD')
+    w_avg = np.array(counts) * frac_lens + cPdt * (1 - frac_lens)
+    ax.plot(_theta_arcsec, w_avg, c=color, lw=2.5, label='Observed ACF')
+    # plt.legend(fontsize=15, loc='lower right')
     plt.tight_layout()
     plt.show()
 
+    if PLOT_FOR_KEYNOTE:
+        fig, ax = plt.subplots(1, 1, figsize=(6, 5), sharex=False, sharey=False)
+        plt.subplots_adjust(wspace=.15, hspace=.2)   
+        ax.set_ylabel(r'$P(<\theta$)', fontsize=20)
+        ax.set_xlabel(r'$\theta$ [arcsec]', fontsize=20)
+        ax.set_xlim((0,10))
+        ax.set_ylim((0,1.1))
+        counts, bins, _ = ax.hist(np.ravel(Theta_pos_noLL), weights=np.ravel(matrix_noLL), bins=_theta_arcsec, range=(0, 12), density=True, histtype='step', alpha=0,
+                                color=color, ls = '--', cumulative=True)
+        counts = np.append(counts, 1)
+        ax.plot(_theta_arcsec, counts, c=c1, ls='--', label='Lenses only')
+        # ax.plot(_theta_arcsec, cPdt, c=c2, ls=':', label='1 halo term HOD')
+        # w_avg = np.array(counts) * frac_lens + cPdt * (1 - frac_lens)
+        # ax.plot(_theta_arcsec, w_avg, c=color, lw=2.5, label='Observed ACF')
+        # plt.legend(fontsize=15, loc='lower right')
+        plt.tight_layout()
+        plt.show()
+        fig, ax = plt.subplots(1, 1, figsize=(6, 5), sharex=False, sharey=False)
+        plt.subplots_adjust(wspace=.15, hspace=.2)   
+        ax.set_ylabel(r'$P(<\theta$)', fontsize=20)
+        ax.set_xlabel(r'$\theta$ [arcsec]', fontsize=20)
+        ax.set_xlim((0,10))
+        ax.set_ylim((0,1.1))
+        counts, bins, _ = ax.hist(np.ravel(Theta_pos_noLL), weights=np.ravel(matrix_noLL), bins=_theta_arcsec, range=(0, 12), density=True, histtype='step', alpha=0,
+                                color=color, ls = '--', cumulative=True)
+        counts = np.append(counts, 1)
+        ax.plot(_theta_arcsec, counts, c=c1, ls='--', label='Lenses only')
+        ax.plot(_theta_arcsec, cPdt, c=c2, ls=':', label='1 halo term HOD')
+        # w_avg = np.array(counts) * frac_lens + cPdt * (1 - frac_lens)
+        # ax.plot(_theta_arcsec, w_avg, c=color, lw=2.5, label='Observed ACF')
+        # plt.legend(fontsize=15, loc='lower right')
+        plt.tight_layout()
+        plt.show()
 
 
 
@@ -555,82 +815,84 @@ def compare_COSMOS_HST_Faure(zl_array, zs_array, sigma_array, M_array_UV, mag_cu
     plt.subplots_adjust(wspace=.23, hspace=.2)
 
     ccc = 'w' if PLOT_FOR_KEYNOTE else 'k'
-    title = 'COSMOS HST i band FAURE'
-    matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
-    _ , __  , ___, P_zs_LL  , P_zl_LL  , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH=1)
-    _ , __  , ___, P_zs_noLL  , P_zl_noLL  , P_sg_noLL   = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
+    cc2 = 'r'
 
-    if LENS_LIGHT:
-        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
-    else:
-        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
-    
-    ax[0].plot(zl_array, P_zl, c=ccc, ls='-', label=title)
-    ax[0].plot(zs_array, P_zs, c=ccc, ls='--')
-    ax[0].set_xlim((0,5.2))
-    ax[0].set_xlabel(r'$z$', fontsize=20) 
-    ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
-    
-    ax[1].hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins = np.arange(0, 4, 0.2), 
-                range=(0, 3), density=True, histtype='step', color=ccc, ls = '-', label=title)
-    ax[1].set_xlabel(r'$\Theta_E$ ["]', fontsize=20)
-    ax[1].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
-    ax[1].set_xlim((0,4))
-
-
-    m_obs = np.linspace(15, 30, 31)
-    #ax[2].plot(m_obs, m_num, color=ccc)
-    if __MAG_OVER_ARCSEC_SQ__:         
-        ax[2].set_xlabel(r'$m_\text{I814W}^\text{src}$ [mag arcsec$^{-2}$]', fontsize=20)
-        ax[2].set_ylabel(r'$N_\text{gal}$', fontsize=20)
-        ax[2].set_xlim((19,mag_cut-1))
-        ax[2].set_ylim((0,50))
-    else:
-        # ax[2].axvline(mag_cut, color=ccc, ls = '--', alpha=0.75)
-        # ax[2].set_xlabel(r'$m_\text{I814W}^\text{src}$ [mag]', fontsize=20)
-        # ax[2].set_ylabel(r'$N_\text{gal}$', fontsize=20)
-        # ax[2].set_xlim((19,mag_cut+1))
-        m_lens = ls.get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix)
-        norm = integrate.simps(m_lens, m_obs)
-        ax[2].plot(m_obs, m_lens/norm, color=ccc)
-        ax[2].set_xlabel(r'$m_\text{I814W}^\text{len}$ [mag]', fontsize=20)
-        ax[2].set_ylabel(r'$dP/dm$', fontsize=20)
-        ax[2].set_xlim((15,25))
-        ax[2].set_ylim((0,0.5))
-    
 
     _nbins_zl = np.arange(0.0, 1.6, 0.2 )
     _nbins_zs = np.arange(0.0, 5  , 0.5 )
     _nbins_sg = np.arange(100, 400, 25  )
     _nbins_Re = np.arange(0  , 4  , 0.25)
+    m_obs = np.linspace(15, 30, 31)
+    line_thick = 3
     if PLOT_FOR_KEYNOTE:
         ER_col1, ER_col2  = 'darkorange', 'lime'
         _ALPHA_ = 1
     else:
         ER_col1, ER_col2  = 'forestgreen', 'firebrick'
         _ALPHA_ = 1
-    ### FULL SAMPLE ###
-    ax[0].hist( np.append(FAURE_A_zl,  FAURE_B_zl)          , bins=_nbins_zl, density=True, histtype='step', color=ER_col1, alpha = _ALPHA_, label='Faure 2008 - Full Sample (53)')
-    ax[1].hist( np.append(FAURE_A_Rarc/1.5,FAURE_B_Rarc/1.5), bins=_nbins_Re, density=True, histtype='step', color=ER_col1, alpha = _ALPHA_)
-    if __MAG_OVER_ARCSEC_SQ__:        
-        ax[2].hist( np.append(FAURE_A_m_src, FAURE_B_m_src)       , bins=m_obs  , density=False, histtype='step', color=ER_col1, alpha = _ALPHA_)
-    else:
-        ax[2].hist( np.append(FAURE_A_m_Ib, FAURE_B_m_Ib)       , bins=m_obs  , density=True, histtype='step', color=ER_col1, alpha = _ALPHA_)
-    if not ONLY_FULL_SAMPLE:
-        ### BEST SAMPLE ###
-        ax[0].hist( FAURE_zl      , bins=_nbins_zl, density=True, histtype='step', color=ER_col2, alpha = _ALPHA_, label='Faure et al. 2008 - Best Sample (16)')
-        ax[0].hist( FAURE_zs      , bins=_nbins_zs, density=True, histtype='step', color=ER_col2, alpha = _ALPHA_, ls='--')
-        ax[1].hist( FAURE_Rein    , bins=_nbins_Re, density=True, histtype='step', color=ER_col2, alpha = _ALPHA_)
-        if __MAG_OVER_ARCSEC_SQ__:        
-            ax[2].hist( FAURE_m_src   , bins=m_obs    , density=False, histtype='step', color=ER_col2, alpha = _ALPHA_)
-        else:
-            ax[2].hist( FAURE_m_Ib, bins=m_obs  , density=True, histtype='step', color=ER_col2, alpha = _ALPHA_)
 
+    ### FULL SAMPLE ###
+    F_zl_hist, F_zl_bins = ax[0].hist( np.append(FAURE_A_zl,  FAURE_B_zl)          , bins=_nbins_zl, density=True, histtype='step', lw=line_thick, color=ER_col1, alpha = _ALPHA_, label=f'Faure 2008 - Full Sample ({len(np.append(FAURE_A_zl,  FAURE_B_zl))})')
+    F_Ra_hist, F_Ra_bins = ax[1].hist( np.append(FAURE_A_Rarc/1.5,FAURE_B_Rarc/1.5), bins=_nbins_Re, density=True, histtype='step', lw=line_thick, color=ER_col1, alpha = _ALPHA_)
+    F_mI_hist, F_mI_bins = ax[2].hist( np.append(FAURE_A_m_Ib, FAURE_B_m_Ib)       , bins=m_obs  , density=True, histtype='step', lw=line_thick, color=ER_col1, alpha = _ALPHA_)
+
+    title = 'COSMOS HST i band FAURE'
+    matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+    _ , __  , ___, P_zs_LL  , P_zl_LL  , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH=1)
+    _ , __  , ___, P_zs_noLL  , P_zl_noLL  , P_sg_noLL   = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
+    if LENS_LIGHT: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
+    else: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
+    ax[0].plot(zl_array, P_zl, c=ccc, ls='-', label=title)
+    ax[0].plot(zs_array, P_zs, c=ccc, ls='--')
+    ax[0].set_xlim((0,5.2))
+    ax[0].set_xlabel(r'$z$', fontsize=20) 
+    ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
+    T_hist_Mason, T_bins_Mason = ax[1].hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins = np.arange(0, 4, 0.2), 
+                range=(0, 3), density=True, histtype='step', color=ccc, ls = '-', label=title)
+    ax[1].set_xlabel(r'$\Theta_E$ ["]', fontsize=20)
+    ax[1].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
+    ax[1].set_xlim((0,4))
+    m_lens = ls.get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix)
+    norm = integrate.simps(m_lens, m_obs)
+    ax[2].plot(m_obs, m_lens/norm, color=ccc)
+    ax[2].set_xlabel(r'$m_\text{I814W}^\text{len}$ [mag]', fontsize=20)
+    ax[2].set_ylabel(r'$dP/dm$', fontsize=20)
+    ax[2].set_xlim((15,25))
+    ax[2].set_ylim((0,0.5))
+
+    pval_zl_Mason = kstest(F_zl_hist, P_zl)[1]
+    pval_Ra_Mason = kstest(F_Ra_hist, T_hist_Mason)[1]
+    pval_mI_Mason = kstest(F_mI_hist, m_lens/norm)[1]
+
+    title = 'COSMOS HST i band FAURE Geng'
+    matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+    _ , __  , ___, P_zs_LL  , P_zl_LL  , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH=1)
+    _ , __  , ___, P_zs_noLL  , P_zl_noLL  , P_sg_noLL   = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
+    if LENS_LIGHT: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
+    else: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
+    ax[0].plot(zl_array, P_zl, c=cc2, ls='-', label=title)
+    ax[0].plot(zs_array, P_zs, c=cc2, ls='--')
+    ax[0].set_xlim((0,5.2))
+    ax[0].set_xlabel(r'$z$', fontsize=20) 
+    ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
+    ax[1].hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins = np.arange(0, 4, 0.2), 
+                range=(0, 3), density=True, histtype='step', color=cc2, ls = '-', label=title)
+    ax[1].set_xlabel(r'$\Theta_E$ ["]', fontsize=20)
+    ax[1].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
+    ax[1].set_xlim((0,4))
+    m_lens = ls.get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix)
+    norm = integrate.simps(m_lens, m_obs)
+    ax[2].plot(m_obs, m_lens/norm, color=cc2)
+    ax[2].set_xlabel(r'$m_\text{I814W}^\text{len}$ [mag]', fontsize=20)
+    ax[2].set_ylabel(r'$dP/dm$', fontsize=20)
+    ax[2].set_xlim((15,25))
+    ax[2].set_ylim((0,0.5))
+    
     ax[0].legend(fontsize=10)
     plt.show()
 
 
-def compare_Sl2S(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 1):
+def compare_SL2S(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 1):
     SL2S_data       = pd.read_csv('../galess/data/SL2S_Sonnenfeld/redshifts_sigma.csv')
     SL2S_data_names = SL2S_data['Name'].to_numpy()
     SL2S_data_zl    = SL2S_data['z_l'].to_numpy()
@@ -646,55 +908,67 @@ def compare_Sl2S(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNO
     ### PLOT DATA #################################################################################
     line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
     ccc = 'w' if PLOT_FOR_KEYNOTE else 'k'
+    cc2 = 'r'
     if PLOT_FOR_KEYNOTE: 
         ER_col1, ER_col2, _ALPHA_  = 'darkorange', 'lime', 1
     else: 
         ER_col1, ER_col2, _ALPHA_  = 'forestgreen', 'firebrick', 1
 
+    _nbins_zl = np.arange(0.0, 1.2, 0.3 )
+    _nbins_zs = np.arange(0.5, 4  , 0.5 )
+    _nbins_sg = np.arange(100, 400, 25  )
+    _nbins_Re = np.arange(0  , 4  , 0.25)
+    
+
     title = 'CFHTLS i band'
     matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
     _ , __  , ___, P_zs_LL   , P_zl_LL   , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=1)
     _ , __  , ___, P_zs_noLL , P_zl_noLL , P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
-
-    if LENS_LIGHT:
-        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
-    else:
-        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
-    
+    if LENS_LIGHT: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
+    else: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
     fig, ax = plt.subplots(1, 3, figsize=(17, 5), sharex=False, sharey=False)
     plt.subplots_adjust(wspace=.23, hspace=.2)
+
+    line_thick = 3
+    ### BEST SAMPLE ###
+    ax[0].hist( SL2S_data_zl    , bins=_nbins_zl, density=True , histtype='step' , lw=line_thick, color=ER_col1, alpha = _ALPHA_, label='Sonnenfeld et al. 2013 - Full Sample (53)')
+    ax[0].hist( SL2S_data_zs    , bins=_nbins_zs, density=True , histtype='step' , lw=line_thick, color=ER_col1, alpha = _ALPHA_, ls='--')
+    ax[1].hist( SL2S_data_sigma , bins=_nbins_sg, density=True , histtype='step' , lw=line_thick, color=ER_col1, alpha = _ALPHA_)
+    ax[2].hist( SL2S_data_Rein  , bins=_nbins_Re, density=True , histtype='step' , lw=line_thick, color=ER_col1, alpha = _ALPHA_)
+
     ax[0].plot(zl_array, P_zl, c=ccc, ls='-', label=title)
     ax[0].plot(zs_array, P_zs, c=ccc, ls='--')
     ax[0].set_xlim((0,5.2))
     ax[0].set_xlabel(r'$z$', fontsize=20) 
     ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
-
     ax[1].plot(sigma_array, P_sg_noLL, c=ccc, ls = '-', label=title)
     ax[1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
     ax[1].set_ylabel(r'$dP/d\sigma$', fontsize=20)
-
     ax[2].hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins = np.arange(0, 4, 0.2), 
                 range=(0, 3), density=True, histtype='step', color=ccc, ls = '-', label=title)
     ax[2].set_xlabel(r'$\Theta_E$ ["]', fontsize=20)
     ax[2].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
     ax[2].set_xlim((0,4))
 
-    _nbins_zl = np.arange(0.0, 1.2, 0.3 )
-    _nbins_zs = np.arange(0.5, 4  , 0.5 )
-    _nbins_sg = np.arange(100, 400, 25  )
-    _nbins_Re = np.arange(0  , 4  , 0.25)
-
-    ### BEST SAMPLE ###
-    ax[0].hist( SL2S_data_zl    , bins=_nbins_zl, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_, label='Sonnenfeld et al. 2013 - Full Sample (53)')
-    ax[0].hist( SL2S_data_zs    , bins=_nbins_zs, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_, ls='--')
-    ax[1].hist( SL2S_data_sigma , bins=_nbins_sg, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_)
-    ax[2].hist( SL2S_data_Rein  , bins=_nbins_Re, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_)
-
-    # ax[0].hist( SL2S_data_zl    , bins=5, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_, label='Sonnenfeld 2013')
-    # ax[0].hist( SL2S_data_zs    , bins=5, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_, ls='--')
-    # ax[1].hist( SL2S_data_sigma , bins=5, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_)
-    # ax[2].hist( SL2S_data_Rein  , bins=5, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_)
-
+    title = 'CFHTLS i band Geng'
+    matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+    _ , __  , ___, P_zs_LL   , P_zl_LL   , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=1)
+    _ , __  , ___, P_zs_noLL , P_zl_noLL , P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
+    if LENS_LIGHT: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
+    else: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
+    ax[0].plot(zl_array, P_zl, c=cc2, ls='-', label=title)
+    ax[0].plot(zs_array, P_zs, c=cc2, ls='--')
+    ax[0].set_xlim((0,5.2))
+    ax[0].set_xlabel(r'$z$', fontsize=20) 
+    ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
+    ax[1].plot(sigma_array, P_sg_noLL, c=cc2, ls = '-', label=title)
+    ax[1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+    ax[1].set_ylabel(r'$dP/d\sigma$', fontsize=20)
+    ax[2].hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins = np.arange(0, 4, 0.2), 
+                range=(0, 3), density=True, histtype='step', color=cc2, ls = '-', label=title)
+    ax[2].set_xlabel(r'$\Theta_E$ ["]', fontsize=20)
+    ax[2].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
+    ax[2].set_xlim((0,4))
     ax[0].legend(fontsize=10)
     plt.show()
 
@@ -717,30 +991,31 @@ def compare_JACOBS_CNN_DES(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT
     ### PLOT DATA #################################################################################
     line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
     ccc = 'w' if PLOT_FOR_KEYNOTE else 'k'
+    cc2 = 'r'
     if PLOT_FOR_KEYNOTE: 
         ER_col1, ER_col2, _ALPHA_  = 'darkorange', 'lime', 1
     else: 
         ER_col1, ER_col2, _ALPHA_  = 'forestgreen', 'firebrick', 1
-
     title = 'DES i band'
     matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
     _ , __  , ___, P_zs_LL   , P_zl_LL   , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=1)
     _ , __  , ___, P_zs_noLL , P_zl_noLL , P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
-
-    if LENS_LIGHT:
-        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
-    else:
-        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
+    if LENS_LIGHT: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
+    else: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
     m_obs = np.linspace(15, 30, 31)
-    
     fig, ax = plt.subplots(1, 2, figsize=(11, 5), sharex=False, sharey=False)
     plt.subplots_adjust(wspace=.23, hspace=.2)
+    line_thick = 3
+    _nbins_zl = np.arange(0.0, 2.2, 0.1 )
+    ### BEST SAMPLE ###
+    ax[0].hist( JAC_DES_data_zl    , bins=_nbins_zl, density=True , histtype='step' , lw = line_thick, color=ER_col1, alpha = _ALPHA_, label='Jacobs et al. 2019 (511)')
+    ax[1].hist( JAC_DES_data_imag, bins=m_obs  , density=True, histtype='step', lw = line_thick, color=ER_col1, alpha = _ALPHA_)
+    
     ax[0].plot(zl_array, P_zl, c=ccc, ls='-', label=title)
-    ax[0].plot(zs_array, P_zs, c=ccc, ls='--', label=title)
+    ax[0].plot(zs_array, P_zs, c=ccc, ls='--')
     ax[0].set_xlim((0,3.2))
     ax[0].set_xlabel(r'$z$', fontsize=20) 
     ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
-
     m_lens = ls.get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix, obs_band = 'sdss_i0')
     norm = integrate.simps(m_lens, m_obs)
     ax[1].plot(m_obs, m_lens/norm, color=ccc)
@@ -749,10 +1024,24 @@ def compare_JACOBS_CNN_DES(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT
     ax[1].set_xlim((15,25))
     ax[1].set_ylim((0,0.5))
 
-    _nbins_zl = np.arange(0.0, 2.2, 0.1 )
-    ### BEST SAMPLE ###
-    ax[0].hist( JAC_DES_data_zl    , bins=_nbins_zl, density=True , histtype='step' , color=ER_col1, alpha = _ALPHA_, label='Jacobs et al. 2019 (511)')
-    ax[1].hist( JAC_DES_data_imag, bins=m_obs  , density=True, histtype='step', color=ER_col1, alpha = _ALPHA_)
+    title = 'DES i band Geng'
+    matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+    _ , __  , ___, P_zs_LL   , P_zl_LL   , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=1)
+    _ , __  , ___, P_zs_noLL , P_zl_noLL , P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
+    if LENS_LIGHT: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
+    else: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL    
+    ax[0].plot(zl_array, P_zl, c=cc2, ls='-', label=title)
+    ax[0].plot(zs_array, P_zs, c=cc2, ls='--')
+    ax[0].set_xlim((0,3.2))
+    ax[0].set_xlabel(r'$z$', fontsize=20) 
+    ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
+    m_lens = ls.get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix, obs_band = 'sdss_i0')
+    norm = integrate.simps(m_lens, m_obs)
+    ax[1].plot(m_obs, m_lens/norm, color=cc2)
+    ax[1].set_xlabel(r'$m_\text{I814W}^\text{len}$ [mag]', fontsize=20)
+    ax[1].set_ylabel(r'$dP/dm$', fontsize=20)
+    ax[1].set_xlim((15,25))
+    ax[1].set_ylim((0,0.5))
     ax[0].legend(fontsize=10)
     plt.show()
 
