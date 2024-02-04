@@ -1,6 +1,0 @@
-{
-    "python.analysis.extraPaths": [
-        "./galess"
-    ],
-    "python.analysis.typeCheckingMode": "off"
-}
