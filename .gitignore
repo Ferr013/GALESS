@@ -1,4 +1,5 @@
 .vscode
+galess/HOD*
 galess/__pycache__
 galess/data/omega
 galess/data/HMF_tables
