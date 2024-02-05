@@ -1,67 +1,153 @@
+# pylint: disable-msg=C0103,W0611,W0613
+"""Module providing a set of functions to evaluate the distributions of 
+lenses and lensed sources in a given survey."""
+
 import os.path
 import numpy as np
 from scipy import integrate as integral
-from scipy import signal
-from scipy import stats
+from scipy import signal, stats
+from scipy.special import gamma as gammafunc
 from scipy.special import ellipe as E_ell
 from tqdm.notebook import tqdm
-
 from astropy.cosmology import FlatLambdaCDM
-cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
-
 import galess.Utils.ls_utils as utils
 
-def schechter_LF(M_int,zs, phi_0=0, Mstar=0):  ### Param from Bouwens 2022
-    zt = 2.42
-    if(phi_0==0): phi_0 = 0.38*10**(-3.)*np.power(10,(-0.35*(zs-6)+(-0.027)*(zs-6)**2))
-    alpha = -1.95+(-0.11)*(zs-6)
-    if(Mstar==0):
-        if(zs<zt): Mstar = -20.87+(-1.1*(zs-zt))
-        if(zs>zt): Mstar = -21.04+(-0.05*(zs-6))
-    return phi_0*(np.log(10)/2.5)*np.power(10,0.4*(Mstar-M_int)*(alpha+1))*np.exp(-1*np.power(10,0.4*(Mstar-M_int)))
+cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
 
-def schechter_LF_Wyithe15(M_int, zs):  ### Param from Wyithe15
-    if(zs == 6)   : Mstar=-21
-    if(zs == 7)   : Mstar=-19.8
-    if(zs == 8.6) : Mstar=-18.0
-    if(zs == 10.6): Mstar=-17.4
+def schechter_LF(M_int,zs):
+    '''
+    Returns the Schechter UV galaxy Luminosity Function.
+    Parameters are taken from Bouwens et al. 2022 
+    link: (https://ui.adsabs.harvard.edu/abs/2022ApJ...940...55B/abstract)
+
+            Parameters:
+                    M_int: ndarray(dtype=float, ndim=1)
+                        Absolute magnitude (mag)
+                    zs: (float)
+                        Redshift of the galaxy population
+            Returns:
+                    LF: ndarray(dtype=float, ndim=1) 
+                        Schechter UV LF
+    '''
+    zt = 2.42
     phi_0 = 0.38*10**(-3.)*np.power(10,(-0.35*(zs-6)+(-0.027)*(zs-6)**2))
-    alpha = -1.95+(-0.11)*(zs-6)
-    return phi_0*(np.log(10)/2.5)*np.power(10,0.4*(Mstar-M_int)*(alpha+1))*np.exp(-1*np.power(10,0.4*(Mstar-M_int)))
+    alpha = -1.95 + (-0.11) * (zs - 6)
+    if zs < zt:
+        Mstar = -20.87+(-1.1*(zs-zt))
+    else:
+        Mstar = -21.04+(-0.05*(zs-6))
+    nrmlzt = phi_0 * (np.log(10) / 2.5)
+    pwrlaw = np.power(10, 0.4 * (Mstar - M_int) * (alpha + 1))
+    expctf = np.exp(-1 * np.power(10, 0.4 * (Mstar - M_int)))
+    return nrmlzt * pwrlaw * expctf
 
 def Theta_E(sigma, zl, zs):
+    '''
+    Returns the Einstein radius of a Singular Isothermal lens.
+
+            Parameters:
+                    sigma: (float)
+                        Velocity dispersion (km/s)
+                    zl: (float)
+                        Redshift of the lens
+                    zs: (float)
+                        Redshift of the source
+            Returns:
+                    Theta_E: (float)
+                        Einstein radius (arcsec)
+    '''
     v_ref = 161 #km/s per SIE = 0.9 arcsec
     Ds = cosmo.angular_diameter_distance(zs).value
     Dds = cosmo.angular_diameter_distance_z1z2(zl,zs).value
-    return 0.9*Dds/Ds*np.power(sigma/v_ref,2) #arcsec
+    return 0.9 * Dds/Ds * np.power (sigma/v_ref,2) #arcsec
 
 def sigma_from_R_Ein(zs, zl, R_E):
+    '''
+    Returns the velocity dispersion given the Einstein radius and
+    lens and source redshifts.
+    The model assumes a Singular Isothermal lens.
+
+            Parameters:
+                    zl: (float)
+                        Redshift of the lens
+                    zs: (float)
+                        Redshift of the source
+                    Theta_E: (float)
+                        Einstein radius (arcsec)
+            Returns:
+                    sigma: (float)
+                        Velocity dispersion (km/s)
+    '''
     v_ref = 161 #km/s per SIE = 0.9 arcsec
     Ds = cosmo.angular_diameter_distance(zs).value
     Dds = cosmo.angular_diameter_distance_z1z2(zl,zs).value
     return v_ref*np.power(R_E / 0.9 * Ds / Dds, 0.5)
 
-def Phi_vel_disp_SDSS(sigma, zl): #from Choi et al. 2007
-    from scipy.special import gamma as gammafunc
+def Phi_vel_disp_SDSS(sigma, zl = 0):
+    '''
+    Returns the velocity dispersion function (VDF) evolution with z.
+    Parameters are taken from Choi et al. 2007 
+    link: (https://ui.adsabs.harvard.edu/abs/2007ApJ...658..884C/abstract)
+
+            Parameters:
+                    sigma: (float)
+                        Velocity dispersion (km/s)
+                    zl: (float)
+                        Redshift of the lens
+            Returns:
+                    VDF: (float)
+                        Velocity Dispersion Function
+    '''
     Phi_star = 8e-3 #Mpc^-3 * h^3
     Phi_star = 8e-3*(cosmo.H0.value/100)**3 #Mpc^-3
     alpha = 2.32
     beta = 2.67
     sigma_star = 161 #km/s
-    return Phi_star*np.power(sigma/sigma_star, alpha)*(np.exp(-np.power(sigma/sigma_star,beta))/gammafunc(alpha/beta))*(beta/sigma)
+    pwrlaw = np.power(sigma/sigma_star, alpha)
+    expctf = np.exp(-np.power(sigma/sigma_star,beta))
+    return Phi_star*pwrlaw(expctf/gammafunc(alpha/beta))*(beta/sigma)
 
-def Phi_vel_disp_Mason(sigma, zl): #from Mason 2015
-    p = 0.24 #from Mason 2015
+def Phi_vel_disp_Mason(sigma, zl):
+    '''
+    Returns the velocity dispersion function (VDF) evolution with z.
+    Parameters are taken from Mason et al. 2015 
+    link: (https://ui.adsabs.harvard.edu/abs/2015ApJ...805...79M/abstract)
+
+            Parameters:
+                    sigma: (float)
+                        Velocity dispersion (km/s)
+                    zl: (float)
+                        Redshift of the lens
+            Returns:
+                    VDF: (float)
+                        Velocity Dispersion Function
+    '''
+    p = 0.24
     beta = 0.2
     alpha_s = -0.54
     Phi_star = 3.75*1e-3 #Mpc^-3
     sigma_star = 216 #km/s
     Phi_star_z = Phi_star*np.power(1+zl,-2.46)
     sigma_z = sigma*np.power(1+zl,beta)
-    return np.log(10)*1/p*(Phi_star_z/sigma_z)*np.power(sigma/sigma_star, (1+alpha_s)/p)*np.exp(-np.power(sigma/sigma_star,1/p))
+    pwrlaw = np.power(sigma/sigma_star, (1+alpha_s)/p)
+    expctf = np.exp(-np.power(sigma/sigma_star,1/p))
+    return np.log(10) / p * (Phi_star_z/sigma_z) * pwrlaw * expctf
 
-def Phi_vel_disp_Geng(sigma, zl): #from Geng et al. 2021
-    from scipy.special import gamma as gammafunc
+def Phi_vel_disp_Geng(sigma, zl):
+    '''
+    Returns the velocity dispersion function (VDF) evolution with z.
+    Parameters are taken from Geng et al. 2021
+    link: (https://ui.adsabs.harvard.edu/abs/2021MNRAS.503.1319G/abstract)
+
+            Parameters:
+                    sigma: (float)
+                        Velocity dispersion (km/s)
+                    zl: (float)
+                        Redshift of the lens
+            Returns:
+                    VDF: (float)
+                        Velocity Dispersion Function
+    '''
     Phi_star = 8e-3 #Mpc^-3 * h^3
     Phi_star = 8e-3*(cosmo.H0.value/100)**3 #Mpc^-3
     alpha = 2.32
@@ -69,27 +155,76 @@ def Phi_vel_disp_Geng(sigma, zl): #from Geng et al. 2021
     sigma_star = 161 #km/s
     nu_n = -1.2
     nu_v = 0.2
-    P = -0.88
-    Q = 0.09
+    # P = -0.88
+    # Q = 0.09
     #Phi_star_z = Phi_star*np.power(10,P*zl)
     #sigma_star_z = sigma_star*np.power(10,Q*zl)
     Phi_star_z = Phi_star*np.power(1+zl,nu_n)
     sigma_star_z = sigma_star*np.power(1+zl,nu_v)
-    return Phi_star_z*np.power(sigma/sigma_star_z, alpha)*(np.exp(-np.power(sigma/sigma_star_z,beta))/gammafunc(alpha/beta))*(beta/sigma)
+    pwrlaw = np.power(sigma/sigma_star_z, alpha)
+    expctf = np.exp(-np.power(sigma/sigma_star_z,beta))
+    return Phi_star_z*pwrlaw*(expctf/gammafunc(alpha/beta))*(beta/sigma)
 
 def dTau_dz_dsigma(sigma, zl, zs, Phi_vel_disp = Phi_vel_disp_Mason):
+    '''
+    Returns the differential multiple image optical depth (tau)
+    over lens redshift and velcity dispersion
+
+            Parameters:
+                    sigma: (float)
+                        Velocity dispersion (km/s)
+                    zl: (float)
+                        Redshift of the lens
+                    zs: (float)
+                        Redshift of the source
+                    Phi_vel_disp: (function)
+                        Velocity Dispersion Function
+            Returns:
+                    dTau_dz_dsigma: (float)
+                        Differential multiple image optical depth
+                        over dz and dsigma
+    '''
     rad_to_arcsec = 1/206265
     c_sp = 299792.458 #km/s
     Hz = cosmo.H(zl).value #km s^-1 Mpc^-1
     Dd = cosmo.angular_diameter_distance(zl).value
     eps = 1e-8
-    return Phi_vel_disp(sigma, zl)*np.power(1+zl,2)*(c_sp/Hz)*np.pi*np.power(Dd+eps,2)*np.power(Theta_E(sigma, zl+eps, zs+eps+eps),2)*(rad_to_arcsec**2)
+    area = np.pi*np.power(Dd+eps,2)*np.power(Theta_E(sigma, zl+eps, zs+eps+eps),2)
+    return Phi_vel_disp(sigma, zl)*np.power(1+zl,2)*(c_sp/Hz)*area*(rad_to_arcsec**2)
 
 def dTau_dz(zl, zs, Phi_vel_disp = Phi_vel_disp_Mason):
+    '''
+    Returns the differential multiple image optical depth (tau)
+    integrated over the lens velocity dispersion
+
+            Parameters:
+                    zl: (float)
+                        Redshift of the lens
+                    zs: (float)
+                        Redshift of the source
+                    Phi_vel_disp: (function)
+                        Velocity Dispersion Function
+            Returns:
+                    dTau_dz: (float)
+                        Differential multiple image optical depth 
+                        over dz
+    '''
     #1-500km/s to integrate over
     return integral.quad(dTau_dz_dsigma, 1, 500, args=(zl, zs, Phi_vel_disp))[0]
     
 def Tau(zs, Phi_vel_disp = Phi_vel_disp_Mason):
+    '''
+    Returns the multiple image optical depth (tau).
+
+            Parameters:
+                    zs: (float)
+                        Redshift of the source
+                    Phi_vel_disp: (function)
+                        Velocity Dispersion Function
+            Returns:
+                    Tau: (float)
+                        Multiple image optical depth
+    '''
     #0-zs redshift to integrate over
     return integral.quad(dTau_dz, 0, zs, args=(zs, Phi_vel_disp))[0]
 

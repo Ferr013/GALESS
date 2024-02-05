@@ -11,4 +11,4 @@ galess/environment.*
 examples/Requests
 profile.html
 profile.json
-tests
+test*
