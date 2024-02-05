@@ -3,6 +3,9 @@ galess/HOD*
 galess/__pycache__
 galess/data/omega
 galess/data/HMF_tables
+galess/.DS_Store
+galess/PROFILING
+galess/environment.*
 examples/Requests
 profile.html
 profile.json

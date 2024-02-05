@@ -19,11 +19,14 @@ def get_requirements():
     return requirements
 
 setup(
-    name='mymodule', # the name of the module
-    packages=['mymodule'], # the location of the module
-    version=0.1,
+    name='galess',
+    version=1.0,
+    description="Model for strong lens populations distribution estimates in surveys",
+    author="Giovanni Ferrami",
+    author_email="gferrami@student.unimelb.edu.au",
+    url="https://github.com/Ferr013/GALESS",
+    packages = ['galess'],
     install_requires=get_requirements(),
     python_requires='>=3.8',
-    scripts=['scripts/runme'],
-    entry_points={'console_scripts':['sky_sim= mymodule.sky_sim:main']}
+    license="BSD-3"
 )

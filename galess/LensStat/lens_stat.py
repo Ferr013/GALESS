@@ -9,7 +9,7 @@ from tqdm.notebook import tqdm
 from astropy.cosmology import FlatLambdaCDM
 cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
 
-import ls_utils as utils
+import galess.Utils.ls_utils as utils
 
 def schechter_LF(M_int,zs, phi_0=0, Mstar=0):  ### Param from Bouwens 2022
     zt = 2.42
