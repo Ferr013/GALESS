@@ -1,4 +1,5 @@
 .vscode
+*.pyc
 galess/HOD*
 galess/__pycache__
 galess/data/omega

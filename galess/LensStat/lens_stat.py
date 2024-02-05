@@ -162,7 +162,7 @@ def SIE_avg_corr():
     return integral.trapz(SIE_corr(f)*fraction_ell(f), f)
 
 def load_weights_dP_dmu_SIE(BASEPATH=''):
-    BASEPATH = os.path.split(os.path.dirname(os.path.abspath('')))[0]+'/GALESS/galess/' if BASEPATH == '' else ''
+    BASEPATH = os.path.dirname(os.path.abspath(''))+'/GALESS/galess/' if BASEPATH == '' else ''
     if os.path.isfile(BASEPATH+'data/SIE_dPdmu/weights_dP_dmu_SIE.txt'):
         weights = np.loadtxt(BASEPATH+'data/SIE_dPdmu/weights_dP_dmu_SIE.txt')
         __dP_dmu_SIE1, __w1 = np.loadtxt(BASEPATH+'data/SIE_dPdmu/dP_dmu_SIE_1.txt'), weights[0]

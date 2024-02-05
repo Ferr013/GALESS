@@ -7,7 +7,7 @@ def remove_spaces_from_string(string):
 
 def read_survey_params(title, VERBOSE = 0):
     TITLE = remove_spaces_from_string(title)
-    FPATH = os.path.split(os.path.dirname(os.path.abspath('')))[0]+'/GALESS/galess/data/surveys_params/'+TITLE+'.param'
+    FPATH = os.path.dirname(os.path.abspath(''))+'/GALESS/galess/data/surveys_params/'+TITLE+'.param'
     params = {}
     with open(FPATH, "r") as file:
         for line in file:
@@ -23,7 +23,7 @@ def read_survey_params(title, VERBOSE = 0):
 
 def load_pickled_files(title, DOUBLE_LENS = 0):
     TITLE = remove_spaces_from_string(title)
-    FOLDERPATH = os.path.split(os.path.dirname(os.path.abspath('')))[0]+'/GALESS/galess/data/surveys_results/'+TITLE+'/'
+    FOLDERPATH = os.path.dirname(os.path.abspath(''))+'/GALESS/galess/data/surveys_results/'+TITLE+'/'
     if os.path.exists(FOLDERPATH):
         FPATH = FOLDERPATH+TITLE+'_matrix_LL.pkl'        
         if os.path.isfile(FPATH):
@@ -58,7 +58,7 @@ def save_pickled_files(
                     temp_noLL, Theta_E_noLL, prob_noLL, 
                     DOUBLE_LENS = 0):
     TITLE = remove_spaces_from_string(title)
-    FOLDERPATH = os.path.split(os.path.dirname(os.path.abspath('')))[0]+'/GALESS/galess/data/surveys_results/'+TITLE+'/'
+    FOLDERPATH = os.path.dirname(os.path.abspath(''))+'/GALESS/galess/data/surveys_results/'+TITLE+'/'
     if not os.path.exists(FOLDERPATH):
         os.makedirs(FOLDERPATH)
     FPATH = FOLDERPATH+TITLE+'_matrix_LL.pkl'

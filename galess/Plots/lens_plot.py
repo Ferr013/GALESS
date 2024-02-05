@@ -13,8 +13,8 @@ from matplotlib.patches import Rectangle
 from astropy.cosmology import FlatLambdaCDM
 cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
 
-import lens_stat as ls
-import ls_utils as utils
+import galess.LensStat.lens_stat as ls
+import galess.Utils.ls_utils as utils
 
 
 
