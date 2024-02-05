@@ -1,5 +1,6 @@
 .vscode
 *.pyc
+*.egg-info/
 galess/HOD*
 galess/__pycache__
 galess/data/omega
