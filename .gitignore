@@ -9,6 +9,7 @@ galess/.DS_Store
 galess/PROFILING
 galess/environment.*
 examples/Requests
+examples/img
 profile.html
 profile.json
 test*
