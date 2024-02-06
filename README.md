@@ -13,6 +13,6 @@ You can find a simple example notebook at [https://github.com/Ferr013/GALESS/...
 
 Attribution
 -----------
-Please cite [Ferrami & Wyithe 2024](https://arxiv.org/>) when you use Galess in a publication and link to [https://github.com/Ferr013/GALESS](https://github.com/Ferr013/GALESS).
+Please cite [Ferrami & Wyithe 2024](https://arxiv.org/>) when you use ``Galess`` in a publication and link to [https://github.com/Ferr013/GALESS](https://github.com/Ferr013/GALESS).
 
 Don't hesitate to reach out if you have questions!
