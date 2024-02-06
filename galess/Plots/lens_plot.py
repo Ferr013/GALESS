@@ -81,7 +81,7 @@ def plot_Lens_Fraction(m_lim = 28.5, mu_arc_SIE = 3,
     for zs in zs_array_plot:
         _col = next(color)
         M_lim = m_lim - 5 * np.log10(cosmo.luminosity_distance(zs).value * 1e5)
-        frl   = ls.Fraction_lensed_SIE(1, M_array, schechter_plot, zs)
+        frl   = ls.Fraction_lensed_SIE(1, M_array, schechter_plot, ls.Phi_vel_disp_Mason, zs)
         ax[0, 0].plot(M_array, frl,        c=_col,  label = r'$z=$'+str(zs))
         C = 0.8979070411803386 #Correction for elliptical caustic area averaged over axis ratio distribution
         #ax[0, 0].axhline(Tau(zs)*C, c=_col, ls='--')

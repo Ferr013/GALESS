@@ -228,7 +228,7 @@ def Tau(zs, Phi_vel_disp = Phi_vel_disp_Mason):
     #0-zs redshift to integrate over
     return integral.quad(dTau_dz, 0, zs, args=(zs, Phi_vel_disp))[0]
 
-def integrand_Lens_cone_volume_diff(z):    
+def integrand_Lens_cone_volume_diff(z):
     '''
     Returns the differential shell of comoving volume around redshift z.
     This approximation assumes a flat universe.
@@ -300,51 +300,216 @@ def Exp_cutoff(x, x_cut):
     r[mask] = np.exp(-((x[mask] - x_cut) * 10) ** 2)
     return r
 
-def fraction_ell(f): #dP/dq from van der Wel+14 (Fig. 1, 1.5<z<2, log M = 10-10.5)
-    test = N_distribution(f,0.375,0.11)+2*N_distribution(f,0.7,0.2)*Exp_cutoff(f,0.82)+0.1*N_distribution(f,0.5,0.1)
-    normtest = np.sum(test*(np.ones(len(test))*(f[1]-f[0])))
-    return test/normtest
+def fraction_ell(f):
+    '''
+    Returns the isophotes axis ratio (f) distribution of the galaxies in SDSS.
+    dP/dq from van der Wel et al. 14 (Fig. 1, 1.5<z<2, log M = 10-10.5).
+    link: https://ui.adsabs.harvard.edu/abs/2014ApJ...792L...6V/abstract
+
+            Parameters:
+                    f: ndarray(dtype=float, ndim=1)
+                        Axis ratio array
+            Returns:
+                    dP/df: ndarray(dtype=float, ndim=1)
+                        Distribution of axis ratio
+    '''
+    T1 = N_distribution(f,0.375,0.11)
+    T2 = 2 * N_distribution(f,0.7,0.2) * Exp_cutoff(f,0.82)
+    T3 = 0.1 * N_distribution(f,0.5,0.1)
+    t = T1+T2+T3
+    normt = np.sum(t*(np.ones(len(t))*(f[1]-f[0])))
+    return t/normt
 
 def dPdMu_Point_SIS(mu):
-    if hasattr(mu, '__len__'): return np.append(np.zeros(len(mu[mu<2])), 2/np.power(mu[mu>=2]-1,3))
-    else: return 2/np.power(mu-1,3) if mu>=2 else 0
+    '''
+    Returns the magnification probabability distribution of a Singular isothermal 
+    lens and a point source.
+
+            Parameters:
+                    mu: ndarray(dtype=float, ndim=1)
+                        Magnification array
+            Returns:
+                    dP/dmu: ndarray(dtype=float, ndim=1)
+                        Distribution of magnification
+    '''
+    if hasattr(mu, '__len__'):
+        return np.append(np.zeros(len(mu[mu<2])), 2/np.power(mu[mu>=2]-1,3))
+    return 2/np.power(mu-1,3) if mu>=2 else 0
 
 def Lensed_Point_LF(M_int, mu_min, dPdMu, LF_func, zs):
+    '''
+    Returns the magnification probabability distribution of a Singular Isothermal 
+    Sphere (SIS) lens and a point source.
+
+            Parameters:
+                    mu: ndarray(dtype=float, ndim=1)
+                        Magnification array
+            Returns:
+                    dP/dmu: ndarray(dtype=float, ndim=1)
+                        Magnification probabability distribution
+    '''
     mu, _dPdMu_ = np.logspace(-2, 3., 300), dPdMu(np.logspace(-2, 3., 300))
-    mu_index  = np.argmin((mu-mu_min)**2)
-    return np.trapz(_dPdMu_[mu_index:] * LF_func(M_int + 5 / 2 * np.log10(mu[mu_index:]), zs), mu[mu_index:])
+    mu_index = np.argmin((mu-mu_min)**2)
+    displ_LF = LF_func(M_int + 5 / 2 * np.log10(mu[mu_index:]), zs)
+    return np.trapz(_dPdMu_[mu_index:] * displ_LF, mu[mu_index:])
 
-def Lensing_Bias(M_int, dPdMu, LF_func, zs):
-    if hasattr(M_int, '__len__'): res = [Lensed_Point_LF(M, 0, dPdMu, LF_func, zs)/LF_func(M, zs) for M in M_int]
-    else: res = Lensed_Point_LF(M_int, 0, dPdMu, LF_func, zs) / LF_func(M_int, zs)
+def Magnification_Bias(M_int, dPdMu, LF_func, zs):
+    '''
+    Returns the magnification bias for a given combination of Luminosity Function
+    and Magnification probability distribution.
+
+            Parameters:
+                    M_int: ndarray(dtype=float, ndim=1)
+                        Absolute magnitude array
+                    dPdMu: (function)
+                        Magnification distribution function
+                    LF_func: (function)
+                        Luminosity Function function
+                    zs: (float)
+                        Redshift of the source population
+            Returns:
+                    Bias: ndarray(dtype=float, ndim=1)
+                        Magnification Bias
+    '''
+    if hasattr(M_int, '__len__'):
+        res = [Lensed_Point_LF(M, 0, dPdMu, LF_func, zs)/LF_func(M, zs) for M in M_int]
+    else:
+        res = Lensed_Point_LF(M_int, 0, dPdMu, LF_func, zs) / LF_func(M_int, zs)
     return np.array(res)
 
-def Fraction_lensed(M_int, dPdMu, LF_func, zs, Phi_vel_disp = Phi_vel_disp_Mason):
+def Fraction_lensed(M_int, dPdMu, LF_func, Phi_vel_disp, zs):
+    '''
+    Returns the fraction of lensed galaxies comparing the LF to the magnification bias
+    and the multiple image optical depth (Tau).
+
+            Parameters:
+                    M_int: ndarray(dtype=float, ndim=1)
+                        Absolute magnitude array
+                    dPdMu: (function)
+                        Magnification distribution function
+                    LF_func: (function)
+                        Luminosity Function function
+                    Phi_vel_disp: (function)
+                        Velocity Dispersion Function function
+                    zs: (float)
+                        Redshift of the source population
+            Returns:
+                    F: ndarray(dtype=float, ndim=1)
+                        Fraction lensed galaxies
+    '''
     tau = Tau(zs, Phi_vel_disp)
-    if hasattr(M_int, '__len__'): res = [tau * Lensing_Bias(M, dPdMu, LF_func, zs)/(tau * Lensing_Bias(M, dPdMu, LF_func, zs)+(1-tau)) for M in M_int]
-    else: res = tau * Lensing_Bias(M_int, dPdMu, LF_func, zs) / (tau * Lensing_Bias(M_int, dPdMu, LF_func, zs) + (1 - tau))
+    if hasattr(M_int, '__len__'):
+        res = [tau * Magnification_Bias(M, dPdMu, LF_func, zs)/\
+            (tau * Magnification_Bias(M, dPdMu, LF_func, zs)+(1-tau)) for M in M_int]
+    else:
+        res = tau * Magnification_Bias(M_int, dPdMu, LF_func, zs)/\
+            (tau * Magnification_Bias(M_int, dPdMu, LF_func, zs) + (1 - tau))
     return np.array(res)
 
-def mu_lim_second_image(M, M_lim): #if mu_1 is greater than this the second image in a SIS is above M_lim
-    if (M >= M_lim): return 1e3
-    else: return -2 / (np.power(10, -0.4 * (M_lim - M)) - 1)
+def mu_lim_second_image(M, M_lim):
+    '''
+    Returns the minimum magnification of the brightest image in a SIS lens
+    that allows a secondary image of a source of magnitude M to be brigther than
+    a limit magnitude M_lim.
+
+            Parameters:
+                    M: (float)
+                        Absolute magnitude of the unlensed source
+                    M_lim: (float)
+                        Limiting magnitude of the survey
+            Returns:
+                    mu_min: (float)
+                        Minumum magnification
+    '''
+    if M >= M_lim:
+        return 1e3
+    return -2 / (np.power(10, -0.4 * (M_lim - M)) - 1)
 
 def Fraction_1st_image_arc(mu_arc, M_int, LF_func, zs, dPdMu = dPdMu_Point_SIS):
-    if hasattr(M_int, '__len__'): res = [Lensed_Point_LF(M, mu_arc, dPdMu, LF_func, zs) / Lensed_Point_LF(M, 0, dPdMu, LF_func, zs) for M in M_int]
-    else: res = Lensed_Point_LF(M_int, mu_arc, dPdMu, LF_func, zs) / Lensed_Point_LF(M_int, 0, dPdMu, LF_func, zs)
+    '''
+    Returns the correction to the Fraction lensed galaxies to considering only 
+    galaxies with an arc stretched more than a given value of mu_arc.
+
+            Parameters:
+                    mu_arc: (float)
+                        Minimum magnification of brightest arc
+                    M_int: ndarray(dtype=float, ndim=1)
+                        Absolute magnitude array
+                    LF_func: (function)
+                        Luminosity Function function
+                    zs: (float)
+                        Redshift of the source population
+                    dPdMu: (function)
+                        Magnification distribution function
+            Returns:
+                    FArc: ndarray(dtype=float, ndim=1)
+                        Correction to F accounting for bright arcs
+    '''
+    if hasattr(M_int, '__len__'):
+        res = [Lensed_Point_LF(M, mu_arc, dPdMu, LF_func, zs)/\
+            Lensed_Point_LF(M, 0, dPdMu, LF_func, zs) for M in M_int]
+    else:
+        res = Lensed_Point_LF(M_int, mu_arc, dPdMu, LF_func, zs)/\
+            Lensed_Point_LF(M_int, 0, dPdMu, LF_func, zs)
     return np.nan_to_num(np.array(res))
 
 def Fraction_2nd_image_above_Mlim(M_int, M_lim, LF_func, zs, dPdMu = dPdMu_Point_SIS):
-    if hasattr(M_int, '__len__'): res = [Lensed_Point_LF(M, mu_lim_second_image(M, M_lim), dPdMu, LF_func, zs) / Lensed_Point_LF(M, 0, dPdMu, LF_func, zs) for M in M_int]
-    else: res = Lensed_Point_LF(M_int, mu_lim_second_image(M_int, M_lim), dPdMu, LF_func, zs) / Lensed_Point_LF(M_int, 0, dPdMu, LF_func, zs)
+    '''
+    Returns the correction to the Fraction lensed galaxies to considering only 
+    galaxies with a secondary image above th emagnitude limit M_lim.
+
+            Parameters:
+                    mu_arc: (float)
+                        Minimum magnification of brightest arc
+                    M_int: ndarray(dtype=float, ndim=1)
+                        Absolute magnitude array
+                    LF_func: (function)
+                        Luminosity Function function
+                    zs: (float)
+                        Redshift of the source population
+                    dPdMu: (function)
+                        Magnification distribution function
+            Returns:
+                    F2nd: ndarray(dtype=float, ndim=1)
+                        Correction to F accounting for visible 2nd images
+    '''
+    if hasattr(M_int, '__len__'):
+        res = [Lensed_Point_LF(M, mu_lim_second_image(M, M_lim), dPdMu, LF_func, zs)/\
+            Lensed_Point_LF(M, 0, dPdMu, LF_func, zs) for M in M_int]
+    else:
+        res = Lensed_Point_LF(M_int, mu_lim_second_image(M_int, M_lim), dPdMu, LF_func, zs)/\
+            Lensed_Point_LF(M_int, 0, dPdMu, LF_func, zs)
     return np.nan_to_num(np.array(res))
-    
-######### SIE LENS FUNCTIONS #######################################################################################################################
+
+######### SIE LENS FUNCTIONS ###################################################################
 def SIE_corr(f):
+    '''
+    Returns the correction to the area in the source plane producing multiple images,
+    accounting for the ellitpicity of the lens.
+
+            Parameters:
+                    f: (float)
+                        Axis ratio
+            Returns:
+                    C: (float)
+                        Correction to area of source plane inside outer caustic
+    '''
     return (np.pi*f**0.5)/(2*E_ell(1-f**2))
 
 def SIE_avg_corr():
-    f = np.linspace(0,1, 100)
+    '''
+    Returns the average correction to the area in the source plane producing multiple images,
+    accounting for the ellitpicity of the lens and weighted over the ellipticity distribution 
+    from dP/dq from van der Wel et al. 14 (Fig. 1, 1.5<z<2, log M = 10-10.5).
+    link: https://ui.adsabs.harvard.edu/abs/2014ApJ...792L...6V/abstract
+
+            Parameters:
+                    None
+            Returns:
+                    C: (float)
+                        Average correction to area of source plane inside outer caustic
+    '''
+    f = np.linspace(0, 1, 100)
     return integral.trapz(SIE_corr(f)*fraction_ell(f), f)
 
 def load_weights_dP_dmu_SIE(BASEPATH=''):
@@ -378,16 +543,16 @@ def Lensed_Point_LF_SIE(img_N, mu_min, M_int, LF_func, zs):
         return np.trapz(w * dP_dmu_SIE[mu_indexL:mu_indexU] * LF_func(M_int + 5 / 2 * np.log10(mu[mu_indexL:mu_indexU]), zs), mu[mu_indexL:mu_indexU])
     else: return 0
 
-def Lensing_Bias_SIE(img_N, M_int, LF_func, zs):
+def Magnification_Bias_SIE(img_N, M_int, LF_func, zs):
     if hasattr(M_int, '__len__'): res = [Lensed_Point_LF_SIE(img_N, 0, M, LF_func, zs) / LF_func(M, zs) for M in M_int]
     else: res = Lensed_Point_LF_SIE(img_N, 0, M_int, LF_func, zs) / LF_func(M_int, zs)
     return res
 
-def Fraction_lensed_SIE(img_N, M_int, LF_func, zs, Phi_vel_disp = Phi_vel_disp_Mason):
+def Fraction_lensed_SIE(img_N, M_int, LF_func, Phi_vel_disp, zs):
     C = 0.8979070411803386 #Correction for elliptical caustic area averaged over axis ratio distribution obtained from SIE_avg_corr
     tau = Tau(zs, Phi_vel_disp)*C
-    if hasattr(M_int, '__len__'): res = [tau*Lensing_Bias_SIE(img_N, M, LF_func, zs)/(tau*Lensing_Bias_SIE(img_N, M, LF_func, zs)+(1-tau)) for M in M_int]
-    else: res = tau * Lensing_Bias_SIE(img_N, M_int, LF_func, zs) / (tau * Lensing_Bias_SIE(img_N, M_int, LF_func, zs) + (1 - tau))
+    if hasattr(M_int, '__len__'): res = [tau*Magnification_Bias_SIE(img_N, M, LF_func, zs)/(tau*Magnification_Bias_SIE(img_N, M, LF_func, zs)+(1-tau)) for M in M_int]
+    else: res = tau * Magnification_Bias_SIE(img_N, M_int, LF_func, zs) / (tau * Magnification_Bias_SIE(img_N, M_int, LF_func, zs) + (1 - tau))
     return np.nan_to_num(np.array(res))
 
 def get_mu_rel_from_cumulative(P1, P2, mu_array, SMOOTH_FLAG=True):
@@ -892,7 +1057,7 @@ def get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix, obs_band = 'sd
             m_num[m_idx] = m_num[m_idx]+N_per_sg[imu]
     return m_num
 
-#### Prob double lenses #################################################################################################################################################################################################
+#### Prob double lenses ################################################################################################################################
 def calculate_num_double_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, app_magn_limit, survey_area_sq_degrees,
                                   seeing_arcsec, SNR, exp_time_sec, sky_bckgnd_m_per_arcsec_sq, zero_point_m,  
                                   photo_band, mag_cut = None, arc_mu_threshold = 3, seeing_trsh = 1.5, num_exposures = 1, 
@@ -997,4 +1162,3 @@ def get_N_and_P_projections_double_lens(N_gal_matrix, sigma_array, zl_array, zs_
         P_zl           = np.convolve(P_zl, np.ones(3)/3, mode='same')
         P_sg           = np.convolve(P_sg, np.ones(3)/3, mode='same')
     return Ngal_zl_sigma, Ngal_zl_sigma, Ngal_zl_zs1, Ngal_zl_zs2, Ngal_sigma_zs1, Ngal_sigma_zs2, Ngal_zs1_zs2, P_zs1, P_zs2, P_zl, P_sg
-    
