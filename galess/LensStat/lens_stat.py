@@ -1,4 +1,4 @@
-# pylint: disable-msg=C0103,W0611,W0613
+# pylint: disable-msg=C0103,W0611,E0611,W0613
 """Module providing a set of functions to evaluate the distributions of 
 lenses and lensed sources in a given survey."""
 
@@ -211,7 +211,7 @@ def dTau_dz(zl, zs, Phi_vel_disp = Phi_vel_disp_Mason):
     '''
     #1-500km/s to integrate over
     return integral.quad(dTau_dz_dsigma, 1, 500, args=(zl, zs, Phi_vel_disp))[0]
-    
+
 def Tau(zs, Phi_vel_disp = Phi_vel_disp_Mason):
     '''
     Returns the multiple image optical depth (tau).
@@ -228,23 +228,74 @@ def Tau(zs, Phi_vel_disp = Phi_vel_disp_Mason):
     #0-zs redshift to integrate over
     return integral.quad(dTau_dz, 0, zs, args=(zs, Phi_vel_disp))[0]
 
-def integrand_Lens_cone_volume_diff(z):                #works only in a flat universe
+def integrand_Lens_cone_volume_diff(z):    
+    '''
+    Returns the differential shell of comoving volume around redshift z.
+    This approximation assumes a flat universe.
+
+            Parameters:
+                    z: (float)
+                        Redshift
+            Returns:
+                    dVdz: (float)
+                        Comoving volume shell
+    '''
     c_sp = 299792.458                                  #km/s
     Hz = cosmo.H(z).value                              #km s^-1 Mpc^-1
     return np.power(cosmo.angular_diameter_distance(z).value*(1+z),2)*(c_sp/Hz)
 
-def Lens_cone_volume_diff(z, area_sq_degree, dz=0.5):  
-    area_sterad = area_sq_degree*1/(57.2958**2)        #sterad 
-    if(z-dz/2>0):
-        return dz/2*(integrand_Lens_cone_volume_diff(z-dz/2)+integrand_Lens_cone_volume_diff(z+dz/2))*area_sterad
-    else:
-        return dz/4*(integrand_Lens_cone_volume_diff(z)+integrand_Lens_cone_volume_diff(z+dz/2))*area_sterad
+def Lens_cone_volume_diff(z, area_sq_degree, dz=0.5):
+    '''
+    Returns the comoving volume of a cone underlying an area of A square degrees,
+    up to redshift z. This approximation assumes a flat universe.
+
+            Parameters:
+                    z: (float)
+                        Redshift
+            Returns:
+                    V: (float)
+                        Comoving volume cone
+    '''
+    area_sterad = area_sq_degree*1/(57.2958**2) #sterad
+    if z-dz/2 > 0:
+        vol_l = integrand_Lens_cone_volume_diff(z-dz/2)
+        vol_r = integrand_Lens_cone_volume_diff(z+dz/2)
+        return dz/2 * (vol_l + vol_r) * area_sterad
+    vol_l = integrand_Lens_cone_volume_diff(z)
+    vol_r = integrand_Lens_cone_volume_diff(z+dz/2)
+    return dz/4 * (vol_l + vol_r) * area_sterad
 
 def N_distribution(x, mean, sigma):
+    '''
+    Returns a normal distribution diven mean and sigma.
+
+            Parameters:
+                    x: ndarray(dtype=float, ndim=1)
+                        x-cooordinate
+                    mean: (float)
+                        Mean of the gaussian
+                    sigma: (float)
+                        Sigma of the gaussian
+            Returns:
+                    N: ndarray(dtype=float, ndim=1)
+                        Gaussian distribution
+    '''
     return 1 / np.sqrt(2 * np.pi * sigma ** 2) * np.exp(-np.power(x - mean, 2) / (2 * sigma ** 2))
 
 def Exp_cutoff(x, x_cut):
-    mask = (x > x_cut)
+    '''
+    Returns an exponential cutoff of an input array past a threshold value.
+
+            Parameters:
+                    x: ndarray(dtype=float, ndim=1)
+                        Input array
+                    x_cut: (float)
+                        Threshold
+            Returns:
+                    EC: ndarray(dtype=float, ndim=1)
+                        Exponential cutoff
+    '''
+    mask = x > x_cut
     r = np.ones(len(x))
     r[mask] = np.exp(-((x[mask] - x_cut) * 10) ** 2)
     return r
@@ -946,3 +997,4 @@ def get_N_and_P_projections_double_lens(N_gal_matrix, sigma_array, zl_array, zs_
         P_zl           = np.convolve(P_zl, np.ones(3)/3, mode='same')
         P_sg           = np.convolve(P_sg, np.ones(3)/3, mode='same')
     return Ngal_zl_sigma, Ngal_zl_sigma, Ngal_zl_zs1, Ngal_zl_zs2, Ngal_sigma_zs1, Ngal_sigma_zs2, Ngal_zs1_zs2, P_zs1, P_zs2, P_zl, P_sg
+    
