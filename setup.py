@@ -20,7 +20,7 @@ def get_requirements():
 
 setup(
     name='galess',
-    version=1.0,
+    version=0.1,
     description="Model for strong lens populations distribution estimates in surveys",
     author="Giovanni Ferrami",
     author_email="gferrami@student.unimelb.edu.au",
