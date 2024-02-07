@@ -687,14 +687,13 @@ def get_mu_rel_from_cumulative(P1, P2, mu_array, SMOOTH_FLAG=True):
 
 def mu_lim_Nth_image_SIE(img_N, M, M_lim, zs):
     '''
-    Returns the minimum magnification of the brightest image in a Singular Isothermal 
-    Ellipsoid (SIE) lens that allows the n-th image of a source of magnitude M to be 
-    brigther than a limit magnitude M_lim.
-
+    Returns the minimum magnification of the brightest image in a Singular Isothermal Ellipsoid
+    (SIE) lens that allows the n-th image of a source of magnitude M to be brigther than a limit
+    magnitude M_lim.
     If mu_1 is greater than this the second image in a SIS is above M_lim.
     log_10(mu_N/mu_1) = 0.4*(M_1-M_lim) solve the equation for mu_1.
-    The following function gets the lower bound of the integral on mu_1 by mapping 
-    the dP/dmuN disitribution to dP/dmu1.
+    The following function gets the lower bound of the integral on mu_1 by mapping the dP/dmuN
+    distribution to dP/dmu1.
 
             Parameters:
                     img_N: (float)
@@ -748,8 +747,8 @@ def mu_lim_Nth_image_SIE(img_N, M, M_lim, zs):
 
 def Fraction_1st_image_arc_SIE(mu_arc, M_int, LF_func, zs):
     '''
-    Returns the correction to the Fraction lensed galaxies to considering only 
-    galaxies with an arc stretched more than a given value of mu_arc.
+    Returns the correction to the Fraction lensed galaxies to considering only galaxies with an arc
+    stretched more than a given value of mu_arc.
     This assumes a Singular Isothermal Ellipsoid (SIE) model for the lens mass profile.
 
             Parameters:
@@ -775,8 +774,8 @@ def Fraction_1st_image_arc_SIE(mu_arc, M_int, LF_func, zs):
 
 def Fraction_Nth_image_above_Mlim_SIE(img_N, M_int, M_lim, LF_func, zs):
     '''
-    Returns the correction to the Fraction lensed galaxies to considering only 
-    galaxies with a n-th image above the magnitude limit M_lim.
+    Returns the correction to the Fraction lensed galaxies to considering only galaxies with a n-th
+    image above the magnitude limit M_lim.
     This assumes a Singular Isothermal Ellipsoid (SIE) model for the lens mass profile.
 
             Parameters:
@@ -816,7 +815,7 @@ def Fraction_Nth_image_above_Mlim_SIE(img_N, M_int, M_lim, LF_func, zs):
 #### Signal-to-Noise Ratio ########################################################################
 def magnitude2cps(m, m_zp):
     '''
-    Converts an apparent magnitude to counts per second
+    Converts an apparent magnitude to counts per second.
 
             Parameters:
                     m: (float)
@@ -861,8 +860,8 @@ def Signal_to_noise_ratio(app_mag_src, src_size_arcsec,  sky_bckgnd_m_per_arcsec
 ############## Calculating K-correction ###########################################################
 def get_UV_cont_slope(zs, intrinsic_Mag_UV):
     '''
-    Returns the interpolation for the evolution with redshift of the UV Continuum Slope and 
-    its derivative with magnitude.
+    Returns the interpolation for the evolution with redshift of the UV Continuum Slope and its 
+    derivative with magnitude.
     For 0 < z < 4 Use linear interpolation from Fig.6 of Mondal et al. 2023
     link: https://iopscience.iop.org/article/10.3847/1538-4357/acc110/pdf
     For 4 < z < 6 Table 4 from Bouwens et al. 2014 
@@ -911,33 +910,96 @@ def get_UV_cont_slope(zs, intrinsic_Mag_UV):
     return dBdM * (intrinsic_Mag_UV - M_beta) + B    
 
 def Flux_integral_div_C(UV_slope, avg_wave, FWHM_wave):
+    '''
+    Returns the Integrated Flux over a rectangular window with mean avg_wave and width FWHM_wave.
+
+            Parameters:
+                    beta: (float)
+                        UV Continuum Slope
+                    avg_wave: (float)
+                        Window mean
+                    FWHM_wave: (float)
+                        Window width
+            Returns:
+                    FluxI: (float)
+                        Flux integrated over a rectangular window
+    '''
     return ((avg_wave+FWHM_wave/2)**(UV_slope+1)-(avg_wave-FWHM_wave/2)**(UV_slope+1))/(UV_slope+1)
 
-def Norm_AB(avg_wave, FWHM_wave):
-    return np.log(avg_wave+FWHM_wave/2)-np.log(avg_wave-FWHM_wave/2)
+def K_corr_singleMag(zs, observing_band, restframe_band, M):
+    '''
+    Returns the K correction for a source with magnitude M at redshift z,
+    with the intrinsic magnitude calculated in the restframe_band and observed in the 
+    observing_band.
 
-def K_correction_singleMag_Hogg(zs, observing_band, restframe_band, intrinsic_Mag):
+            Parameters:
+                    zs: (float)
+                        Redshift of the source
+                    observing_band: (string)
+                        Observing band (see supported photo bands)
+                    restframe_band: (string)
+                        Restframe band (see supported photo bands)
+                    M: (float)
+                        Intrinsic Magnitude
+            Returns:
+                    Kcorr: (float)
+                        K correction
+    '''
     supported_K_correctn_photo_bands = [
         'galex_FUV', 'galex_NUV', 
         'sdss_g0', 'sdss_r0', 'sdss_i0', 'sdss_z0', 
         'ukirt_wfcam_Y', 'ukirt_wfcam_J', 'ukirt_wfcam_H', 'ukirt_wfcam_K']
-    if observing_band not in supported_K_correctn_photo_bands or restframe_band not in supported_K_correctn_photo_bands: 
-        return 0
-    rest_frame_wave, rest_frame_FWHM = get_wavelength_nm_from_photo_band(restframe_band)
-    obsr_frame_wave, obsr_frame_FWHM = get_wavelength_nm_from_photo_band(observing_band)
-    UV_slope = get_UV_cont_slope(zs, intrinsic_Mag)+1
-    rest_frame_flux = Flux_integral_div_C(UV_slope, rest_frame_wave, rest_frame_FWHM)/Norm_AB(rest_frame_wave, rest_frame_FWHM)
-    obsr_frame_flux = Flux_integral_div_C(UV_slope, obsr_frame_wave, obsr_frame_FWHM)/Norm_AB(obsr_frame_wave, obsr_frame_FWHM)/(1 + zs)
-    return -2.5 * np.log10(obsr_frame_flux / rest_frame_flux)
+    if all(x in supported_K_correctn_photo_bands for x in [observing_band, restframe_band]):
+        rest_frame_wave, rest_frame_FWHM = get_wavelength_nm_from_photo_band(restframe_band)
+        obsr_frame_wave, obsr_frame_FWHM = get_wavelength_nm_from_photo_band(observing_band)
+        UV_slope = get_UV_cont_slope(zs, M)+1
+        rest_frame_flux = Flux_integral_div_C(UV_slope, rest_frame_wave, rest_frame_FWHM)
+        obsr_frame_flux = Flux_integral_div_C(UV_slope, obsr_frame_wave, obsr_frame_FWHM)/(1 + zs)
+        return -2.5 * np.log10(obsr_frame_flux / rest_frame_flux)
+    return 0
 
 def K_correction(zs, observing_band, restframe_band, intrinsic_Mag):
-    if hasattr(intrinsic_Mag, '__len__'):
-        res = np.zeros(0)
-        for M in intrinsic_Mag: res = np.append(res, K_correction_singleMag_Hogg(zs, observing_band, restframe_band, M))
-    else: res = K_correction_singleMag_Hogg(zs, observing_band, restframe_band, intrinsic_Mag)
-    return res 
+    '''
+    Returns the K correction for a population of sources with magnitude M at redshift z,
+    with the intrinsic magnitude calculated in the restframe_band and observed in the 
+    observing_band.
 
-def K_correction_from_UV(zs, observing_band, intrinsic_Mag): return K_correction(zs, observing_band, 'galex_NUV', intrinsic_Mag)
+            Parameters:
+                    zs: (float)
+                        Redshift of the source
+                    observing_band: (string)
+                        Observing band (see supported photo bands)
+                    restframe_band: (string)
+                        Restframe band (see supported photo bands)
+                    M: ndarray(dtype=float, ndim=1)
+                        Intrinsic Magnitudes
+            Returns:
+                    Kcorr: (float)
+                        K correction
+    '''
+    if hasattr(intrinsic_Mag, '__len__'):
+        res = [K_corr_singleMag(zs, observing_band, restframe_band, M) for M in intrinsic_Mag]
+    else:
+        res = K_corr_singleMag(zs, observing_band, restframe_band, intrinsic_Mag)
+    return np.asarray(res)
+
+def K_correction_from_UV(zs, observing_band, intrinsic_Mag): 
+    '''
+    Returns the K correction for a population of sources with magnitude M at redshift z,
+    with the intrinsic magnitude calculated in the UV and observed in the observing_band.
+
+            Parameters:
+                    zs: (float)
+                        Redshift of the source
+                    observing_band: (string)
+                        Window mean
+                    M: ndarray(dtype=float, ndim=1)
+                        Intrinsic Magnitudes
+            Returns:
+                    Kcorr: (float)
+                        K correction
+    '''
+    return K_correction(zs, observing_band, 'galex_NUV', intrinsic_Mag)
 
 ############## Fundamental Plane ###############################################################
 def get_wavelength_nm_from_photo_band(photo_band):
