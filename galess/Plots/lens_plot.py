@@ -3,31 +3,86 @@ import numpy as np
 import pandas as pd
 from scipy import integrate
 from scipy.stats import kstest
-
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib import colors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.patches import Rectangle
-
 from astropy.cosmology import FlatLambdaCDM
-cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
 
 import galess.LensStat.lens_stat as ls
 import galess.Utils.ls_utils as utils
 
+cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
 
+def plot_survey_ALL_distributions(surveys, READ_FILES = 1, _PLOT_FOR_KEYNOTE = 1):
+    set_plt_param(PLOT_FOR_KEYNOTE = _PLOT_FOR_KEYNOTE)
+    M_array     = np.linspace(-13 , -25 , 25)
+    sigma_array = np.linspace(100 , 400 , 31)
+    zl_array    = np.arange(0.  , 2.5 , 0.1)
+    zs_array    = np.arange(0.  , 5.4 , 0.2)
+    min_SNR     = 20
+    arc_mu_thr  = 3
+    Phi_vel_dis = ls.Phi_vel_disp_Mason
+
+    for title in surveys:
+        survey_params = utils.read_survey_params(title, VERBOSE = 0)
+        limit    = survey_params['limit']
+        cut      = survey_params['cut']
+        area     = survey_params['area']
+        seeing   = survey_params['seeing']
+        exp_time_sec = survey_params['exp_time_sec']
+        zero_point_m = survey_params['zero_point_m']
+        sky_bckgnd_m = survey_params['sky_bckgnd_m']
+        photo_band   = survey_params['photo_band']
+        try:
+            if READ_FILES:
+                matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+            else:
+                raise ValueError
+        except ValueError:
+            print('FILE do NOT exist - RUNNING MODEL')            
+            matrix_noLL, Theta_E_noLL, prob_noLL = ls.calculate_num_lenses_and_prob(
+                                                                        sigma_array, zl_array, zs_array, M_array, limit, area, 
+                                                                        seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m, 
+                                                                        photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr, 
+                                                                        Phi_vel_disp = Phi_vel_dis, LENS_LIGHT_FLAG = False, SIE_FLAG = True)      
+            matrix_LL, Theta_E_LL, prob_LL = ls.calculate_num_lenses_and_prob(
+                                                                        sigma_array, zl_array, zs_array, M_array, limit, area, 
+                                                                        seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
+                                                                        photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr, 
+                                                                        Phi_vel_disp = Phi_vel_dis, LENS_LIGHT_FLAG = True, SIE_FLAG = True)                                                                                                                                                                                  
+            utils.save_pickled_files(title,  matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL)
+        utils.print_summary_surveys([title])
+        plot_ALL_distributions(title, zl_array, zs_array, sigma_array,
+                                    Theta_E_LL, matrix_LL, Theta_E_noLL, matrix_noLL,
+                                    PLOT_FOR_KEYNOTE = _PLOT_FOR_KEYNOTE, SMOOTH = 1, SAVE = 0)
 
 def set_plt_param(PLOT_FOR_KEYNOTE = 1):
-    params_paper = {
-        'axes.labelsize': 14,
-        'legend.fontsize': 7,
-        'xtick.labelsize': 10,
-        'ytick.labelsize': 10,
-        'text.usetex': False,
-        'figure.figsize': [6, 4],
-        'legend.title_fontsize': 20
-        }
+    plt.rcParams.update(plt.rcParamsDefault)
+    plt.rcParams['figure.figsize'  ] = (3.3,2.0)
+    plt.rcParams['font.size'       ] = 8
+    plt.rcParams['axes.labelsize'  ] = 14
+    plt.rcParams['legend.fontsize' ] = 8
+    plt.rcParams['legend.frameon'  ] = False
+    plt.rcParams['legend.title_fontsize'] = 20
+    plt.rcParams['font.family'     ] = 'STIXGeneral'
+    plt.rcParams['mathtext.fontset'] = 'stix'
+    plt.rcParams['xtick.direction' ] = 'in'
+    plt.rcParams['ytick.direction' ] = 'in'
+    plt.rcParams['xtick.top'       ] = True
+    plt.rcParams['ytick.right'     ] = True
+    plt.rcParams['xtick.labelsize' ] = 15
+    plt.rcParams['ytick.labelsize' ] = 15
+    plt.rcParams['xtick.major.size'] = 6
+    plt.rcParams['xtick.minor.size'] = 3
+    plt.rcParams['ytick.major.size'] = 6
+    plt.rcParams['ytick.minor.size'] = 3
+    plt.rcParams['xtick.major.width'] = 1.25
+    plt.rcParams['xtick.minor.width'] = 0.75
+    plt.rcParams['ytick.major.width'] = 1.25
+    plt.rcParams['ytick.minor.width'] = 0.75
+    
     params_keynote = {
         "lines.color": "white",
         "patch.edgecolor": "white",
@@ -42,10 +97,18 @@ def set_plt_param(PLOT_FOR_KEYNOTE = 1):
         "figure.edgecolor": 'lightgray',
         "savefig.facecolor":'#222222',
         "savefig.edgecolor": 'lightgray',
-        'legend.title_fontsize': 20
         }
-    plt.rcParams.update(plt.rcParamsDefault)
-    if(PLOT_FOR_KEYNOTE): 
+
+    line_c = 'k'
+    cmap_c = cm.inferno
+    _col_  = None
+    col_A  = 'k'
+    col_B  = 'r'
+    col_C  = 'm'
+    col_D  = 'orange'
+    fn_prefix = ''
+
+    if PLOT_FOR_KEYNOTE: 
         plt.rcParams.update(params_keynote)
         line_c = 'w'
         cmap_c = cm.cool
@@ -55,18 +118,8 @@ def set_plt_param(PLOT_FOR_KEYNOTE = 1):
         col_C  = next(_col_)
         col_D  = next(_col_)
         fn_prefix = 'KEY_'
-        return line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix
-    else:
-        plt.rcParams.update(params_paper)   
-        line_c = 'k'
-        cmap_c = cm.inferno
-        _col_  = None
-        col_A  = 'k'
-        col_B  = 'r'
-        col_C  = 'm'
-        col_D  = 'orange'
-        fn_prefix = ''
-        return line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix
+    return line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix
+
     
 def plot_Lens_Fraction(m_lim = 28.5, mu_arc_SIE = 3, 
                        M_array = 0, zs_array_plot = 0, schechter_plot = ls.schechter_LF, 
@@ -322,17 +375,47 @@ def plot_z_sigma_distributions(fig, ax, title, zl_array, zs_array, sigma_array,
         plt.savefig(folderpath+'/'+fn_prefix+'corner_plts.jpg', dpi=200)
 
 
-def plot_effect_vel_disp_function(zl_array, zs_array, sigma_array, PLOT_FOR_KEYNOTE = 1, LENS_LIGHT = 1, SMOOTH = 0, SAVE = 0):
+def plot_effect_vel_disp_function(zl_array, zs_array, sigma_array, 
+                                    PLOT_FOR_KEYNOTE = 1, LENS_LIGHT = 1,
+                                    SMOOTH = 0, SAVE = 0, READ_FILES = 1):
     line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
     fig, ax = plt.subplots(1, 3, figsize=(17, 5), sharex=False, sharey=False)
     plt.subplots_adjust(wspace=.15, hspace=.2)
-    for title, lstyle, label in zip(['EUCLID Wide VIS', 'EUCLID Wide VIS VDF Choi', 'EUCLID Wide VIS VDF Geng'], 
+    for title, lstyle, label, VDF in zip(['EUCLID Wide VIS', 'EUCLID Wide VIS VDF Choi', 'EUCLID Wide VIS VDF Geng'], 
                                 ['-', '--', ':'], 
-                                ['VDF Mason et al. 2015', 'VDF Choi et al. 2007', 'VDF Geng et al. 2021']):
+                                ['VDF Mason et al. 2015', 'VDF Choi et al. 2007', 'VDF Geng et al. 2021'],
+                                [ls.Phi_vel_disp_Mason, ls.Phi_vel_disp_SDSS, ls.Phi_vel_disp_Geng]):
         try:
-            matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+            if READ_FILES:
+                matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+            else:
+                raise(ValueError)
         except ValueError:
-            print('FILE do NOT exist')
+            M_array     = np.linspace(-13 , -25 , 25)
+            min_SNR     = 20
+            arc_mu_thr  = 3
+            survey_params = utils.read_survey_params('EUCLID Wide VIS', VERBOSE = 0)
+            limit    = survey_params['limit']
+            cut      = survey_params['cut']
+            area     = survey_params['area']
+            seeing   = survey_params['seeing']
+            exp_time_sec = survey_params['exp_time_sec']
+            zero_point_m = survey_params['zero_point_m']
+            sky_bckgnd_m = survey_params['sky_bckgnd_m']
+            photo_band   = survey_params['photo_band']
+            print('FILE do NOT exist - RUNNING MODEL')            
+            if LENS_LIGHT:
+                matrix_LL, Theta_E_LL, prob_LL = ls.calculate_num_lenses_and_prob(
+                                                                            sigma_array, zl_array, zs_array, M_array, limit, area, 
+                                                                            seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
+                                                                            photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr, 
+                                                                            Phi_vel_disp = VDF, LENS_LIGHT_FLAG = True, SIE_FLAG = True)
+            else:
+                matrix_noLL, Theta_E_noLL, prob_noLL = ls.calculate_num_lenses_and_prob(
+                                                                            sigma_array, zl_array, zs_array, M_array, limit, area, 
+                                                                            seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m, 
+                                                                            photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr, 
+                                                                            Phi_vel_disp = VDF, LENS_LIGHT_FLAG = False, SIE_FLAG = True)
         if LENS_LIGHT:
             Ngal_zl_sigma_noLL, Ngal_zs_sigma_noLL, Ngal_zs_zl_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH)
         else:

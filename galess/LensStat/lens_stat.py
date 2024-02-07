@@ -1,4 +1,4 @@
-# pylint: disable-msg=C0103,W0611,E0611,W0613
+# pylint: disable-msg=C0103,W0611,E0611,W0613,R0914,R1705,R0913
 """Module providing a set of functions to evaluate the distributions of 
 lenses and lensed sources in a given survey."""
 
@@ -8,7 +8,8 @@ from scipy import integrate as integral
 from scipy import signal, stats
 from scipy.special import gamma as gammafunc
 from scipy.special import ellipe as E_ell
-from tqdm.notebook import tqdm
+from scipy.ndimage import gaussian_filter1d
+from tqdm import tqdm
 from astropy.cosmology import FlatLambdaCDM
 import galess.Utils.ls_utils as utils
 
@@ -105,7 +106,8 @@ def Phi_vel_disp_SDSS(sigma, zl = 0):
     sigma_star = 161 #km/s
     pwrlaw = np.power(sigma/sigma_star, alpha)
     expctf = np.exp(-np.power(sigma/sigma_star,beta))
-    return Phi_star*pwrlaw(expctf/gammafunc(alpha/beta))*(beta/sigma)
+    gammav = gammafunc(alpha/beta)
+    return Phi_star * pwrlaw * expctf / gammav * (beta/sigma)
 
 def Phi_vel_disp_Mason(sigma, zl):
     '''
@@ -322,8 +324,8 @@ def fraction_ell(f):
 
 def dPdMu_Point_SIS(mu):
     '''
-    Returns the magnification probabability distribution of a Singular isothermal 
-    lens and a point source.
+    Returns the magnification probabability distribution of a Singular Isothermal 
+    Sphere (SIS) lens and a point source.
 
             Parameters:
                     mu: ndarray(dtype=float, ndim=1)
@@ -338,15 +340,22 @@ def dPdMu_Point_SIS(mu):
 
 def Lensed_Point_LF(M_int, mu_min, dPdMu, LF_func, zs):
     '''
-    Returns the magnification probabability distribution of a Singular Isothermal 
-    Sphere (SIS) lens and a point source.
+    Returns the Lensed Luminosity Function.
 
             Parameters:
-                    mu: ndarray(dtype=float, ndim=1)
-                        Magnification array
+                    M_int: ndarray(dtype=float, ndim=1)
+                        Absolute magnitude array
+                    mu_min: (float)
+                        Lower bound of integral over magnification
+                    dPdMu: (function)
+                        Magnification distribution function
+                    LF_func: (function)
+                        Luminosity Function function
+                    zs: (float)
+                        Redshift of the source population
             Returns:
-                    dP/dmu: ndarray(dtype=float, ndim=1)
-                        Magnification probabability distribution
+                    LensdLF: ndarray(dtype=float, ndim=1)
+                        Lensed Luminosity Function
     '''
     mu, _dPdMu_ = np.logspace(-2, 3., 300), dPdMu(np.logspace(-2, 3., 300))
     mu_index = np.argmin((mu-mu_min)**2)
@@ -357,6 +366,7 @@ def Magnification_Bias(M_int, dPdMu, LF_func, zs):
     '''
     Returns the magnification bias for a given combination of Luminosity Function
     and Magnification probability distribution.
+    This assumes a Singular Isothermal Sphere (SIS) model for the lens mass profile.
 
             Parameters:
                     M_int: ndarray(dtype=float, ndim=1)
@@ -381,6 +391,7 @@ def Fraction_lensed(M_int, dPdMu, LF_func, Phi_vel_disp, zs):
     '''
     Returns the fraction of lensed galaxies comparing the LF to the magnification bias
     and the multiple image optical depth (Tau).
+    This assumes a Singular Isothermal Sphere (SIS) model for the lens mass profile.
 
             Parameters:
                     M_int: ndarray(dtype=float, ndim=1)
@@ -408,9 +419,9 @@ def Fraction_lensed(M_int, dPdMu, LF_func, Phi_vel_disp, zs):
 
 def mu_lim_second_image(M, M_lim):
     '''
-    Returns the minimum magnification of the brightest image in a SIS lens
-    that allows a secondary image of a source of magnitude M to be brigther than
-    a limit magnitude M_lim.
+    Returns the minimum magnification of the brightest image in a Singular Isothermal 
+    Sphere (SIS) lens that allows a secondary image of a source of magnitude M to be 
+    brigther than a limit magnitude M_lim.
 
             Parameters:
                     M: (float)
@@ -429,6 +440,7 @@ def Fraction_1st_image_arc(mu_arc, M_int, LF_func, zs, dPdMu = dPdMu_Point_SIS):
     '''
     Returns the correction to the Fraction lensed galaxies to considering only 
     galaxies with an arc stretched more than a given value of mu_arc.
+    This assumes a Singular Isothermal Sphere (SIS) model for the lens mass profile.
 
             Parameters:
                     mu_arc: (float)
@@ -456,19 +468,20 @@ def Fraction_1st_image_arc(mu_arc, M_int, LF_func, zs, dPdMu = dPdMu_Point_SIS):
 def Fraction_2nd_image_above_Mlim(M_int, M_lim, LF_func, zs, dPdMu = dPdMu_Point_SIS):
     '''
     Returns the correction to the Fraction lensed galaxies to considering only 
-    galaxies with a secondary image above th emagnitude limit M_lim.
+    galaxies with a secondary image above the magnitude limit M_lim.
+    This assumes a Singular Isothermal Sphere (SIS) model for the lens mass profile.
 
             Parameters:
-                    mu_arc: (float)
-                        Minimum magnification of brightest arc
+                    img_N: (int)
+                        Image multiplicity
                     M_int: ndarray(dtype=float, ndim=1)
                         Absolute magnitude array
+                    M_lim: (float)
+                        Magnitude limit
                     LF_func: (function)
                         Luminosity Function function
                     zs: (float)
                         Redshift of the source population
-                    dPdMu: (function)
-                        Magnification distribution function
             Returns:
                     F2nd: ndarray(dtype=float, ndim=1)
                         Correction to F accounting for visible 2nd images
@@ -486,6 +499,8 @@ def SIE_corr(f):
     '''
     Returns the correction to the area in the source plane producing multiple images,
     accounting for the ellitpicity of the lens.
+    This assumes a Singular Isothermal Ellipsoid (SIE) model for the lens mass profile.
+
 
             Parameters:
                     f: (float)
@@ -502,6 +517,7 @@ def SIE_avg_corr():
     accounting for the ellitpicity of the lens and weighted over the ellipticity distribution 
     from dP/dq from van der Wel et al. 14 (Fig. 1, 1.5<z<2, log M = 10-10.5).
     link: https://ui.adsabs.harvard.edu/abs/2014ApJ...792L...6V/abstract
+    This assumes a Singular Isothermal Ellipsoid (SIE) model for the lens mass profile.
 
             Parameters:
                     None
@@ -512,8 +528,20 @@ def SIE_avg_corr():
     f = np.linspace(0, 1, 100)
     return integral.trapz(SIE_corr(f)*fraction_ell(f), f)
 
-def load_weights_dP_dmu_SIE(BASEPATH=''):
-    BASEPATH = os.path.dirname(os.path.abspath(''))+'/GALESS/galess/' if BASEPATH == '' else ''
+def load_weights_dP_dmu_SIE():
+    '''
+    Returns the magnification probabability distributions of a point source and Singular 
+    Isothermal Ellipsoid (SIE) lens, in each region of the source plane characterised by 
+    different image multiplicities.
+
+            Parameters:
+                    None
+            Returns:
+                    dPdmu1 ... w4: (float)
+                        Magnification distributions and weights for a SIE lens
+    '''
+    # BASEPATH = os.path.dirname(os.path.abspath(''))+'/GALESS/galess/'
+    BASEPATH = '/Users/giofer/Documents/GitHub/GALESS/galess/'
     if os.path.isfile(BASEPATH+'data/SIE_dPdmu/weights_dP_dmu_SIE.txt'):
         weights = np.loadtxt(BASEPATH+'data/SIE_dPdmu/weights_dP_dmu_SIE.txt')
         __dP_dmu_SIE1, __w1 = np.loadtxt(BASEPATH+'data/SIE_dPdmu/dP_dmu_SIE_1.txt'), weights[0]
@@ -523,157 +551,364 @@ def load_weights_dP_dmu_SIE(BASEPATH=''):
         __dP_dmu_SIE1_3 = np.loadtxt(BASEPATH+'data/SIE_dPdmu/dP_dmu_SIE_1_3reg.txt')
         __dP_dmu_SIE3_3 = np.loadtxt(BASEPATH+'data/SIE_dPdmu/dP_dmu_SIE_3_3reg.txt')
         __dP_dmu_SIE1_4= np.loadtxt(BASEPATH+'data/SIE_dPdmu/dP_dmu_SIE_1_4reg.txt')
-        return __dP_dmu_SIE1,__dP_dmu_SIE2,__dP_dmu_SIE3,__dP_dmu_SIE4,__dP_dmu_SIE1_3,__dP_dmu_SIE3_3,__dP_dmu_SIE1_4,__w1,__w2,__w3,__w4
-    else: print('Did not load files')
-    pass
+        return __dP_dmu_SIE1,__dP_dmu_SIE2,__dP_dmu_SIE3,__dP_dmu_SIE4,\
+            __dP_dmu_SIE1_3,__dP_dmu_SIE3_3,__dP_dmu_SIE1_4,__w1,__w2,__w3,__w4
+    print('Did not load files')
+    return 0
+
+PM1, PM2, PM3, PM4, PM13, PM33, PM14, __w1,__w2,__w3,__w4 = load_weights_dP_dmu_SIE()
+__dP_dmu_SIE1,__dP_dmu_SIE2,__dP_dmu_SIE3,__dP_dmu_SIE4 = PM1, PM2, PM3, PM4
+__dP_dmu_SIE1_3,__dP_dmu_SIE3_3,__dP_dmu_SIE1_4 = PM13, PM33, PM14
 
 def Lensed_Point_LF_SIE(img_N, mu_min, M_int, LF_func, zs):
-    if  (img_N==1): dP_dmu_SIE, w = __dP_dmu_SIE1, __w1
-    elif(img_N==2): dP_dmu_SIE, w = __dP_dmu_SIE2, __w2
-    elif(img_N==3): dP_dmu_SIE, w = __dP_dmu_SIE3, __w3
-    elif(img_N==4): dP_dmu_SIE, w = __dP_dmu_SIE4, __w4
-    else: return 0
+    '''
+    Returns the Lensed Luminosity Function.
+    This assumes a Singular Isothermal Ellipsoid (SIE) model for the lens mass profile.
+            Parameters:
+                    img_N: (int)
+                        Image multiplicity
+                    mu_min: (float)
+                        Lower bound of integral over magnification
+                    M_int: ndarray(dtype=float, ndim=1)
+                        Absolute magnitude array
+                    LF_func: (function)
+                        Luminosity Function function
+                    zs: (float)
+                        Redshift of the source population
+            Returns:
+                    LensdLF: ndarray(dtype=float, ndim=1)
+                        Lensed Luminosity Function
+    '''
+    dP_dmu_SIE, w = 0, 0
+    if   img_N==1:
+        dP_dmu_SIE, w = __dP_dmu_SIE1, __w1
+    elif img_N==2:
+        dP_dmu_SIE, w = __dP_dmu_SIE2, __w2
+    elif img_N==3:
+        dP_dmu_SIE, w = __dP_dmu_SIE3, __w3
+    elif img_N==4:
+        dP_dmu_SIE, w = __dP_dmu_SIE4, __w4
     mu = np.logspace(-2,3.,300)
-    if (hasattr(mu_min, '__len__')==False): 
-        mu_index  = np.argmin((mu-mu_min)**2)
-        return np.trapz(w * dP_dmu_SIE[mu_index:] * LF_func(M_int + 5 / 2 * np.log10(mu[mu_index:]), zs), mu[mu_index:])
-    elif(len(mu_min)==2): 
+    if hasattr(mu_min, '__len__') is False:
+        mu_index = np.argmin((mu-mu_min)**2)
+        displ_LF = LF_func(M_int + 5 / 2 * np.log10(mu[mu_index:]), zs)
+        return np.trapz(w * dP_dmu_SIE[mu_index:] * displ_LF, mu[mu_index:])
+    elif len(mu_min)==2:
         mu_indexL = np.argmin((mu-mu_min[0])**2)
         mu_indexU = np.argmin((mu-mu_min[1])**2)
-        return np.trapz(w * dP_dmu_SIE[mu_indexL:mu_indexU] * LF_func(M_int + 5 / 2 * np.log10(mu[mu_indexL:mu_indexU]), zs), mu[mu_indexL:mu_indexU])
-    else: return 0
+        displ_LF = LF_func(M_int + 5 / 2 * np.log10(mu[mu_indexL:mu_indexU]), zs)
+        return np.trapz(w * dP_dmu_SIE[mu_indexL:mu_indexU] * displ_LF, mu[mu_indexL:mu_indexU])
+    else:
+        return 0
 
 def Magnification_Bias_SIE(img_N, M_int, LF_func, zs):
-    if hasattr(M_int, '__len__'): res = [Lensed_Point_LF_SIE(img_N, 0, M, LF_func, zs) / LF_func(M, zs) for M in M_int]
-    else: res = Lensed_Point_LF_SIE(img_N, 0, M_int, LF_func, zs) / LF_func(M_int, zs)
-    return res
+    '''
+    Returns the magnification bias for a given combination of Luminosity Function
+    and Magnification probability distribution.
+    This assumes a Singular Isothermal Ellipsoid (SIE) model for the lens mass profile.
+
+            Parameters:
+                    img_N: (int)
+                        Image multiplicity
+                    M_int: ndarray(dtype=float, ndim=1)
+                        Absolute magnitude array
+                    dPdMu: (function)
+                        Magnification distribution function
+                    LF_func: (function)
+                        Luminosity Function function
+                    zs: (float)
+                        Redshift of the source population
+            Returns:
+                    Bias: ndarray(dtype=float, ndim=1)
+                        Magnification Bias
+    '''
+    if hasattr(M_int, '__len__'):
+        res = [Lensed_Point_LF_SIE(img_N, 0, M, LF_func, zs) / LF_func(M, zs) for M in M_int]
+    else:
+        res = Lensed_Point_LF_SIE(img_N, 0, M_int, LF_func, zs) / LF_func(M_int, zs)
+    return np.nan_to_num(np.array(res))
 
 def Fraction_lensed_SIE(img_N, M_int, LF_func, Phi_vel_disp, zs):
-    C = 0.8979070411803386 #Correction for elliptical caustic area averaged over axis ratio distribution obtained from SIE_avg_corr
-    tau = Tau(zs, Phi_vel_disp)*C
-    if hasattr(M_int, '__len__'): res = [tau*Magnification_Bias_SIE(img_N, M, LF_func, zs)/(tau*Magnification_Bias_SIE(img_N, M, LF_func, zs)+(1-tau)) for M in M_int]
-    else: res = tau * Magnification_Bias_SIE(img_N, M_int, LF_func, zs) / (tau * Magnification_Bias_SIE(img_N, M_int, LF_func, zs) + (1 - tau))
+    '''
+    Returns the fraction of lensed galaxies comparing the LF to the magnification bias
+    and the multiple image optical depth (Tau).
+    This assumes a Singular Isothermal Ellipsoid (SIE) model for the lens mass profile.
+
+            Parameters:
+                    img_N: (int)
+                        Image multiplicity
+                    M_int: ndarray(dtype=float, ndim=1)
+                        Absolute magnitude array
+                    LF_func: (function)
+                        Luminosity Function function
+                    Phi_vel_disp: (function)
+                        Velocity Dispersion Function function
+                    zs: (float)
+                        Redshift of the source population
+            Returns:
+                    F: ndarray(dtype=float, ndim=1)
+                        Fraction lensed galaxies
+    '''
+    #Elliptical caustic area averaged over axis ratio distribution obtained from SIE_avg_corr
+    tau = Tau(zs, Phi_vel_disp) * 0.8979070411803386
+    if hasattr(M_int, '__len__'):
+        res = [tau * Magnification_Bias_SIE(img_N, M, LF_func, zs)/\
+            (tau * Magnification_Bias_SIE(img_N, M, LF_func, zs) + (1 - tau)) for M in M_int]
+    else:
+        res = tau * Magnification_Bias_SIE(img_N, M_int, LF_func, zs)/\
+            (tau * Magnification_Bias_SIE(img_N, M_int, LF_func, zs) + (1 - tau))
     return np.nan_to_num(np.array(res))
 
 def get_mu_rel_from_cumulative(P1, P2, mu_array, SMOOTH_FLAG=True):
+    '''
+    Helper function that returns matched cumulative distributions.
+
+            Parameters:
+                    P1: ndarray(dtype=float, ndim=1)
+                        Normalised cumulative distribution 1
+                    P2: ndarray(dtype=float, ndim=1)
+                        Normalised cumulative distribution 2
+                    mu_array: ndarray(dtype=float, ndim=1)
+                        Magnification array
+                    SMOOTH_FLAG: (boolean)
+                        Flag for smoothing the function
+            Returns:
+                    mu_diff: (float)
+                        Relation between mu1 and mu2
+    '''
     diff = np.zeros(0)
-    for id_mu2 in range(len(mu_array)):
+    for id_mu2, mu2 in enumerate(mu_array):
         id_mu1 = np.argmin((P1-P2[id_mu2])**2)
-        diff   = np.append(diff, mu_array[id_mu1]-mu_array[id_mu2])
-    if(SMOOTH_FLAG):    
-        from scipy.ndimage import gaussian_filter1d
+        diff   = np.append(diff, mu_array[id_mu1]-mu2)
+    if SMOOTH_FLAG:
         gauss_sigma, id_gf = 5, 10
-        diff = np.append(diff[:id_gf],gaussian_filter1d(diff[id_gf:], gauss_sigma))
+        diff = np.append(diff[:id_gf], gaussian_filter1d(diff[id_gf:], gauss_sigma))
     return diff
 
-def mu_lim_Nth_image_SIE(img_N, M, M_lim, zs): 
-    #if mu_1 is greater than this the second image in a SIS is above M_lim
-    #log_10(mu_N/mu_1) = 0.4*(M_1-M_lim) solve the equation for mu_1
-    #The following function gets the lower bound of the integral on mu_1 by mapping the dP/dmuN disitribution to dP/dmu1
+def mu_lim_Nth_image_SIE(img_N, M, M_lim, zs):
+    '''
+    Returns the minimum magnification of the brightest image in a Singular Isothermal 
+    Ellipsoid (SIE) lens that allows the n-th image of a source of magnitude M to be 
+    brigther than a limit magnitude M_lim.
+
+    If mu_1 is greater than this the second image in a SIS is above M_lim.
+    log_10(mu_N/mu_1) = 0.4*(M_1-M_lim) solve the equation for mu_1.
+    The following function gets the lower bound of the integral on mu_1 by mapping 
+    the dP/dmuN disitribution to dP/dmu1.
+
+            Parameters:
+                    img_N: (float)
+                        N-th image.
+                    M: ndarray(dtype=float, ndim=1)
+                        Absolute magnitude array
+                    M_lim: (float)
+                        Magnitude limit 
+                    zs: (float)
+                        redshift
+            Returns:
+                    mu_lim: (float)
+                        Minimum magnification to satisfy M_nth < M_lim
+    '''
     mu_array = np.logspace(-2,3.,300)
     mu_array_ext_steps = np.zeros(0)
     for i in range(len(mu_array) - 1):
         dist = mu_array[i+1] - mu_array[i]
         mu_array_ext_steps = np.append(mu_array_ext_steps,dist)
     mu_array_ext_steps = np.append(mu_array_ext_steps,0)
-    if  (img_N==2): dP_dmu_A, dP_dmu_B = __dP_dmu_SIE1  , __dP_dmu_SIE2
-    elif(img_N==3): dP_dmu_A, dP_dmu_B = __dP_dmu_SIE1_3, __dP_dmu_SIE3_3
-    elif(img_N==4): dP_dmu_A, dP_dmu_B = __dP_dmu_SIE1_4, __dP_dmu_SIE4
-    else: return 0
+    if img_N == 2:
+        dP_dmu_A, dP_dmu_B = __dP_dmu_SIE1  , __dP_dmu_SIE2
+    elif img_N == 3:
+        dP_dmu_A, dP_dmu_B = __dP_dmu_SIE1_3, __dP_dmu_SIE3_3
+    elif img_N == 4:
+        dP_dmu_A, dP_dmu_B = __dP_dmu_SIE1_4, __dP_dmu_SIE4
+    else:
+        return 0
     PA = np.cumsum(mu_array_ext_steps*dP_dmu_A)/np.sum(mu_array_ext_steps*dP_dmu_A)
     PB = np.cumsum(mu_array_ext_steps*dP_dmu_B)/np.sum(mu_array_ext_steps*dP_dmu_B)
     diff = get_mu_rel_from_cumulative(PA, PB, mu_array)
-    mu_A = mu_array+diff
     ratiomuBmuA = mu_array/(mu_array+diff)
     ratiomuBmuA[0] = 0
-    if(img_N==3): ratiomuBmuA[mu_array+diff<1.45] = 0
+    if img_N==3:
+        ratiomuBmuA[mu_array+diff<1.45] = 0
     targetval  = np.power(10,-0.4*(M_lim-M))
     idx = np.argwhere(np.diff(np.sign(ratiomuBmuA-targetval))).flatten()
     mu1_best = np.zeros(0)
     for _idx in idx:
         mu1 = mu_array[_idx]+diff[_idx]
-        if(mu1<175): mu1_best = np.append(mu1_best,mu1)
-    if  (len(mu1_best) == 0): return (9.9e2,1e3)
-    elif(len(mu1_best) == 1): return (mu1_best,1e3)
-    elif(len(mu1_best) == 2): return  mu1_best
-    else                    : return  mu1_best[-2:]
+        if mu1<175:
+            mu1_best = np.append(mu1_best,mu1)
+    if len(mu1_best) == 0:
+        return (9.9e2,1e3)
+    elif len(mu1_best) == 1:
+        return (mu1_best,1e3)
+    elif len(mu1_best) == 2:
+        return  mu1_best
+    else:
+        return  mu1_best[-2:]
 
 def Fraction_1st_image_arc_SIE(mu_arc, M_int, LF_func, zs):
-    if hasattr(M_int, '__len__'): res = [Lensed_Point_LF_SIE(1, mu_arc, M, LF_func, zs) / Lensed_Point_LF_SIE(1, 0, M, LF_func, zs) for M in M_int]
-    else: res = Lensed_Point_LF_SIE(1, mu_arc, M_int, LF_func, zs)/ Lensed_Point_LF_SIE(1, 0, M_int, LF_func, zs)
+    '''
+    Returns the correction to the Fraction lensed galaxies to considering only 
+    galaxies with an arc stretched more than a given value of mu_arc.
+    This assumes a Singular Isothermal Ellipsoid (SIE) model for the lens mass profile.
+
+            Parameters:
+                    mu_arc: (float)
+                        Minimum magnification of brightest arc
+                    M_int: ndarray(dtype=float, ndim=1)
+                        Absolute magnitude array
+                    LF_func: (function)
+                        Luminosity Function function
+                    zs: (float)
+                        Redshift of the source population
+            Returns:
+                    FArc: ndarray(dtype=float, ndim=1)
+                        Correction to F accounting for bright arcs
+    '''
+    if hasattr(M_int, '__len__'):
+        res = [Lensed_Point_LF_SIE(1, mu_arc, M, LF_func, zs)/\
+            Lensed_Point_LF_SIE(1, 0, M, LF_func, zs) for M in M_int]
+    else:
+        res = Lensed_Point_LF_SIE(1, mu_arc, M_int, LF_func, zs)/\
+            Lensed_Point_LF_SIE(1, 0, M_int, LF_func, zs)
     return np.nan_to_num(np.array(res))
 
 def Fraction_Nth_image_above_Mlim_SIE(img_N, M_int, M_lim, LF_func, zs):
-    if  (img_N==1): dP_dmu_SIE, w = __dP_dmu_SIE1, __w1
-    elif(img_N==2): dP_dmu_SIE, w = __dP_dmu_SIE2, __w2
-    elif(img_N==3): dP_dmu_SIE, w = __dP_dmu_SIE3, __w3
-    elif(img_N==4): dP_dmu_SIE, w = __dP_dmu_SIE4, __w4
-    else: return 0
-    if hasattr(M_int, '__len__'): res = [Lensed_Point_LF_SIE(1, mu_lim_Nth_image_SIE(img_N, M, M_lim, zs), M, LF_func, zs) / Lensed_Point_LF_SIE(1, 0, M, LF_func, zs) for M in M_int]
-    else: res = Lensed_Point_LF_SIE(1, mu_lim_Nth_image_SIE(img_N, M_int, M_lim, zs), M_int, LF_func, zs) / Lensed_Point_LF_SIE(1, 0, M_int, LF_func, zs)
+    '''
+    Returns the correction to the Fraction lensed galaxies to considering only 
+    galaxies with a n-th image above the magnitude limit M_lim.
+    This assumes a Singular Isothermal Ellipsoid (SIE) model for the lens mass profile.
+
+            Parameters:
+                    img_N: (int)
+                        Image multiplicity
+                    M_int: ndarray(dtype=float, ndim=1)
+                        Absolute magnitude array
+                    M_lim: (float)
+                        Magnitude limit
+                    LF_func: (function)
+                        Luminosity Function function
+                    zs: (float)
+                        Redshift of the source population
+            Returns:
+                    F2nd: ndarray(dtype=float, ndim=1)
+                        Correction to F accounting for visible 2nd images
+    '''
+    if   img_N==1:
+        w = __w1
+    elif img_N==2:
+        w = __w2
+    elif img_N==3:
+        w = __w3
+    elif img_N==4:
+        w = __w4
+    else:
+        return 0
+    if hasattr(M_int, '__len__'):
+        res = [Lensed_Point_LF_SIE(1, mu_lim_Nth_image_SIE(img_N, M, M_lim, zs), M, LF_func, zs)/\
+            Lensed_Point_LF_SIE(1, 0, M, LF_func, zs) for M in M_int]
+    else:
+        mu_LIM = mu_lim_Nth_image_SIE(img_N, M_int, M_lim, zs)
+        res = Lensed_Point_LF_SIE(1, mu_LIM, M_int, LF_func, zs)/\
+            Lensed_Point_LF_SIE(1, 0, M_int, LF_func, zs)
     return np.nan_to_num(np.array(res)) * w
-    
-#### Signal-to-Noise Ratio ################################################################################################################################
-def magnitude2cps(magnitude, magnitude_zero_point):
-    """
-    converts an apparent magnitude to counts per second
 
-    The zero point of an instrument, by definition, is the magnitude of an object that produces one count
-    (or data number, DN) per second. The magnitude of an arbitrary object producing DN counts in an observation of
-    length EXPTIME is therefore:
-    m = -2.5 x log10(DN / EXPTIME) + ZEROPOINT
+#### Signal-to-Noise Ratio ########################################################################
+def magnitude2cps(m, m_zp):
+    '''
+    Converts an apparent magnitude to counts per second
 
-    :param magnitude: astronomical magnitude
-    :param magnitude_zero_point: magnitude zero point (astronomical magnitude with 1 count per second)
-    :return: counts per second of astronomical object
-    """
-    delta_m = magnitude - magnitude_zero_point
-    counts = 10**(-delta_m / 2.5)
-    return counts
+            Parameters:
+                    m: (float)
+                        Magnitude
+                    m_zp: (float)
+                        Magnitude zero point
+            Returns:
+                    CpS: (float)
+                        Counts per second of astronomical object
+    '''
+    delta_m = m - m_zp
+    return 10 ** (- delta_m / 2.5)
 
-def cps2magnitude(cps, magnitude_zero_point):
-    """
-    :param cps: float, count-per-second
-    :param magnitude_zero_point: magnitude zero point
-    :return: magnitude for given counts
-    """
-    delta_m = -np.log10(cps) * 2.5
-    magnitude = delta_m + magnitude_zero_point
-    return magnitude
+def Signal_to_noise_ratio(app_mag_src, src_size_arcsec,  sky_bckgnd_m_per_arcsec_sq,
+                         zero_point_m, exp_time_sec, num_exposures = 1):
+    '''
+    Returns the Signal-to-Noise ratio (SNR).
 
-def Signal_to_noise_ratio(app_mag_src, src_size_arcsec,  sky_bckgnd_m_per_arcsec_sq, zero_point_m, exp_time_sec, num_exposures = 1):
+            Parameters:
+                    app_mag_src: (float)
+                        Apparent Magnitude
+                    src_size_arcsec: (float)
+                        Source size [arcsec]
+                    sky_bckgnd_m_per_arcsec_sq: (float)
+                        Sky background
+                    zero_point_m: (float)
+                        Magnitude zero point
+                    exp_time_sec: (float)
+                        Exposure time [sec]
+                    num_exposures: (int)
+                        Number of exposures
+            Returns:
+                    SNR: (float)
+                        Signal-to-Noise ratio
+    '''
     exposure_time_tot = num_exposures * exp_time_sec
     phc_src = magnitude2cps(app_mag_src, zero_point_m) * exposure_time_tot
     phc_sky = magnitude2cps(sky_bckgnd_m_per_arcsec_sq, zero_point_m) * exposure_time_tot
     sig_sq_bkg = (phc_sky * np.pi * src_size_arcsec ** 2) / (exposure_time_tot ** 2)
-    return phc_src / np.sqrt(phc_src + sig_sq_bkg)  
+    return phc_src / np.sqrt(phc_src + sig_sq_bkg)
 
-############## Calculating K-correction #################################################################
-def get_B_and_der_from_Bouwens_2014(zs): 
-    B, dBdM = 0, 0
-    #For 0 to 4 Use linear interpolation from Fig.6 of https://iopscience.iop.org/article/10.3847/1538-4357/acc110/pdf
-    if(np.around(zs,0)<4):     B, dBdM = -1.5+(zs-1)*((1.5-2.21)/6), 0
-    #Table 4 fromm Bouwens+2014 (https://iopscience.iop.org/article/10.1088/0004-637X/793/2/115/pdf)
-    elif(np.around(zs,0)==4):  B, dBdM = -1.95, -0.13
-    elif(np.around(zs,0)==5):  B, dBdM = -2.05, -0.17
-    elif(np.around(zs,0)==6):  B, dBdM = -2.22, -0.24
-    #Table 3 fromm Bouwens+2014 (https://iopscience.iop.org/article/10.1088/0004-637X/793/2/115/pdf)
-    elif(np.around(zs,0)==7):  B, dBdM = -2.05, -0.20
-    elif(np.around(zs,0)==8):  B, dBdM = -2.13, -0.15
-    #Text after Eq.16 of fromm Liu+2016 (Dragons paper IV)
-    elif(np.around(zs,0)==9):  B, dBdM = -2.19, -0.16
-    elif(np.around(zs,0)==10): B, dBdM = -2.16, -0.16
-    else: B, dBdM = -2.16, -0.16
-    return B, dBdM  
-
+############## Calculating K-correction ###########################################################
 def get_UV_cont_slope(zs, intrinsic_Mag_UV):
-    B_MUV, dBdMUV = get_B_and_der_from_Bouwens_2014(zs)
-    if(zs>=4 and zs<=6):
-        _dBdMUV    = dBdMUV if (intrinsic_Mag_UV <= -18.8) else -0.08
-        UV_slope   = _dBdMUV*(intrinsic_Mag_UV+18.8)+B_MUV
-    elif(zs>=7 and zs<=8): UV_slope  = dBdMUV*(intrinsic_Mag_UV+19.5)+B_MUV
-    else: UV_slope = -1.7
-    return UV_slope
+    '''
+    Returns the interpolation for the evolution with redshift of the UV Continuum Slope and 
+    its derivative with magnitude.
+    For 0 < z < 4 Use linear interpolation from Fig.6 of Mondal et al. 2023
+    link: https://iopscience.iop.org/article/10.3847/1538-4357/acc110/pdf
+    For 4 < z < 6 Table 4 from Bouwens et al. 2014 
+    link: https://iopscience.iop.org/article/10.1088/0004-637X/793/2/115/pdf
+    For 6 < z < 8 Table 3 from Bouwens et al. 2014 
+    link: https://iopscience.iop.org/article/10.1088/0004-637X/793/2/115/pdf
+    For 8 < z < 10 from Eq.16 in Liu et al. 2016 (Dragons paper IV)
+    link: https://ui.adsabs.harvard.edu/abs/2016MNRAS.462..235L/abstract
+
+            Parameters:
+                    zs: (float)
+                        Redshift of the source
+                    intrinsic_Mag_UV: (float)
+                        Intrinsic UV Magnitude of the source
+            Returns:
+                    beta: (float)
+                        UV Continuum Slope
+    '''
+    B, dBdM, M_beta = -2.16, -0.16, -18.8
+    if np.around(zs,0) < 4: 
+        B, dBdM, M_beta = -1.5+(zs-1)*((1.5-2.21)/6), 0, -18.8
+    elif np.around(zs,0)==4:
+        B, dBdM, M_beta = -1.95, -0.13, -18.8
+        dBdM = dBdM if intrinsic_Mag_UV <= M_beta else -0.08
+    elif np.around(zs,0)==5:
+        B, dBdM, M_beta = -2.05, -0.17, -18.8
+        dBdM = dBdM if intrinsic_Mag_UV <= M_beta else -0.08
+    elif np.around(zs,0)==6:
+        B, dBdM, M_beta = -2.22, -0.24, -18.8
+        dBdM = dBdM if intrinsic_Mag_UV <= M_beta else -0.08
+    elif np.around(zs,0)==7:
+        B, dBdM, M_beta = -2.05, -0.20, -19.5
+    elif np.around(zs,0)==8:
+        B, dBdM, M_beta = -2.13, -0.15, -19.5
+    elif np.around(zs,0)==9:
+        B, dBdM, M_beta = -2.19, -0.16, -19.5
+    elif np.around(zs,0)==10:
+        B, dBdM, M_beta = -2.16, -0.16, -19.5
+    # if(zs>=4 and zs<=6):
+    #     _dBdM    = dBdM if (intrinsic_Mag_UV <= -18.8) else -0.08
+    #     UV_slope   = _dBdM*(intrinsic_Mag_UV+18.8)+B
+    # elif(zs>=7 and zs<=8): 
+    #     UV_slope  = dBdM*(intrinsic_Mag_UV+19.5)+B
+    # else: 
+    #     UV_slope = -1.7
+    return dBdM * (intrinsic_Mag_UV - M_beta) + B    
 
 def Flux_integral_div_C(UV_slope, avg_wave, FWHM_wave):
     return ((avg_wave+FWHM_wave/2)**(UV_slope+1)-(avg_wave-FWHM_wave/2)**(UV_slope+1))/(UV_slope+1)
@@ -682,14 +917,18 @@ def Norm_AB(avg_wave, FWHM_wave):
     return np.log(avg_wave+FWHM_wave/2)-np.log(avg_wave-FWHM_wave/2)
 
 def K_correction_singleMag_Hogg(zs, observing_band, restframe_band, intrinsic_Mag):
-    supported_K_correctn_photo_bands = ['galex_FUV', 'galex_NUV', 'sdss_g0', 'sdss_r0', 'sdss_i0', 'sdss_z0', 'ukirt_wfcam_Y', 'ukirt_wfcam_J', 'ukirt_wfcam_H', 'ukirt_wfcam_K']
-    if ((observing_band not in supported_K_correctn_photo_bands) or (restframe_band not in supported_K_correctn_photo_bands)): return 0
+    supported_K_correctn_photo_bands = [
+        'galex_FUV', 'galex_NUV', 
+        'sdss_g0', 'sdss_r0', 'sdss_i0', 'sdss_z0', 
+        'ukirt_wfcam_Y', 'ukirt_wfcam_J', 'ukirt_wfcam_H', 'ukirt_wfcam_K']
+    if observing_band not in supported_K_correctn_photo_bands or restframe_band not in supported_K_correctn_photo_bands: 
+        return 0
     rest_frame_wave, rest_frame_FWHM = get_wavelength_nm_from_photo_band(restframe_band)
     obsr_frame_wave, obsr_frame_FWHM = get_wavelength_nm_from_photo_band(observing_band)
     UV_slope = get_UV_cont_slope(zs, intrinsic_Mag)+1
     rest_frame_flux = Flux_integral_div_C(UV_slope, rest_frame_wave, rest_frame_FWHM)/Norm_AB(rest_frame_wave, rest_frame_FWHM)
     obsr_frame_flux = Flux_integral_div_C(UV_slope, obsr_frame_wave, obsr_frame_FWHM)/Norm_AB(obsr_frame_wave, obsr_frame_FWHM)/(1 + zs)
-    return -2.5*np.log10(obsr_frame_flux/rest_frame_flux)
+    return -2.5 * np.log10(obsr_frame_flux / rest_frame_flux)
 
 def K_correction(zs, observing_band, restframe_band, intrinsic_Mag):
     if hasattr(intrinsic_Mag, '__len__'):
@@ -872,7 +1111,6 @@ def get_prob_lensed_bckgnd(sigma, zl, zs, M_array, dzs=0.5, LF_func = schechter_
     return np.nan_to_num(cVol * np.array(LF) * np.abs(np.diff(M_array)[0]))
 
 #########################################################################################################################################################
-__dP_dmu_SIE1,__dP_dmu_SIE2,__dP_dmu_SIE3,__dP_dmu_SIE4,__dP_dmu_SIE1_3,__dP_dmu_SIE3_3,__dP_dmu_SIE1_4,__w1,__w2,__w3,__w4 = load_weights_dP_dmu_SIE()
 
 def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, app_magn_limit, survey_area_sq_degrees,
                                   seeing_arcsec, SNR, exp_time_sec, sky_bckgnd_m_per_arcsec_sq, zero_point_m,  
