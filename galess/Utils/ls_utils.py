@@ -10,7 +10,7 @@ def read_survey_params(title, VERBOSE = 0):
     # BASEPATH = os.path.dirname(os.path.abspath(''))+'/GALESS/galess/'
     BASEPATH = '/Users/giofer/Documents/GitHub/GALESS/galess/'
     FPATH = BASEPATH + '/data/surveys_params/'+TITLE+'.param'
-    
+
     params = {}
     with open(FPATH, "r") as file:
         for line in file:
@@ -30,7 +30,7 @@ def load_pickled_files(title, DOUBLE_LENS = 0):
     BASEPATH = '/Users/giofer/Documents/GitHub/GALESS/galess/'
     FOLDERPATH = BASEPATH + '/data/surveys_results/'+TITLE+'/'
     if os.path.exists(FOLDERPATH):
-        FPATH = FOLDERPATH+TITLE+'_matrix_LL.pkl'        
+        FPATH = FOLDERPATH+TITLE+'_matrix_LL.pkl'
         if os.path.isfile(FPATH):
             with open(FPATH, 'rb') as pickle_file: _temp_LL = pickle.load(pickle_file)
             FPATH = FOLDERPATH+TITLE+'_prob_LL.pkl'
@@ -58,9 +58,9 @@ def load_pickled_files(title, DOUBLE_LENS = 0):
     raise ValueError('Files do not exist. Run the model on this survey.')
 
 def save_pickled_files(
-                    title, 
+                    title,
                     temp_LL, Theta_E_LL, prob_LL,
-                    temp_noLL, Theta_E_noLL, prob_noLL, 
+                    temp_noLL, Theta_E_noLL, prob_noLL,
                     DOUBLE_LENS = 0):
     TITLE = remove_spaces_from_string(title)
     # BASEPATH = os.path.dirname(os.path.abspath(''))+'/GALESS/galess/'
@@ -69,42 +69,42 @@ def save_pickled_files(
     if not os.path.exists(FOLDERPATH):
         os.makedirs(FOLDERPATH)
     FPATH = FOLDERPATH+TITLE+'_matrix_LL.pkl'
-    with open(FPATH, 'wb') as pickle_file:  
+    with open(FPATH, 'wb') as pickle_file:
         pickle.dump(temp_LL, pickle_file)
     FPATH = FOLDERPATH+TITLE+'_prob_LL.pkl'
-    with open(FPATH, 'wb') as pickle_file:  
+    with open(FPATH, 'wb') as pickle_file:
         pickle.dump(prob_LL, pickle_file)
     FPATH = FOLDERPATH+TITLE+'_matrix_noLL.pkl'
-    with open(FPATH, 'wb') as pickle_file:  
+    with open(FPATH, 'wb') as pickle_file:
         pickle.dump(temp_noLL, pickle_file)
     FPATH = FOLDERPATH+TITLE+'_prob_noLL.pkl'
-    with open(FPATH, 'wb') as pickle_file:  
+    with open(FPATH, 'wb') as pickle_file:
         pickle.dump(prob_noLL, pickle_file)
     if DOUBLE_LENS:
         FPATH = FOLDERPATH+TITLE+'_Theta_E_LL_z1.pkl'
-        with open(FPATH, 'wb') as pickle_file:  
+        with open(FPATH, 'wb') as pickle_file:
             pickle.dump(Theta_E_LL[0], pickle_file)
         FPATH = FOLDERPATH+TITLE+'_Theta_E_noLL_z1.pkl'
-        with open(FPATH, 'wb') as pickle_file:  
+        with open(FPATH, 'wb') as pickle_file:
             pickle.dump(Theta_E_noLL[0], pickle_file)
         FPATH = FOLDERPATH+TITLE+'_Theta_E_LL_z2.pkl'
-        with open(FPATH, 'wb') as pickle_file:  
+        with open(FPATH, 'wb') as pickle_file:
             pickle.dump(Theta_E_LL[1], pickle_file)
         FPATH = FOLDERPATH+TITLE+'_Theta_E_noLL_z2.pkl'
-        with open(FPATH, 'wb') as pickle_file:  
+        with open(FPATH, 'wb') as pickle_file:
             pickle.dump(Theta_E_noLL[1], pickle_file)
     else:
         FPATH = FOLDERPATH+TITLE+'_Theta_E_LL.pkl'
-        with open(FPATH, 'wb') as pickle_file:  
+        with open(FPATH, 'wb') as pickle_file:
             pickle.dump(Theta_E_LL, pickle_file)
         FPATH = FOLDERPATH+TITLE+'_Theta_E_noLL.pkl'
-        with open(FPATH, 'wb') as pickle_file:  
+        with open(FPATH, 'wb') as pickle_file:
             pickle.dump(Theta_E_noLL, pickle_file)
-    pass    
+    pass
 
 def print_summary_surveys(surveys_selection):
     print(f'|     Survey - Filter     | PSF/Seeing ["] | Area [deg^2] | m_cut [mag] | m_lim [mag] | N [deg^-1] | N_lenses (LL)       |')
-    print() 
+    print()
     if hasattr(surveys_selection, '__len__') == False: surveys_selection = [surveys_selection]
     for title in surveys_selection:
         survey_params = read_survey_params(title, VERBOSE = 0)
@@ -123,4 +123,4 @@ def print_summary_surveys(surveys_selection):
         else:
             N_LL, N_noLL = f'{np.sum(matrix_LL):.0f}', f'{np.sum(matrix_noLL):.0f}'
         print(f'|{title:^25}|{seeing:16.3f}|{area:14.3f}|{cut:13.1f}|{limit:13.1f}|{(np.sum(matrix_noLL)/area):12.0f}|{N_noLL:>9} ({N_LL:>9})|')
-        print() 
+        print()
