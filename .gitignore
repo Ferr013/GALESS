@@ -8,6 +8,7 @@ galess/data/HMF_tables
 galess/.DS_Store
 galess/PROFILING
 galess/environment.*
+galess/RareLensStat
 examples/Requests
 examples/img
 profile.html
