@@ -672,7 +672,7 @@ def plot_angular_separation(survey_title, _theta_arcsec, omega, cmap_c = cm.cool
         plt.tight_layout()
         plt.show()
 
-def compare_COSMOS_HST_Faure(zl_array, zs_array, sigma_array, M_array_UV, mag_cut, ONLY_FULL_SAMPLE = 0, LENS_LIGHT = 1, __MAG_OVER_ARCSEC_SQ__ = 0, PLOT_FOR_KEYNOTE = 0):
+def compare_COSMOS_HST_Faure(zl_array, zs_array, sigma_array, M_array_UV, mag_cut, ONLY_FULL_SAMPLE = 1, LENS_LIGHT = 1, __MAG_OVER_ARCSEC_SQ__ = 0, PLOT_FOR_KEYNOTE = 0):
     ### FAURE DATA #################################################################################
     ### from FAURE+(2008) --- selection of high grade lenses from COSMOS-HST
     FAURE_title=['Name'       ,'zl' , 'zs', 'sig', 'Rein', 'mag_814W_len', 'mag_814W_src_arcsec_sq']
