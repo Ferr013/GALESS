@@ -15,4 +15,5 @@ examples/Requests
 examples/img
 profile.html
 profile.json
+build*
 test*
