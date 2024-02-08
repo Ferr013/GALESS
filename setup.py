@@ -25,7 +25,7 @@ setup(
     author="Giovanni Ferrami",
     author_email="gferrami@student.unimelb.edu.au",
     url="https://github.com/Ferr013/GALESS",
-    packages = ['galess'],
+    packages = ['galess', 'galess.LensStat', 'galess.Plots', 'galess.Utils', 'galess.ComputeSurveys'],
     install_requires=get_requirements(),
     python_requires='>=3.8',
     license="BSD-3"

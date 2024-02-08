@@ -1,6 +1,4 @@
 astropy==5.3.4
-halomod==2.1.0
-hmf==3.4.4
 matplotlib==3.8.1
 mpmath==1.3.0
 numpy==1.26.3
