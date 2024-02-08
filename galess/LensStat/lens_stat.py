@@ -1565,61 +1565,41 @@ def get_N_and_P_projections(N_gal_matrix, sigma_array, zl_array, zs_array, SMOOT
         P_sg          = np.convolve(P_sg, np.ones(3)/3, mode='same')
     return Ngal_zl_sigma, Ngal_sigma_zs, Ngal_zl_zs, P_zs, P_zl, P_sg
 
-
-def get_param_space_idx_from_obs_constraints(CW_ER_zl, CW_ER_zs, E_ring_rad,
-                                                zs_array, zl_array, sigma_array):
-    m_sg = np.zeros((len(zs_array), len(zl_array)))
-    for izs, _zs in enumerate(zs_array):
-        for izl, _zl in enumerate(zl_array):
-            if((_zs>_zl) and (_zs>CW_ER_zs[0]-CW_ER_zs[2]) and (_zs<CW_ER_zs[0]+CW_ER_zs[1])):
-                if((_zl>CW_ER_zl[0]-CW_ER_zl[2]) and (_zl<CW_ER_zl[0]+CW_ER_zl[1])):
-                    m_sg[izs][izl] = sigma_from_R_Ein(_zs, _zl, E_ring_rad)
-    sig_nozero_idx = np.zeros(0).astype(int)
-    for sg_from_RE in m_sg[np.where(m_sg > 0)]:
-            sig_nozero_idx = np.append(sig_nozero_idx, int(np.argmin(np.abs(sigma_array-sg_from_RE))))
-    zs_nozero_idx, zl_nozero_idx = np.where(m_sg > 0)[0], np.where(m_sg > 0)[1]
-    return zl_nozero_idx, zs_nozero_idx, sig_nozero_idx
-
-def prob_for_obs_conf_in_param_space_per_sq_degree(survey_title,
-                                                    CW_ER_zl, CW_ER_zs, E_ring_rad,
-                                                    zs_array, zl_array, sigma_array, CHECK_LL = True):
-    survey_params = utils.read_survey_params(survey_title, VERBOSE = 0)
-    area     = survey_params['area']
-    matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(survey_title)
-    Ngal_zl_sigma_LL, Ngal_zs_sigma_LL, Ngal_zs_zl_LL, _ , __ , ___ = get_N_and_P_projections(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH=1)
-    mat = matrix_LL if CHECK_LL else matrix_noLL
-    res = 0
-    zl_nozero_idx, zs_nozero_idx, sig_nozero_idx = get_param_space_idx_from_obs_constraints(CW_ER_zl, CW_ER_zs, E_ring_rad, zs_array, zl_array, sigma_array)
-    for src, sig, lns in zip(zs_nozero_idx, sig_nozero_idx, zl_nozero_idx):
-        res = res + mat[src][sig][lns]
-    return res/area
-
-def get_src_magnitude_distr(m_obs, m_cut, zs_array, prob, M_array_UV, obs_band = 'sdss_i0'):
-    m_num = np.zeros(len(m_obs))
-    M_array_UV   = M_array_UV[::-1] if (M_array_UV[0]>M_array_UV[-1]) else M_array_UV
-    for izs, zs in enumerate(zs_array[zs_array>0]):
-        obs_band_to_intr_UV_corr = 5 * np.log10(cosmo.luminosity_distance(zs).value * 1e5) + K_correction_from_UV(zs, obs_band, M_array_UV)
-        m_array_i = M_array_UV + obs_band_to_intr_UV_corr - 2.5 * np.log10(3)
-        idcut = int(np.argmin(np.power(m_array_i-m_cut,2)))
-        N_per_M = np.sum(prob,axis=(1,2))[izs][:]
-        # N_per_M = prob[izs][:][:][:]
-        # N_per_M[:][:][idcut-1:] = 0
-        # N_per_M = np.sum(N_per_M, axis=(0,1))
-        for imu, mu in enumerate(m_array_i):
-            m_idx = int(np.argmin(np.abs(m_obs - mu)))
-            #if(imu < idcut):
-            m_num[m_idx] = m_num[m_idx]+np.sum(N_per_M[imu])
-    return m_num
-
 def get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix, obs_band = 'sdss_i0'):
+    '''
+    Returns the apparent magnitude distribution in the chosen observing band of the lens
+    population obtained using galess.
+    The approximation maps the velocity dispersion to the absoulute V magnitude, using
+    link: https://ui.adsabs.harvard.edu/abs/2019ApJ...887...10S/abstract
+    and then apply distance modulus and K correction to evaluate the apparent magnitude
+    in obs_band.
+
+            Parameters:
+                    m_obs: ndarray(dtype=float, ndim=1)
+                        Magnitude bins, used to match the observed distribution.
+                    zl_array: ndarray(dtype=float, ndim=1)
+                        Redshift of the lens.
+                    sigma_array: ndarray(dtype=float, ndim=1)
+                        Velocity dispersion of the lens.
+                    matrix: ndarray(dtype=float, ndim=3)
+                        Number of lensed galaxies per bin of velocity dispersion, redshift
+                        of the lens and the source, integrated over the source magnitude
+                        up to the magnitude limit of the survey.
+                    obs_band: (string)
+                        Observing photometric band.
+            Returns:
+                    m_num: ndarray(dtype=float, ndim=1)
+                        Fraction of sources with magnitude M_UV for which the brightest
+                        multiple image is brighter than the foreground lens light profile.
+    '''
     m_num = np.zeros(len(m_obs))
     for izl, zl in enumerate(zl_array[zl_array>0]):
-        #https://ui.adsabs.harvard.edu/abs/2019ApJ...887...10S/abstract
         M_array_V = -2.5 * (4.86 * np.log10(sigma_array / 200) + 8.52)
-        obs_band_to_intr_UV_corr = 5 * np.log10(cosmo.luminosity_distance(zl).value * 1e5) + K_correction(zl, obs_band, 'sdss_g0', M_array_V)
+        Kc = K_correction(zl, obs_band, 'sdss_g0', M_array_V)
+        obs_band_to_intr_UV_corr = 5 * np.log10(cosmo.luminosity_distance(zl).value * 1e5) + Kc
         m_array_i = M_array_V + obs_band_to_intr_UV_corr
         N_per_sg = np.sum(matrix, axis=0)[:, izl]
         for imu, mu in enumerate(m_array_i):
             m_idx = np.argmin(np.abs(m_obs - mu))
-            m_num[m_idx] = m_num[m_idx]+N_per_sg[imu]
+            m_num[m_idx] = m_num[m_idx] + N_per_sg[imu]
     return m_num
