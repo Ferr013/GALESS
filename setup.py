@@ -36,8 +36,8 @@ setup(
     author="Giovanni Ferrami",
     author_email="gferrami@student.unimelb.edu.au",
     url="https://github.com/Ferr013/GALESS",
-    packages = find_packages()
-    # packages = ['galess', 'galess.LensStat', 'galess.Plots', 'galess.Utils', 'galess.ComputeSurveys'],
+    # packages = find_packages()
+    packages = ['galess', 'galess.LensStat', 'galess.Plots', 'galess.Utils', 'galess.ComputeSurveys'],
     # include_package_data=True,
     # package_data={'': ['galess/data/*']},
     install_requires=get_requirements(),
