@@ -19,11 +19,11 @@ def get_requirements():
                     requirements.append(line.strip())
     return requirements
 
-os.chdir("galess")
-for root, dirnames, filenames in os.walk('data'):
-	for filename in fnmatch.filter(filenames, '*'):
-		package_info['package_data']['galess'].append(os.path.join(root, filename))
-os.chdir("..")
+# os.chdir("galess")
+# for root, dirnames, filenames in os.walk('data'):
+# 	for filename in fnmatch.filter(filenames, '*'):
+# 		package_info['package_data']['galess'].append(os.path.join(root, filename))
+# os.chdir("..")
 
 setup(
     name='galess',
@@ -33,6 +33,8 @@ setup(
     author_email="gferrami@student.unimelb.edu.au",
     url="https://github.com/Ferr013/GALESS",
     packages = ['galess', 'galess.LensStat', 'galess.Plots', 'galess.Utils', 'galess.ComputeSurveys'],
+    include_package_data=True,
+    package_data={'': ['data/*']},
     install_requires=get_requirements(),
     python_requires='>=3.8',
     license="BSD-3"
