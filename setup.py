@@ -39,7 +39,7 @@ setup(
     # packages = ['galess', 'galess.LensStat', 'galess.Plots', 'galess.Utils', 'galess.ComputeSurveys'],
     # include_package_data=True,
     # package_data={'': ['galess/data/*']},
-    packages=find_namespace_packages(where="galess"),
+    packages=find_namespace_packages(where=""),
     package_dir={"": "galess"},
     include_package_data=True,
     install_requires=get_requirements(),
