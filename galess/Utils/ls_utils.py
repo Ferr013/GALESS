@@ -5,7 +5,9 @@ import numpy as np
 
 # BASEPATH = os.path.dirname(os.path.abspath(''))+'/GALESS/galess/'
 # BASEPATH = '/../../data/'
-BASEPATH = files('data').joinpath('').read_text()
+# BASEPATH = files('data').joinpath('').read_text()
+BASEPATH = 'data/'
+
 
 def remove_spaces_from_string(string):
     return "".join(string.split())

@@ -542,7 +542,8 @@ def load_weights_dP_dmu_SIE():
                         Magnification distributions and weights for a SIE lens
     '''
     # BASEPATH = '/../../data/'
-    BASEPATH = files('data').joinpath('').read_text()
+    # BASEPATH = files('data').joinpath('').read_text()
+    BASEPATH = 'data/'
 
     if os.path.isfile(BASEPATH+'SIE_dPdmu/weights_dP_dmu_SIE.txt'):
         weights = np.loadtxt(BASEPATH+'SIE_dPdmu/weights_dP_dmu_SIE.txt')
