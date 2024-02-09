@@ -3,6 +3,7 @@
 Set up for mymodule
 """
 from setuptools import setup
+import fnmatch
 import os
 
 def get_requirements():
