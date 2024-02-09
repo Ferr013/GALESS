@@ -5,7 +5,7 @@
 Installation
 ------------
 
-``$ pip install git+https://github.com/Ferr013/GALESS``
+``pip install git+https://github.com/Ferr013/GALESS``
 
 
 Example notebooks
