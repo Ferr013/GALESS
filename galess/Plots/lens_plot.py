@@ -1027,6 +1027,7 @@ def model_response_m_cut():
     sky_bckgnd_m = survey_params['sky_bckgnd_m']
     photo_band   = survey_params['photo_band']
 
+    M_array = np.linspace(-13 , -25 , 25)
     zl_array_CFHTLS = np.arange(0.0 , 2.1 , 0.1)
     zs_array_CFHTLS = np.arange(0.0 , 5.6 , 0.2)
     sg_array_CFHTLS = np.linspace(100 , 400 , 31)
