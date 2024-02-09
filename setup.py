@@ -18,6 +18,12 @@ def get_requirements():
                     requirements.append(line.strip())
     return requirements
 
+os.chdir("galess")
+for root, dirnames, filenames in os.walk('data'):
+	for filename in fnmatch.filter(filenames, '*'):
+		package_info['package_data']['galess'].append(os.path.join(root, filename))
+os.chdir("..")
+
 setup(
     name='galess',
     version=0.1,

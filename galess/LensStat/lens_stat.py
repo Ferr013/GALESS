@@ -540,17 +540,16 @@ def load_weights_dP_dmu_SIE():
                     dPdmu1 ... w4: (float)
                         Magnification distributions and weights for a SIE lens
     '''
-    # BASEPATH = os.path.dirname(os.path.abspath(''))+'/GALESS/galess/' #FIXME: is is hardcoded!
-    BASEPATH = '/Users/giofer/Documents/GitHub/GALESS/galess/'
-    if os.path.isfile(BASEPATH+'data/SIE_dPdmu/weights_dP_dmu_SIE.txt'):
-        weights = np.loadtxt(BASEPATH+'data/SIE_dPdmu/weights_dP_dmu_SIE.txt')
-        __dP_dmu_SIE1, __w1 = np.loadtxt(BASEPATH+'data/SIE_dPdmu/dP_dmu_SIE_1.txt'), weights[0]
-        __dP_dmu_SIE2, __w2 = np.loadtxt(BASEPATH+'data/SIE_dPdmu/dP_dmu_SIE_2.txt'), weights[1]
-        __dP_dmu_SIE3, __w3 = np.loadtxt(BASEPATH+'data/SIE_dPdmu/dP_dmu_SIE_3.txt'), weights[2]
-        __dP_dmu_SIE4, __w4 = np.loadtxt(BASEPATH+'data/SIE_dPdmu/dP_dmu_SIE_4.txt'), weights[3]
-        __dP_dmu_SIE1_3 = np.loadtxt(BASEPATH+'data/SIE_dPdmu/dP_dmu_SIE_1_3reg.txt')
-        __dP_dmu_SIE3_3 = np.loadtxt(BASEPATH+'data/SIE_dPdmu/dP_dmu_SIE_3_3reg.txt')
-        __dP_dmu_SIE1_4= np.loadtxt(BASEPATH+'data/SIE_dPdmu/dP_dmu_SIE_1_4reg.txt')
+    BASEPATH = '/../../data/'
+    if os.path.isfile(BASEPATH+'SIE_dPdmu/weights_dP_dmu_SIE.txt'):
+        weights = np.loadtxt(BASEPATH+'SIE_dPdmu/weights_dP_dmu_SIE.txt')
+        __dP_dmu_SIE1, __w1 = np.loadtxt(BASEPATH+'SIE_dPdmu/dP_dmu_SIE_1.txt'), weights[0]
+        __dP_dmu_SIE2, __w2 = np.loadtxt(BASEPATH+'SIE_dPdmu/dP_dmu_SIE_2.txt'), weights[1]
+        __dP_dmu_SIE3, __w3 = np.loadtxt(BASEPATH+'SIE_dPdmu/dP_dmu_SIE_3.txt'), weights[2]
+        __dP_dmu_SIE4, __w4 = np.loadtxt(BASEPATH+'SIE_dPdmu/dP_dmu_SIE_4.txt'), weights[3]
+        __dP_dmu_SIE1_3 = np.loadtxt(BASEPATH+'SIE_dPdmu/dP_dmu_SIE_1_3reg.txt')
+        __dP_dmu_SIE3_3 = np.loadtxt(BASEPATH+'SIE_dPdmu/dP_dmu_SIE_3_3reg.txt')
+        __dP_dmu_SIE1_4= np.loadtxt(BASEPATH+'SIE_dPdmu/dP_dmu_SIE_1_4reg.txt')
         return __dP_dmu_SIE1,__dP_dmu_SIE2,__dP_dmu_SIE3,__dP_dmu_SIE4,\
             __dP_dmu_SIE1_3,__dP_dmu_SIE3_3,__dP_dmu_SIE1_4,__w1,__w2,__w3,__w4
     print('Did not load files')
@@ -1546,7 +1545,7 @@ def get_N_and_P_projections(N_gal_matrix, sigma_array, zl_array, zs_array, SMOOT
                     P_zs: ndarray(dtype=float, ndim=1)
                         Probability distribution of identifiable lenses over source redshift zs
                     P_zl: ndarray(dtype=float, ndim=1)
-                        Probability distribution of identifiable lenses over lens redshift zl
+                        Probability distribution of identifiable lenses over lens rFedshift zl
                     P_sg: ndarray(dtype=float, ndim=1)
                         Probability distribution of identifiable lenses over lens vel. disp. sigma
     '''

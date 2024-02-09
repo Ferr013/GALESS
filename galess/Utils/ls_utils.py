@@ -2,14 +2,15 @@ import os
 import pickle
 import numpy as np
 
+# BASEPATH = os.path.dirname(os.path.abspath(''))+'/GALESS/galess/'
+BASEPATH = '/../../data/'
+
 def remove_spaces_from_string(string):
     return "".join(string.split())
 
 def read_survey_params(title, VERBOSE = 0):
     TITLE = remove_spaces_from_string(title)
-    # BASEPATH = os.path.dirname(os.path.abspath(''))+'/GALESS/galess/'
-    BASEPATH = '/Users/giofer/Documents/GitHub/GALESS/galess/'
-    FPATH = BASEPATH + '/data/surveys_params/'+TITLE+'.param'
+    FPATH = BASEPATH + 'surveys_params/'+TITLE+'.param'
 
     params = {}
     with open(FPATH, "r") as file:
@@ -26,9 +27,7 @@ def read_survey_params(title, VERBOSE = 0):
 
 def load_pickled_files(title, DOUBLE_LENS = 0):
     TITLE = remove_spaces_from_string(title)
-    # BASEPATH = os.path.dirname(os.path.abspath(''))+'/GALESS/galess/'
-    BASEPATH = '/Users/giofer/Documents/GitHub/GALESS/galess/'
-    FOLDERPATH = BASEPATH + '/data/surveys_results/'+TITLE+'/'
+    FOLDERPATH = BASEPATH + 'surveys_results/'+TITLE+'/'
     if os.path.exists(FOLDERPATH):
         FPATH = FOLDERPATH+TITLE+'_matrix_LL.pkl'
         if os.path.isfile(FPATH):
@@ -63,9 +62,7 @@ def save_pickled_files(
                     temp_noLL, Theta_E_noLL, prob_noLL,
                     DOUBLE_LENS = 0):
     TITLE = remove_spaces_from_string(title)
-    # BASEPATH = os.path.dirname(os.path.abspath(''))+'/GALESS/galess/'
-    BASEPATH = '/Users/giofer/Documents/GitHub/GALESS/galess/'
-    FOLDERPATH = BASEPATH + '/data/surveys_results/'+TITLE+'/'
+    FOLDERPATH = BASEPATH + 'surveys_results/'+TITLE+'/'
     if not os.path.exists(FOLDERPATH):
         os.makedirs(FOLDERPATH)
     FPATH = FOLDERPATH+TITLE+'_matrix_LL.pkl'
