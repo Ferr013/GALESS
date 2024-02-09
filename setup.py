@@ -29,6 +29,15 @@ def get_requirements():
 # 		package_info['package_data']['galess'].append(os.path.join(root, filename))
 # os.chdir("..")
 
+def package_files(directory):
+    paths = []
+    for (path, directories, filenames) in os.walk(directory):
+        for filename in filenames:
+            paths.append(os.path.join('..', path, filename))
+    return paths
+
+extra_files = package_files('galess/data')
+
 setup(
     name='galess',
     version=0.1,
@@ -41,7 +50,8 @@ setup(
     # package_data={'': ['galess/data/*']},
     # packages=find_namespace_packages(where=""),
     # package_dir={"": ""},
-    package_data={"galess.data": ["*"]},
+    # package_data={"galess.data": ["*"]},
+    package_data={'': extra_files},
     install_requires=get_requirements(),
     python_requires='>=3.8',
     license="BSD-3"
