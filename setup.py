@@ -41,9 +41,7 @@ setup(
     # package_data={'': ['galess/data/*']},
     # packages=find_namespace_packages(where=""),
     package_dir={"": "galess"},
-    package_data={
-        "data": ["*"],
-    }
+    package_data={"data": ["*"]},
     install_requires=get_requirements(),
     python_requires='>=3.8',
     license="BSD-3"
