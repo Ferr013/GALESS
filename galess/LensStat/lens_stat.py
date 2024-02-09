@@ -3,6 +3,7 @@
 lenses and lensed sources in a given survey."""
 
 import os.path
+from importlib.resources import files
 import numpy as np
 from scipy import integrate as integral
 from scipy import signal, stats
@@ -540,7 +541,9 @@ def load_weights_dP_dmu_SIE():
                     dPdmu1 ... w4: (float)
                         Magnification distributions and weights for a SIE lens
     '''
-    BASEPATH = '/../../data/'
+    # BASEPATH = '/../../data/'
+    BASEPATH = files('data').joinpath('').read_text()
+
     if os.path.isfile(BASEPATH+'SIE_dPdmu/weights_dP_dmu_SIE.txt'):
         weights = np.loadtxt(BASEPATH+'SIE_dPdmu/weights_dP_dmu_SIE.txt')
         __dP_dmu_SIE1, __w1 = np.loadtxt(BASEPATH+'SIE_dPdmu/dP_dmu_SIE_1.txt'), weights[0]

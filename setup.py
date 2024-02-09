@@ -2,7 +2,7 @@
 """
 Set up for mymodule
 """
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 import os
 
 # import fnmatch
@@ -36,10 +36,12 @@ setup(
     author="Giovanni Ferrami",
     author_email="gferrami@student.unimelb.edu.au",
     url="https://github.com/Ferr013/GALESS",
-    # packages = find_packages()
-    packages = ['galess', 'galess.LensStat', 'galess.Plots', 'galess.Utils', 'galess.ComputeSurveys'],
+    # packages = ['galess', 'galess.LensStat', 'galess.Plots', 'galess.Utils', 'galess.ComputeSurveys'],
     # include_package_data=True,
     # package_data={'': ['galess/data/*']},
+    packages=find_namespace_packages(where="src"),
+    package_dir={"": "src"},
+    include_package_data=True,
     install_requires=get_requirements(),
     python_requires='>=3.8',
     license="BSD-3"

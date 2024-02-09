@@ -1,9 +1,11 @@
 import os
+from importlib.resources import files
 import pickle
 import numpy as np
 
 # BASEPATH = os.path.dirname(os.path.abspath(''))+'/GALESS/galess/'
-BASEPATH = '/../../data/'
+# BASEPATH = '/../../data/'
+BASEPATH = files('data').joinpath('').read_text()
 
 def remove_spaces_from_string(string):
     return "".join(string.split())
