@@ -3,12 +3,7 @@ from importlib.resources import files
 import pickle
 import numpy as np
 
-# BASEPATH = os.path.dirname(os.path.abspath(''))+'/GALESS/galess/'
-# BASEPATH = '/../../data/'
-# BASEPATH = files('data').joinpath('').read_text()
-# BASEPATH = './../data/'
 BASEPATH = os.path.dirname(os.path.abspath(__file__)) + '/../data/'
-
 
 def remove_spaces_from_string(string):
     return "".join(string.split())

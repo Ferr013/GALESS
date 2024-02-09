@@ -541,11 +541,7 @@ def load_weights_dP_dmu_SIE():
                     dPdmu1 ... w4: (float)
                         Magnification distributions and weights for a SIE lens
     '''
-    # BASEPATH = '/../../data/'
-    # BASEPATH = files('data').joinpath('').read_text()
-    # BASEPATH = './../data/'
     BASEPATH = os.path.dirname(os.path.abspath(__file__)) + '/../data/'
-    np.loadtxt(BASEPATH+'SIE_dPdmu/weights_dP_dmu_SIE.txt')
     if os.path.isfile(BASEPATH+'SIE_dPdmu/weights_dP_dmu_SIE.txt'):
         weights = np.loadtxt(BASEPATH+'SIE_dPdmu/weights_dP_dmu_SIE.txt')
         __dP_dmu_SIE1, __w1 = np.loadtxt(BASEPATH+'SIE_dPdmu/dP_dmu_SIE_1.txt'), weights[0]
@@ -558,7 +554,6 @@ def load_weights_dP_dmu_SIE():
         return __dP_dmu_SIE1,__dP_dmu_SIE2,__dP_dmu_SIE3,__dP_dmu_SIE4,\
             __dP_dmu_SIE1_3,__dP_dmu_SIE3_3,__dP_dmu_SIE1_4,__w1,__w2,__w3,__w4
     print('Did not load files')
-    # print(os.getcwd()+BASEPATH)
     print(os.path.abspath(__file__) + BASEPATH)
     return 0
 
