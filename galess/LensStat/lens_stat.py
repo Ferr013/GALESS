@@ -543,7 +543,7 @@ def load_weights_dP_dmu_SIE():
     '''
     # BASEPATH = '/../../data/'
     # BASEPATH = files('data').joinpath('').read_text()
-    BASEPATH = 'data/'
+    BASEPATH = '../data/'
 
     if os.path.isfile(BASEPATH+'SIE_dPdmu/weights_dP_dmu_SIE.txt'):
         weights = np.loadtxt(BASEPATH+'SIE_dPdmu/weights_dP_dmu_SIE.txt')
@@ -557,6 +557,7 @@ def load_weights_dP_dmu_SIE():
         return __dP_dmu_SIE1,__dP_dmu_SIE2,__dP_dmu_SIE3,__dP_dmu_SIE4,\
             __dP_dmu_SIE1_3,__dP_dmu_SIE3_3,__dP_dmu_SIE1_4,__w1,__w2,__w3,__w4
     print('Did not load files')
+    print(os.path.dirname(os.path.abspath(''))+BASEPATH)
     return 0
 
 PM1, PM2, PM3, PM4, PM13, PM33, PM14, __w1,__w2,__w3,__w4 = load_weights_dP_dmu_SIE()
