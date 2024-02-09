@@ -34,7 +34,7 @@ setup(
     url="https://github.com/Ferr013/GALESS",
     packages = ['galess', 'galess.LensStat', 'galess.Plots', 'galess.Utils', 'galess.ComputeSurveys'],
     include_package_data=True,
-    package_data={'': ['data/*']},
+    package_data={'': ['galess/data/*']},
     install_requires=get_requirements(),
     python_requires='>=3.8',
     license="BSD-3"
