@@ -2,6 +2,10 @@
 
 ``GaLeSS`` is a software package to model the distributions of strong gravitational lenses and strongly lensed sources in surveys.
 
+Installation
+------------
+
+``$ pip install git+https://github.com/Ferr013/GALESS``
 
 
 Example notebooks
