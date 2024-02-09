@@ -558,7 +558,7 @@ def load_weights_dP_dmu_SIE():
             __dP_dmu_SIE1_3,__dP_dmu_SIE3_3,__dP_dmu_SIE1_4,__w1,__w2,__w3,__w4
     print('Did not load files')
     # print(os.getcwd()+BASEPATH)
-    print(os.path.dirname( os.pah.abspath(__file__))+BASEPATH)
+    print(os.path.abspath(__file__) + BASEPATH)
     return 0
 
 PM1, PM2, PM3, PM4, PM13, PM33, PM14, __w1,__w2,__w3,__w4 = load_weights_dP_dmu_SIE()
