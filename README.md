@@ -21,4 +21,4 @@ Please cite [Ferrami & Wyithe 2024](https://arxiv.org/>) when you use ``GaLeSS``
 
 Don't hesitate to reach out if you have questions! 
 
-email: [gferrami@student.unimelb.edu.au](gferrami@student.unimelb.edu.au)
+email: [gferrami@student.unimelb.edu.au](mailto::gferrami@student.unimelb.edu.au)
