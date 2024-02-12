@@ -1561,10 +1561,10 @@ def get_N_and_P_projections(N_gal_matrix, sigma_array, zl_array, zs_array, SMOOT
         Ngal_zl_sigma = signal.convolve2d(Ngal_zl_sigma, np.ones((3,3))/9, mode='same')
         Ngal_zl_zs    = signal.convolve2d(Ngal_zl_zs   , np.ones((3,3))/9, mode='same')
         Ngal_sigma_zs = signal.convolve2d(Ngal_sigma_zs, np.ones((3,3))/9, mode='same')
-        if zl[0] == 0:
+        if zl_array[0] == 0:
             Ngal_zl_sigma[0,:] = 0
             Ngal_zl_zs[0,:] = 0
-        if zs[0] == 0:
+        if zs_array[0] == 0:
             Ngal_zl_zs[:,0] = 0
             Ngal_sigma_zs[:,0] = 0
         P_zs = np.append(P_zs[0], np.convolve(P_zs[1:], np.ones(3)/3, mode='same'))
