@@ -1,3 +1,5 @@
+"""Module providing a set of plotting functions."""
+
 import os.path
 import numpy as np
 import pandas as pd
