@@ -19,4 +19,6 @@ Attribution
 -----------
 Please cite [Ferrami & Wyithe 2024](https://arxiv.org/>) when you use ``GaLeSS`` in a publication and link to [https://github.com/Ferr013/GALESS](https://github.com/Ferr013/GALESS).
 
-Don't hesitate to reach out if you have questions!
+Don't hesitate to reach out if you have questions! 
+
+email: [gferrami@student.unimelb.edu.au](gferrami@student.unimelb.edu.au)
