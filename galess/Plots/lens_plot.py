@@ -249,7 +249,31 @@ def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, 
         zero_point_m = survey_params['zero_point_m']
         sky_bckgnd_m = survey_params['sky_bckgnd_m']
         photo_band   = survey_params['photo_band']
-        matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+
+        try:
+          matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+        except ValueError:
+            print('FILE do NOT exist - RUNNING MODEL')
+            M_array     = np.linspace(-13 , -25 , 25)
+            sigma_array = np.linspace(100 , 400 , 31)
+            zl_array    = np.arange(0.  , 2.5 , 0.1)
+            zs_array    = np.arange(0.  , 5.4 , 0.2)
+            min_SNR     = 20
+            arc_mu_thr  = 3
+            VDF = ls.Phi_vel_disp_Mason
+            matrix_noLL, Theta_E_noLL, prob_noLL = ls.calculate_num_lenses_and_prob(
+                                                    sigma_array, zl_array, zs_array, M_array, limit, area,
+                                                    seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
+                                                    photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
+                                                    Phi_vel_disp = VDF, LENS_LIGHT_FLAG = False)
+            matrix_LL, Theta_E_LL, prob_LL = ls.calculate_num_lenses_and_prob(
+                                                    sigma_array, zl_array, zs_array, M_array, limit, area,
+                                                    seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
+                                                    photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
+                                                    Phi_vel_disp = VDF, LENS_LIGHT_FLAG = True)
+            utils.save_pickled_files(title,  matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL)
+            matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+
         matrix  = matrix_LL  if LENS_LIGHT else matrix_noLL
         Theta_E = Theta_E_LL if LENS_LIGHT else Theta_E_noLL
         __col__ = next(_col_)
