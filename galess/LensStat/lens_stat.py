@@ -1476,9 +1476,9 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
             frac_2nd_img = Fraction_2nd_image_above_Mlim(M_array_UV, M_lim, LF_func, zs)
         #TODO: if(SIE_FLAG): frac_3rd_img, frac_4th_img = Fraction_Nth_image_above_Mlim_SIE(3, ...)
         for isg, sigma in enumerate(sigma_array):
-            _dsg = sigma_array[1]-sigma_array[0] if (isg==0) else (sigma-sigma_array[isg-1])
+            _dsg = sigma_array[1]-sigma_array[0] if isg==0 else sigma-sigma_array[isg-1]
             for izl, zl in enumerate(zl_array):
-                _dzl = zl_array[1]-zl_array[0] if (izl==0) else (zl-zl_array[izl-1])
+                _dzl = zl_array[1]-zl_array[0] if izl == 0 else zl-zl_array[izl-1]
                 if zl==0:
                     continue #avoid division by 0
                 # The (\Theta_e > c*seeing) condition is a first order approximation that works
@@ -1561,9 +1561,9 @@ def get_N_and_P_projections(N_gal_matrix, sigma_array, zl_array, zs_array, SMOOT
         Ngal_zl_sigma = signal.convolve2d(Ngal_zl_sigma, np.ones((3,3))/9, mode='same')
         Ngal_zl_zs    = signal.convolve2d(Ngal_zl_zs   , np.ones((3,3))/9, mode='same')
         Ngal_sigma_zs = signal.convolve2d(Ngal_sigma_zs, np.ones((3,3))/9, mode='same')
-        P_zs          = np.convolve(P_zs, np.ones(3)/3, mode='same')
-        P_zl          = np.convolve(P_zl, np.ones(3)/3, mode='same')
-        P_sg          = np.convolve(P_sg, np.ones(3)/3, mode='same')
+        P_zs = np.append(P_zs[0], np.convolve(P_zs[1:], np.ones(3)/3, mode='same'))
+        P_zl = np.append(P_zl[0], np.convolve(P_zl[1:], np.ones(3)/3, mode='same'))
+        P_sg = np.append(P_sg[0], np.convolve(P_sg[1:], np.ones(3)/3, mode='same'))
     return Ngal_zl_sigma, Ngal_sigma_zs, Ngal_zl_zs, P_zs, P_zl, P_sg
 
 def get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix, obs_band = 'sdss_i0'):
