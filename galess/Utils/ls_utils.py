@@ -13,7 +13,6 @@ def remove_spaces_from_string(string):
 def read_survey_params(title, VERBOSE = 0):
     TITLE = remove_spaces_from_string(title)
     FPATH = BASEPATH + 'surveys_params/'+TITLE+'.param'
-
     params = {}
     with open(FPATH, "r") as file:
         for line in file:
@@ -104,7 +103,8 @@ def save_pickled_files(
 def print_summary_surveys(surveys_selection):
     print(f'|     Survey - Filter     | PSF/Seeing ["] | Area [deg^2] | m_cut [mag] | m_lim [mag] | N [deg^-1] | N_lenses (LL)       |')
     print()
-    if hasattr(surveys_selection, '__len__') == False: surveys_selection = [surveys_selection]
+    if hasattr(surveys_selection, '__len__') is False:
+        surveys_selection = [surveys_selection]
     for title in surveys_selection:
         survey_params = read_survey_params(title, VERBOSE = 0)
         limit    = survey_params['limit']
@@ -116,10 +116,24 @@ def print_summary_surveys(surveys_selection):
         zero_point_m = survey_params['zero_point_m']
         sky_bckgnd_m = survey_params['sky_bckgnd_m']
         photo_band   = survey_params['photo_band']
-        matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = load_pickled_files(title)
-        if(np.sum(matrix_noLL))>10_000:
+        try:
+          matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+        except ValueError:
+            print('FILE do NOT exist - RUNNING MODEL')
+            matrix_noLL, Theta_E_noLL, prob_noLL = ls.calculate_num_lenses_and_prob(
+                                                    sigma_array, zl_array, zs_array, M_array, limit, area,
+                                                    seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
+                                                    photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
+                                                    Phi_vel_disp = ls.Phi_vel_disp_Mason, LENS_LIGHT_FLAG = False)
+            matrix_LL, Theta_E_LL, prob_LL = ls.calculate_num_lenses_and_prob(
+                                                    sigma_array, zl_array, zs_array, M_array, limit, area,
+                                                    seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
+                                                    photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
+                                                    Phi_vel_disp = ls.Phi_vel_disp_Mason, LENS_LIGHT_FLAG = True)
+            utils.save_pickled_files(title,  matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL)
+            matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = load_pickled_files(title)
+        N_LL, N_noLL = f'{np.sum(matrix_LL):.0f}', f'{np.sum(matrix_noLL):.0f}'
+        if np.sum(matrix_noLL)>10_000:
             N_LL, N_noLL = f'{np.sum(matrix_LL):.1e}', f'{np.sum(matrix_noLL):.1e}'
-        else:
-            N_LL, N_noLL = f'{np.sum(matrix_LL):.0f}', f'{np.sum(matrix_noLL):.0f}'
         print(f'|{title:^25}|{seeing:16.3f}|{area:14.3f}|{cut:13.1f}|{limit:13.1f}|{(np.sum(matrix_noLL)/area):12.0f}|{N_noLL:>9} ({N_LL:>9})|')
         print()
