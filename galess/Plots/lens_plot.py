@@ -329,7 +329,7 @@ def compare_SL2S(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNO
 
     title = 'CFHTLS i band'
     try:
-          matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+        matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
     except ValueError:
         print('FILE do NOT exist - RUNNING MODEL')
         M_array     = np.linspace(-13 , -25 , 25)
@@ -339,6 +339,16 @@ def compare_SL2S(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNO
         min_SNR     = 20
         arc_mu_thr  = 3
         VDF = ls.Phi_vel_disp_Mason
+        survey_params = utils.read_survey_params(title, VERBOSE = 0)
+        limit    = survey_params['limit']
+        cut      = survey_params['cut']
+        area     = survey_params['area']
+        seeing   = survey_params['seeing']
+        exp_time_sec = survey_params['exp_time_sec']
+        pixel_arcsec = survey_params['pixel_arcsec']
+        zero_point_m = survey_params['zero_point_m']
+        sky_bckgnd_m = survey_params['sky_bckgnd_m']
+        photo_band   = survey_params['photo_band']
         matrix_noLL, Theta_E_noLL, prob_noLL = ls.calculate_num_lenses_and_prob(
                                                 sigma_array, zl_array, zs_array, M_array, limit, area,
                                                 seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
@@ -379,7 +389,28 @@ def compare_SL2S(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNO
     ax[2].set_xlim((0,4))
 
     title = 'CFHTLS i band Geng'
-    matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+    try:
+          matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+    except ValueError:
+        print('FILE do NOT exist - RUNNING MODEL')
+        M_array     = np.linspace(-13 , -25 , 25)
+        sigma_array = np.linspace(100 , 400 , 31)
+        zl_array    = np.arange(0.  , 2.5 , 0.1)
+        zs_array    = np.arange(0.  , 5.4 , 0.2)
+        min_SNR     = 20
+        arc_mu_thr  = 3
+        VDF = ls.Phi_vel_disp_Geng
+        matrix_noLL, Theta_E_noLL, prob_noLL = ls.calculate_num_lenses_and_prob(
+                                                sigma_array, zl_array, zs_array, M_array, limit, area,
+                                                seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
+                                                photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
+                                                Phi_vel_disp = VDF, LENS_LIGHT_FLAG = False)
+        matrix_LL, Theta_E_LL, prob_LL = ls.calculate_num_lenses_and_prob(
+                                                sigma_array, zl_array, zs_array, M_array, limit, area,
+                                                seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
+                                                photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
+                                                Phi_vel_disp = VDF, LENS_LIGHT_FLAG = True)
+        utils.save_pickled_files(title,  matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL)
     _ , __  , ___, P_zs_LL   , P_zl_LL   , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=1)
     _ , __  , ___, P_zs_noLL , P_zl_noLL , P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
     if LENS_LIGHT: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
@@ -416,25 +447,21 @@ def model_response_m_cut():
     zero_point_m = survey_params['zero_point_m']
     sky_bckgnd_m = survey_params['sky_bckgnd_m']
     photo_band   = survey_params['photo_band']
-
     M_array = np.linspace(-13 , -25 , 25)
     zl_array_CFHTLS = np.arange(0.0 , 2.1 , 0.1)
     zs_array_CFHTLS = np.arange(0.0 , 5.6 , 0.2)
     sg_array_CFHTLS = np.linspace(100 , 400 , 31)
-
-
-    _title_ = 'PEARLS NEP F115W band_mcut_'
     delta_cut_limit = np.arange(0, 5.25, 0.5)
     gal_num_vs_mcut, gal_num_vs_mcut_LL = np.zeros(0), np.zeros(0)
 
+    _title_ = 'PEARLS NEP F115W band_mcut_'
     for iid, dlt in enumerate(delta_cut_limit):
         cut   = limit - dlt
         title = _title_ + str(iid)
         try:
-            #raise(ValueError)
             matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
         except ValueError:
-            #print('FILE do NOT exist - RUNNING MODEL')
+            print('FILE do NOT exist - RUNNING MODEL')
             matrix_noLL, Theta_E_noLL, prob_noLL = ls.calculate_num_lenses_and_prob(
                                                                         sg_array_CFHTLS, zl_array_CFHTLS, zs_array_CFHTLS, M_array, limit, area,
                                                                         seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
@@ -448,27 +475,23 @@ def model_response_m_cut():
                                                                         LENS_LIGHT_FLAG = True, SIE_FLAG = False)
 
             utils.save_pickled_files(title,  matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL)
-
         gal_num_vs_mcut = np.append(gal_num_vs_mcut, np.sum(matrix_noLL))
         gal_num_vs_mcut_LL = np.append(gal_num_vs_mcut_LL, np.sum(matrix_LL))
 
     line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(___PLOT_FOR_KEYNOTE___)
     _c_ = 'w' if ___PLOT_FOR_KEYNOTE___ else 'k'
-
     fig = plt.figure(figsize=(17, 7))
     grid = plt.GridSpec(2, 3, wspace=0.2, hspace=0.35)
     ax1 = fig.add_subplot(grid[0, :])
     ax2 = fig.add_subplot(grid[1, 0])
     ax3 = fig.add_subplot(grid[1, 1])
     ax4 = fig.add_subplot(grid[1, 2])
-
     if LENS_DENSITY:
         ax1.plot(limit - delta_cut_limit, gal_num_vs_mcut/area, c = _c_)
         ax1.plot(limit - delta_cut_limit, gal_num_vs_mcut_LL/area, c = _c_, ls='--')
     else:
         ax1.plot(limit - delta_cut_limit, gal_num_vs_mcut, c = _c_)
         ax1.plot(limit - delta_cut_limit, gal_num_vs_mcut_LL, c = _c_, ls='--')
-
     _col_  = iter(cmap_c(np.linspace(0, 1, len(delta_cut_limit)+1)))
     for iid, dlt in enumerate(delta_cut_limit):
         ccc = next(_col_)
@@ -476,44 +499,29 @@ def model_response_m_cut():
         matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
         _ , __  , ___, P_zs_LL   , P_zl_LL  , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL, sg_array_CFHTLS, zl_array_CFHTLS, zs_array_CFHTLS, SMOOTH=1)
         _ , __  , ___, P_zs_noLL , P_zl_noLL  , P_sg_noLL   = ls.get_N_and_P_projections(matrix_noLL, sg_array_CFHTLS, zl_array_CFHTLS, zs_array_CFHTLS, SMOOTH=1)
-
         if LENS_DENSITY:
             ax1.plot(limit - dlt, np.sum(matrix_noLL)/area, marker='o', c = ccc, ms = 12)
         else:
             ax1.plot(limit - dlt, np.sum(matrix_noLL), marker='o', c = ccc, ms = 12)
-
-        if(1):
-            ax2.plot(np.append(0,zl_array_CFHTLS), np.append(0,P_zl_noLL), c=ccc, ls='-', label=str(limit - dlt))
-            ax3.plot(np.append(0,zs_array_CFHTLS), np.append(0,P_zs_noLL), c=ccc, ls='-')
-            ax4.plot(sg_array_CFHTLS, P_sg_noLL, c=ccc, ls='-')
-        else:
-            ax2.plot(np.append(0,zl_array_CFHTLS), np.append(0,P_zl_LL), c=ccc, ls='--')
-            ax3.plot(np.append(0,zs_array_CFHTLS), np.append(0,P_zs_LL), c=ccc, ls='--')
-            ax4.plot(sg_array_CFHTLS, P_sg_LL, c=ccc, ls='--')
-
+        ax2.plot(np.append(0,zl_array_CFHTLS), np.append(0,P_zl_noLL), c=ccc, ls='-', label=str(limit - dlt))
+        ax3.plot(np.append(0,zs_array_CFHTLS), np.append(0,P_zs_noLL), c=ccc, ls='-')
+        ax4.plot(sg_array_CFHTLS, P_sg_noLL, c=ccc, ls='-')
     ax1.set_yscale('log')
     ax2.set_xlim((0, 2.0))
     ax3.set_xlim((0, 5.5))
-
     __size_labels__, __size_ticks__ = 20, 15
     ax1.set_xlabel(r'm$_\text{cut}$ [mag]', fontsize=__size_labels__)
-    if LENS_DENSITY: ax1.set_ylabel(r'N lenses [deg$^{-2}$]' , fontsize=__size_labels__)
-    else: ax1.set_ylabel(r'N lenses' , fontsize=__size_labels__)
+    if LENS_DENSITY:
+        ax1.set_ylabel(r'N lenses [deg$^{-2}$]' , fontsize=__size_labels__)
+    else:
+        ax1.set_ylabel(r'N lenses' , fontsize=__size_labels__)
     ax2.set_xlabel(r'$z_l$'    , fontsize=__size_labels__)
     ax3.set_xlabel(r'$z_s$'    , fontsize=__size_labels__)
     ax4.set_xlabel(r'$\sigma$ [km/s]', fontsize=__size_labels__)
-    if(0):
-        ax2.set_ylabel(r'$dP/dz_l$', fontsize=__size_labels__)
-        ax3.set_ylabel(r'$dP/dz_s$', fontsize=__size_labels__)
-        ax4.set_ylabel(r'$dP/d\sigma$'   , fontsize=__size_labels__)
-    else:
-        ax2.set_ylabel(r'Probability distr.', fontsize=__size_labels__)
-
+    ax2.set_ylabel(r'Probability distr.', fontsize=__size_labels__)
     ax1.tick_params(axis='both', which = 'major', labelsize=__size_ticks__, direction = 'in', length = 8)
     ax1.tick_params(axis='both', which = 'minor', labelsize=__size_ticks__, direction = 'in', length = 5)
-
     ax2.tick_params(axis='both', which = 'both', labelsize=__size_ticks__, direction = 'in', length = 5)
     ax3.tick_params(axis='both', which = 'both', labelsize=__size_ticks__, direction = 'in', length = 5)
     ax4.tick_params(axis='both', which = 'both', labelsize=__size_ticks__, direction = 'in', length = 5)
-
     plt.show()
