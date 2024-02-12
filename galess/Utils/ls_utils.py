@@ -117,7 +117,7 @@ def print_summary_surveys(surveys_selection):
         sky_bckgnd_m = survey_params['sky_bckgnd_m']
         photo_band   = survey_params['photo_band']
         try:
-          matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+          matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = load_pickled_files(title)
         except ValueError:
             print('FILE do NOT exist - RUNNING MODEL')
             matrix_noLL, Theta_E_noLL, prob_noLL = ls.calculate_num_lenses_and_prob(
@@ -130,7 +130,7 @@ def print_summary_surveys(surveys_selection):
                                                     seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
                                                     photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
                                                     Phi_vel_disp = ls.Phi_vel_disp_Mason, LENS_LIGHT_FLAG = True)
-            utils.save_pickled_files(title,  matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL)
+            save_pickled_files(title,  matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL)
             matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = load_pickled_files(title)
         N_LL, N_noLL = f'{np.sum(matrix_LL):.0f}', f'{np.sum(matrix_noLL):.0f}'
         if np.sum(matrix_noLL)>10_000:
