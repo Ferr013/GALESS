@@ -123,16 +123,23 @@ def print_summary_surveys(surveys_selection):
           matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = load_pickled_files(title)
         except ValueError:
             print('FILE do NOT exist - RUNNING MODEL')
+            M_array     = np.linspace(-13 , -25 , 25)
+            sigma_array = np.linspace(100 , 400 , 31)
+            zl_array    = np.arange(0.  , 2.5 , 0.1)
+            zs_array    = np.arange(0.  , 5.4 , 0.2)
+            min_SNR     = 20
+            arc_mu_thr  = 3
+            VDF = ls.Phi_vel_disp_Mason
             matrix_noLL, Theta_E_noLL, prob_noLL = ls.calculate_num_lenses_and_prob(
                                                     sigma_array, zl_array, zs_array, M_array, limit, area,
                                                     seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
                                                     photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
-                                                    Phi_vel_disp = ls.Phi_vel_disp_Mason, LENS_LIGHT_FLAG = False)
+                                                    Phi_vel_disp = VDF, LENS_LIGHT_FLAG = False)
             matrix_LL, Theta_E_LL, prob_LL = ls.calculate_num_lenses_and_prob(
                                                     sigma_array, zl_array, zs_array, M_array, limit, area,
                                                     seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
                                                     photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
-                                                    Phi_vel_disp = ls.Phi_vel_disp_Mason, LENS_LIGHT_FLAG = True)
+                                                    Phi_vel_disp = VDF, LENS_LIGHT_FLAG = True)
             save_pickled_files(title,  matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL)
             matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = load_pickled_files(title)
         N_LL, N_noLL = f'{np.sum(matrix_LL):.0f}', f'{np.sum(matrix_noLL):.0f}'
