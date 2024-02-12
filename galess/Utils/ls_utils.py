@@ -1,3 +1,5 @@
+"""Module providing a set of utility functions."""
+
 import os
 from importlib.resources import files
 import pickle
