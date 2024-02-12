@@ -5,6 +5,9 @@ from importlib.resources import files
 import pickle
 import numpy as np
 
+import galess.LensStat.lens_stat as ls
+
+
 BASEPATH = os.path.dirname(os.path.abspath(__file__)) + '/../data/'
 
 def remove_spaces_from_string(string):
