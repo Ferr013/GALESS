@@ -249,7 +249,6 @@ def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, 
         zero_point_m = survey_params['zero_point_m']
         sky_bckgnd_m = survey_params['sky_bckgnd_m']
         photo_band   = survey_params['photo_band']
-
         try:
           matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
         except ValueError:
@@ -272,8 +271,6 @@ def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, 
                                                     photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
                                                     Phi_vel_disp = VDF, LENS_LIGHT_FLAG = True)
             utils.save_pickled_files(title,  matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL)
-            matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
-
         matrix  = matrix_LL  if LENS_LIGHT else matrix_noLL
         Theta_E = Theta_E_LL if LENS_LIGHT else Theta_E_noLL
         __col__ = next(_col_)
@@ -289,6 +286,19 @@ def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, 
     ax[2].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
     ax[0].legend(fontsize=12)
     plt.show()
+
+def plot_z_distribution_in_ax(ax, title, color, zl_array, zs_array, sigma_array, matrix, SMOOTH = 1):
+    _n, __n, ___n, P_zs, P_zl, P_sg = ls.get_N_and_P_projections(matrix, sigma_array, zl_array, zs_array, SMOOTH)
+    ax.plot(zl_array, P_zl, c=color, ls='-' , label=title)
+    ax.plot(zs_array, P_zs, c=color, ls=':' )
+
+def plot_s_distribution_in_ax(ax, title, color, zl_array, zs_array, sigma_array, matrix, SMOOTH = 1):
+    _n, __n, ___n, P_zs, P_zl, P_sg = ls.get_N_and_P_projections(matrix, sigma_array, zl_array, zs_array, SMOOTH)
+    ax.plot(sigma_array, P_sg, c=color, ls='-', label=title)
+
+def plot_R_distribution_in_ax(ax, title, color, _nbins_Re, matrix, Theta_E, SMOOTH = 1):
+    ax.hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=color, ls = '-', label=title)
+
 
 def compare_SL2S(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 0):
     SL2S_data       = pd.read_csv('../galess/data/LENS_SEARCHES/SL2S_Sonnenfeld/redshifts_sigma.csv')
@@ -318,7 +328,28 @@ def compare_SL2S(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNO
     _nbins_Re = np.arange(0  , 4  , 0.25)
 
     title = 'CFHTLS i band'
-    matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+    try:
+          matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+    except ValueError:
+        print('FILE do NOT exist - RUNNING MODEL')
+        M_array     = np.linspace(-13 , -25 , 25)
+        sigma_array = np.linspace(100 , 400 , 31)
+        zl_array    = np.arange(0.  , 2.5 , 0.1)
+        zs_array    = np.arange(0.  , 5.4 , 0.2)
+        min_SNR     = 20
+        arc_mu_thr  = 3
+        VDF = ls.Phi_vel_disp_Mason
+        matrix_noLL, Theta_E_noLL, prob_noLL = ls.calculate_num_lenses_and_prob(
+                                                sigma_array, zl_array, zs_array, M_array, limit, area,
+                                                seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
+                                                photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
+                                                Phi_vel_disp = VDF, LENS_LIGHT_FLAG = False)
+        matrix_LL, Theta_E_LL, prob_LL = ls.calculate_num_lenses_and_prob(
+                                                sigma_array, zl_array, zs_array, M_array, limit, area,
+                                                seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
+                                                photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
+                                                Phi_vel_disp = VDF, LENS_LIGHT_FLAG = True)
+        utils.save_pickled_files(title,  matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL)
     _ , __  , ___, P_zs_LL   , P_zl_LL   , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=1)
     _ , __  , ___, P_zs_noLL , P_zl_noLL , P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
     if LENS_LIGHT: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
