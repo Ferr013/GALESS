@@ -12,27 +12,34 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.patches import Rectangle
 from astropy.cosmology import FlatLambdaCDM
 
-import galess.LensStat.lens_stat as ls
-import galess.Utils.ls_utils as utils
+# import galess.LensStat.lens_stat as ls
+# import galess.Utils.ls_utils as utils
+import sys
+path_root = os.path.split(os.path.abspath(''))[0]
+sys.path.append(str(path_root) + '/galess/LensStat/')
+sys.path.append(str(path_root) + '/galess/Utils/')
+import lens_stat as ls
+import ls_utils as utils
+
 
 cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
 
 def set_plt_param(PLOT_FOR_KEYNOTE = 0):
     plt.rcParams.update(plt.rcParamsDefault)
     plt.rcParams['figure.figsize'  ] = (3.3,2.0)
-    plt.rcParams['font.size'       ] = 8
-    plt.rcParams['axes.labelsize'  ] = 14
-    plt.rcParams['legend.fontsize' ] = 13
-    plt.rcParams['legend.frameon'  ] = False
-    plt.rcParams['legend.title_fontsize'] = 20
     plt.rcParams['font.family'     ] = 'STIXGeneral'
     plt.rcParams['mathtext.fontset'] = 'stix'
+    plt.rcParams['font.size'       ] = 8
+    plt.rcParams['axes.labelsize'  ] = 16
+    plt.rcParams['legend.fontsize' ] = 13
+    plt.rcParams['legend.title_fontsize'] = 20
+    plt.rcParams['legend.frameon'  ] = False
+    plt.rcParams['xtick.labelsize' ] = 16
+    plt.rcParams['ytick.labelsize' ] = 16
     plt.rcParams['xtick.direction' ] = 'in'
     plt.rcParams['ytick.direction' ] = 'in'
     plt.rcParams['xtick.top'       ] = True
     plt.rcParams['ytick.right'     ] = True
-    plt.rcParams['xtick.labelsize' ] = 18
-    plt.rcParams['ytick.labelsize' ] = 18
     plt.rcParams['xtick.major.size'] = 6
     plt.rcParams['xtick.minor.size'] = 3
     plt.rcParams['ytick.major.size'] = 6

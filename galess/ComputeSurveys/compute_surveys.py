@@ -1,10 +1,17 @@
-import os 
+import os
 import sys
 import numpy as np
-from tqdm import tqdm 
+from tqdm import tqdm
 
-import galess.LensStat.lens_stat as ls
-import galess.Utils.ls_utils as utils
+# import galess.LensStat.lens_stat as ls
+# import galess.Utils.ls_utils as utils
+import sys
+path_root = os.path.split(os.path.abspath(''))[0]
+sys.path.append(str(path_root) + '/galess/LensStat/')
+sys.path.append(str(path_root) + '/galess/Utils/')
+import lens_stat as ls
+import ls_utils as utils
+
 
 M_array     = np.linspace(-13 , -25 , 25)
 sigma_array = np.linspace(100 , 400 , 31)
@@ -13,17 +20,17 @@ zs_array    = np.arange(0.  , 5.4 , 0.2)
 min_SNR     = 20
 arc_mu_thr  = 3
 surveys_titles = [
-     'COSMOS Web F115W', 'COSMOS Web F150W', 'COSMOS Web F277W', 
+     'COSMOS Web F115W', 'COSMOS Web F150W', 'COSMOS Web F277W',
      'PEARLS NEP F115W', 'PEARLS NEP F150W', 'PEARLS NEP F277W',
      'JADES Deep F115W', 'JADES Deep F150W', 'JADES Deep F277W',
      'COSMOS HST i band',
-     'EUCLID Wide VIS', 
-     'Roman HLWA J', 
-     'DES i band', 
-     'LSST i band', 
+     'EUCLID Wide VIS',
+     'Roman HLWA J',
+     'DES i band',
+     'LSST i band',
      'SUBARU HSC SuGOHI i band',]
 
-def Compute_SL_distributions(surveys = surveys_titles, 
+def Compute_SL_distributions(surveys = surveys_titles,
                               sigma_array = sigma_array, zl_array = zl_array, zs_array = zs_array, M_array = M_array):
      for title in tqdm(surveys):
           survey_params = utils.read_survey_params(title, VERBOSE = 0)
@@ -42,15 +49,15 @@ def Compute_SL_distributions(surveys = surveys_titles,
           except ValueError:
                print('FILE do NOT exist - RUNNING MODEL')
                matrix_noLL, Theta_E_noLL, prob_noLL = ls.calculate_num_lenses_and_prob(
-                                                                           sigma_array, zl_array, zs_array, M_array, limit, area, 
-                                                                           seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m, 
-                                                                           photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr, 
+                                                                           sigma_array, zl_array, zs_array, M_array, limit, area,
+                                                                           seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
+                                                                           photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
                                                                            LENS_LIGHT_FLAG = False, SIE_FLAG = True)
 
                matrix_LL, Theta_E_LL, prob_LL = ls.calculate_num_lenses_and_prob(
-                                                                           sigma_array, zl_array, zs_array, M_array, limit, area, 
-                                                                           seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m, 
-                                                                           photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr, 
+                                                                           sigma_array, zl_array, zs_array, M_array, limit, area,
+                                                                           seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
+                                                                           photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
                                                                            LENS_LIGHT_FLAG = True, SIE_FLAG = False)
 
                utils.save_pickled_files(title,  matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL)

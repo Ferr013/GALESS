@@ -12,7 +12,13 @@ from scipy.special import ellipe as E_ell
 from scipy.ndimage import gaussian_filter1d
 from tqdm import tqdm
 from astropy.cosmology import FlatLambdaCDM
-import galess.Utils.ls_utils as utils
+
+# import galess.Utils.ls_utils as utils
+import sys
+path_root = os.path.split(os.path.abspath(''))[0]
+sys.path.append(str(path_root) + '/galess/Utils/')
+import ls_utils as utils
+
 
 cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
 

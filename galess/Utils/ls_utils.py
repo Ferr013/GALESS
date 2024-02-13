@@ -4,7 +4,13 @@ import os
 from importlib.resources import files
 import pickle
 import numpy as np
-import galess.LensStat.lens_stat as ls
+
+# import galess.LensStat.lens_stat as ls
+import sys
+path_root = os.path.split(os.path.abspath(''))[0]
+sys.path.append(str(path_root) + '/galess/LensStat/')
+import lens_stat as ls
+
 
 BASEPATH = os.path.dirname(os.path.abspath(__file__)) + '/../data/'
 

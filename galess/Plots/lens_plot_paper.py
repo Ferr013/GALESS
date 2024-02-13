@@ -10,8 +10,19 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.patches import Rectangle
 from astropy.cosmology import FlatLambdaCDM
 
-import galess.LensStat.lens_stat as ls
-import galess.Utils.ls_utils as utilsnvim
+# import galess.LensStat.lens_stat as ls
+# import galess.Utils.ls_utils as utils
+import sys
+path_root = os.path.split(os.path.abspath(''))[0]
+sys.path.append(str(path_root) + '/galess/LensStat/')
+sys.path.append(str(path_root) + '/galess/Utils/')
+sys.path.append(str(path_root) + '/galess/Plots/')
+sys.path.append(str(path_root) + '/galess/RareLensStat/')
+import lens_stat as ls
+import rare_lens_stat as rls
+import ls_utils as utils
+from lens_plot import *
+
 
 def plot_Lens_Fraction(m_lim = 28.5, mu_arc_SIE = 3,
                        M_array = 0, zs_array_plot = 0, schechter_plot = ls.schechter_LF,
@@ -20,27 +31,28 @@ def plot_Lens_Fraction(m_lim = 28.5, mu_arc_SIE = 3,
     if M_array == 0: M_array = np.linspace(-14,-26,37)
     line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
     cmap_c = cm.viridis
-    f, ax = plt.subplots(2, 2, figsize=(12, 12), sharex=True, sharey=True, squeeze=True)
+    f, ax = plt.subplots(2, 2, figsize=(10, 10), sharex=True, sharey=True, squeeze=True)
     plt.subplots_adjust(wspace=.075, hspace=.075)
     color = iter(cmap_c(np.linspace(0, 1, len(zs_array_plot))))
+    l_width = 1.75
     for zs in zs_array_plot:
         _col = next(color)
         M_lim = m_lim - 5 * np.log10(cosmo.luminosity_distance(zs).value * 1e5)
         frl   = ls.Fraction_lensed_SIE(1, M_array, schechter_plot, ls.Phi_vel_disp_Mason, zs)
-        ax[0, 0].plot(M_array, frl,        c=_col,  label = r'$z=$'+str(zs))
+        ax[0, 0].plot(M_array, frl,        c=_col,  label = r'$z=$'+str(zs), lw=l_width)
         C = 0.8979070411803386 #Correction for elliptical caustic area averaged over axis ratio distribution
         #ax[0, 0].axhline(Tau(zs)*C, c=_col, ls='--')
         F_arc = ls.Fraction_1st_image_arc_SIE(mu_arc_SIE, M_array, schechter_plot, zs)
-        ax[0, 1].plot(M_array, frl*F_arc,  c=_col,  label = r'$z=$'+str(zs))
+        ax[0, 1].plot(M_array, frl*F_arc,  c=_col,  label = r'$z=$'+str(zs), lw=l_width)
         img_N = 2
         F_Nth = ls.Fraction_Nth_image_above_Mlim_SIE(img_N, M_array, M_lim, schechter_plot, zs)
-        ax[1, 0].plot(M_array, frl*F_Nth,  c=_col,  label = r'$z=$'+str(zs))
+        ax[1, 0].plot(M_array, frl*F_Nth,  c=_col,  label = r'$z=$'+str(zs), lw=l_width)
         img_N = 3
         F_Nth = ls.Fraction_Nth_image_above_Mlim_SIE(img_N, M_array, M_lim, schechter_plot, zs)
         ax[1, 1].plot(M_array, frl*F_Nth,  c=_col, ls=':')
         img_N = 4
         F_Nth = ls.Fraction_Nth_image_above_Mlim_SIE(img_N, M_array, M_lim, schechter_plot, zs)
-        ax[1, 1].plot(M_array, frl*F_Nth,  c=_col,  label = r'$z=$'+str(zs))
+        ax[1, 1].plot(M_array, frl*F_Nth,  c=_col,  label = r'$z=$'+str(zs), lw=l_width)
     # ax[0, 0].set_title(r'Fraction of lensed galaxies',                              fontsize=15)
     # ax[0, 1].set_title(r'Fraction arcs stretched more than $\mu=$'+str(mu_arc_SIE), fontsize=15)
     # ax[1, 0].set_title(r'Fraction of 2nd images above $M_{lim}$',                   fontsize=15)
@@ -113,8 +125,8 @@ def plot_z_sigma_distributions_double_lenses(title, zl_array, zs_array, sigma_ar
     line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
     fig, ax = plt.subplots(1, 2, figsize=(11, 5), sharex=False, sharey=False)
     plt.subplots_adjust(wspace=.25, hspace=.2)
-    Ngal_zl_sigma_noLL, Ngal_zl_sigma_noLL, Ngal_zl_zs1_noLL, Ngal_zl_zs2_noLL, Ngal_sigma_zs1_noLL, Ngal_sigma_zs2_noLL, Ngal_zs1_zs2_noLL, P_zs_noLL, P_zs2_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections_double_lens(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
-    Ngal_zl_sigma_LL, Ngal_zl_sigma_LL, Ngal_zl_zs1_LL, Ngal_zl_zs2_LL, Ngal_sigma_zs1_LL, Ngal_sigma_zs2_LL, Ngal_zs1_zs2_LL, P_zs_LL, P_zs2_LL, P_zl_LL, P_sg_LL = ls.get_N_and_P_projections_double_lens(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH)
+    Ngal_zl_sigma_noLL, Ngal_zl_sigma_noLL, Ngal_zl_zs1_noLL, Ngal_zl_zs2_noLL, Ngal_sigma_zs1_noLL, Ngal_sigma_zs2_noLL, Ngal_zs1_zs2_noLL, P_zs_noLL, P_zs2_noLL, P_zl_noLL, P_sg_noLL = rls.get_N_and_P_projections_double_lens(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
+    Ngal_zl_sigma_LL, Ngal_zl_sigma_LL, Ngal_zl_zs1_LL, Ngal_zl_zs2_LL, Ngal_sigma_zs1_LL, Ngal_sigma_zs2_LL, Ngal_zs1_zs2_LL, P_zs_LL, P_zs2_LL, P_zl_LL, P_sg_LL = rls.get_N_and_P_projections_double_lens(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH)
     ax[0].plot(zl_array, P_zl_noLL, c=col_A, ls='-')
     ax[0].plot(zl_array, P_zl_LL,   c=col_A, ls=':')
     ax[0].plot(zs_array, P_zs_noLL, c=col_B, ls='-' , label='No lens light')
@@ -140,8 +152,8 @@ def plot_z_sigma_distributions(fig, ax, title, zl_array, zs_array, sigma_array,
                                LEGEND = 1, DOUBLE_LENS = 0):
     line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
     if DOUBLE_LENS:
-        Ngal_zl_sigma_noLL, Ngal_zl_sigma_noLL, Ngal_zl_zs1_noLL, Ngal_zl_zs2_noLL, Ngal_sigma_zs1_noLL, Ngal_sigma_zs2_noLL, Ngal_zs1_zs2_noLL, P_zs_noLL, P_zs2_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections_double_lens(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
-        Ngal_zl_sigma_LL, Ngal_zl_sigma_LL, Ngal_zl_zs1_LL, Ngal_zl_zs2_LL, Ngal_sigma_zs1_LL, Ngal_sigma_zs2_LL, Ngal_zs1_zs2_LL, P_zs_LL, P_zs2_LL, P_zl_LL, P_sg_LL = ls.get_N_and_P_projections_double_lens(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH)
+        Ngal_zl_sigma_noLL, Ngal_zl_sigma_noLL, Ngal_zl_zs1_noLL, Ngal_zl_zs2_noLL, Ngal_sigma_zs1_noLL, Ngal_sigma_zs2_noLL, Ngal_zs1_zs2_noLL, P_zs_noLL, P_zs2_noLL, P_zl_noLL, P_sg_noLL = rls.get_N_and_P_projections_double_lens(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
+        Ngal_zl_sigma_LL, Ngal_zl_sigma_LL, Ngal_zl_zs1_LL, Ngal_zl_zs2_LL, Ngal_sigma_zs1_LL, Ngal_sigma_zs2_LL, Ngal_zs1_zs2_LL, P_zs_LL, P_zs2_LL, P_zl_LL, P_sg_LL = rls.get_N_and_P_projections_double_lens(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH)
     else:
         Ngal_zl_sigma_noLL, Ngal_zs_sigma_noLL, Ngal_zs_zl_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
         Ngal_zl_sigma_LL, Ngal_zs_sigma_LL, Ngal_zs_zl_LL, P_zs_LL, P_zl_LL, P_sg_LL = ls.get_N_and_P_projections(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH)
@@ -669,9 +681,9 @@ def compare_SL2S(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNO
     _ , __  , ___, P_zs_noLL , P_zl_noLL , P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
     if LENS_LIGHT: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
     else: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
+
     fig, ax = plt.subplots(1, 3, figsize=(17, 5), sharex=False, sharey=False)
     plt.subplots_adjust(wspace=.23, hspace=.2)
-
     line_thick = 3
     ### BEST SAMPLE ###
     ax[0].hist( SL2S_data_zl    , bins=_nbins_zl, density=True , histtype='step' , lw=line_thick, color=ER_col1, alpha = _ALPHA_, label='Sonnenfeld et al. 2013 - Full Sample (53)')

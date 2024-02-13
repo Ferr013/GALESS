@@ -12,8 +12,15 @@ from scipy.ndimage import gaussian_filter1d
 from tqdm import tqdm
 from astropy.cosmology import FlatLambdaCDM
 
-import galess.LensStat.lens_stat
-import galess.Utils.ls_utils as utils
+# import galess.LensStat.lens_stat
+# import galess.Utils.ls_utils as utils
+import sys
+path_root = os.path.split(os.path.abspath(''))[0]
+sys.path.append(str(path_root) + '/galess/LensStat/')
+sys.path.append(str(path_root) + '/galess/Utils/')
+from lens_stat import *
+import ls_utils as utils
+
 
 cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
 
@@ -168,10 +175,21 @@ def get_N_and_P_projections_double_lens(N_gal_matrix, sigma_array, zl_array, zs_
         Ngal_sigma_zs1 = signal.convolve2d(Ngal_sigma_zs1,np.ones((3,3))/9, mode='same')
         Ngal_sigma_zs2 = signal.convolve2d(Ngal_sigma_zs2,np.ones((3,3))/9, mode='same')
         Ngal_zs1_zs2   = signal.convolve2d(Ngal_zs1_zs2,  np.ones((3,3))/9, mode='same')
-        P_zs1          = np.convolve(P_zs1, np.ones(3)/3, mode='same')
-        P_zs2          = np.convolve(P_zs2, np.ones(3)/3, mode='same')
-        P_zl           = np.convolve(P_zl, np.ones(3)/3, mode='same')
-        P_sg           = np.convolve(P_sg, np.ones(3)/3, mode='same')
+        if zl_array[0] == 0:
+            Ngal_zl_sigma[:,0] = 0
+            Ngal_zl_zs1[:,0] = 0
+            Ngal_zl_zs2[:,0] = 0
+        if zs_array[0] == 0:
+            Ngal_zl_zs1[0,:] = 0
+            Ngal_zl_zs2[0,:] = 0
+            Ngal_sigma_zs1[0,:] = 0
+            Ngal_sigma_zs2[0,:] = 0
+            Ngal_zs1_zs2[0,:] = 0
+            Ngal_zs1_zs2[:,0] = 0
+        P_zs1 = np.append(P_zs1[0], np.convolve(P_zs1[1:], np.ones(3)/3, mode='same'))
+        P_zs2 = np.append(P_zs2[0], np.convolve(P_zs2[1:], np.ones(3)/3, mode='same'))
+        P_zl  = np.append(P_zl[0],  np.convolve(P_zl[1:],  np.ones(3)/3, mode='same'))
+        P_sg  = np.append(P_sg[0],  np.convolve(P_sg[1:],  np.ones(3)/3, mode='same'))
     return Ngal_zl_sigma, Ngal_zl_sigma, Ngal_zl_zs1, Ngal_zl_zs2, Ngal_sigma_zs1, Ngal_sigma_zs2, Ngal_zs1_zs2, P_zs1, P_zs2, P_zl, P_sg
 
 def get_param_space_idx_from_obs_constraints(CW_ER_zl, CW_ER_zs, E_ring_rad,
