@@ -1567,6 +1567,9 @@ def get_N_and_P_projections(N_gal_matrix, sigma_array, zl_array, zs_array, SMOOT
         if zs_array[0] == 0:
             Ngal_zl_zs[0,:] = 0
             Ngal_sigma_zs[0,:] = 0
+        for izl,zl in enumerate(zl_array):
+             for izs,zs in enumerate(zs_array):
+                if zl >= zs: Ngal_zl_zs[izs][izl] = 0
         P_zs = np.append(P_zs[0], np.convolve(P_zs[1:], np.ones(3)/3, mode='same'))
         P_zl = np.append(P_zl[0], np.convolve(P_zl[1:], np.ones(3)/3, mode='same'))
         P_sg = np.append(P_sg[0], np.convolve(P_sg[1:], np.ones(3)/3, mode='same'))
