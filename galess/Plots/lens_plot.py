@@ -6,10 +6,11 @@ import pandas as pd
 from scipy import integrate
 from scipy.stats import kstest
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 from matplotlib import colors
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+import matplotlib.cm as cm
+from matplotlib.ticker import ScalarFormatter
 from matplotlib.patches import Rectangle
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from astropy.cosmology import FlatLambdaCDM
 
 # import galess.LensStat.lens_stat as ls
@@ -48,6 +49,7 @@ def set_plt_param(PLOT_FOR_KEYNOTE = 0):
     plt.rcParams['xtick.minor.width'] = 0.75
     plt.rcParams['ytick.major.width'] = 1.25
     plt.rcParams['ytick.minor.width'] = 0.75
+
     params_keynote = {
         "lines.color": "white",
         "patch.edgecolor": "white",
@@ -245,6 +247,7 @@ def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, 
     _col_  = iter(cmap_c(np.linspace(0, 1, len(surveys_selection)+1)))
     fig, ax = plt.subplots(1, 3, figsize=(17, 5), sharex=False, sharey=False)
     plt.subplots_adjust(wspace=.235, hspace=.2)
+    ax[1].get_yaxis().get_major_formatter().set_useOffset(True)
     for title in surveys_selection:
         survey_params = utils.read_survey_params(title, VERBOSE = 0)
         limit    = survey_params['limit']
