@@ -2,4 +2,6 @@
 import sys
 import galess.ComputeSurveys.compute_surveys as cs
 
-cs.Compute_SL_distributions(surveys = sys.argv[1])
+survey = sys.argv[1]
+print('Computing strong lensing statistics for ', survey)
+cs.Compute_SL_distributions(surveys = [survey])
