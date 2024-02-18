@@ -1,6 +1,8 @@
 #!/bin/bash
 #
 #SBATCH --job-name=SL_surveys
+#SBATCH --output=outputs/slurm_%j.out
+#SBATCH --error=outputs/slurm_%j.err
 #
 #SBATCH --ntasks=1
 #SBATCH --time=20:00
