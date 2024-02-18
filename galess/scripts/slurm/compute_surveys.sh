@@ -10,6 +10,6 @@
 #
 #SBATCH --array=1-2
 
-A=(COSMOS Web F115W, 'EUCLID Wide VIS')
+SURVEYS=(COSMOS Web F115W, 'EUCLID Wide VIS')
 
-srun ./calc_survey.py ${FILES[$SLURM_ARRAY_TASK_ID]}
+srun ./calc_survey.py ${SURVEYS[$SLURM_ARRAY_TASK_ID]}
