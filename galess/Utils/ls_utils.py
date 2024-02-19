@@ -288,4 +288,4 @@ print(f'|     Survey - Filter     | PSF/Seeing ["] | Area [deg^2] | m_cut [mag] 
 print(f'|                         |                |              |             |             |            | VDF: Mason + 2015 |  VDF: Geng + 2021 |')
 print()
 print(f'|{title:^25}|{seeing:16.3f}|{area:14.3f}|{cut:13.1f}|{limit:13.1f}|{(np.sum(matrix_noLL)/area):12.0f}|{N_noLL:>9} ({N_LL:^7})|{N_noLG:>9} ({N_LG:^7})|')
-        print()
+print()
