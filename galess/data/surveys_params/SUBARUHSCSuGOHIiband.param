@@ -5,6 +5,6 @@ area: 178
 seeing: 0.6
 exp_time_sec: 8000
 pixel_arcsec: 0.17
-zero_point_m: 25.5
-sky_bckgnd_m: 20
+zero_point_m: 30
+sky_bckgnd_m: 19.2
 photo_band: sdss_i0

@@ -1,9 +1,9 @@
 title: EUCLID Wide VIS
-limit: 26.2
-cut: 25
+limit: 24.5
+cut: 24.5
 area: 15000
 seeing: 0.17
-exp_time_sec: 1610
+exp_time_sec: 2280
 pixel_arcsec: 0.1
 zero_point_m: 25.5
 sky_bckgnd_m: 22.2

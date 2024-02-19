@@ -1,10 +1,10 @@
-title: EUCLID Wide H
+title: EUCLID Wide Y
 limit: 24
 cut: 24
 area: 15000
-seeing: 0.36
+seeing: 0.220
 exp_time_sec: 448
 pixel_arcsec: 0.1
-zero_point_m: 25.21
+zero_point_m: 25.04
 sky_bckgnd_m: 22
-photo_band: ukirt_wfcam_H
+photo_band: ukirt_wfcam_Y
