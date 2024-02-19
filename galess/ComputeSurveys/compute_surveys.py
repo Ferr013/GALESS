@@ -28,6 +28,7 @@ def Compute_SL_distributions(surveys = surveys_titles,
                               zs_array = zs_array, M_array = M_array,
                               VDF = ls.Phi_vel_disp_Mason):
      for title in tqdm(surveys):
+          print('Computing strong lensing statistics for ', title)
           survey_params = utils.read_survey_params(title, VERBOSE = 0)
 
           limit    = survey_params['limit']
