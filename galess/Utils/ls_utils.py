@@ -205,7 +205,8 @@ def print_summary_surveys(surveys_selection):
             Returns:
                     None
     '''
-    print(f'|     Survey - Filter     | PSF/Seeing ["] | Area [deg^2] | m_cut [mag] | m_lim [mag] | N [deg^-1] | N_lenses (LL)       |')
+    print(f'|     Survey - Filter     | PSF/Seeing ["] | Area [deg^2] | m_cut [mag] | m_lim [mag] | N [deg^-1] |   N_lenses (LL)   |   N_lenses (LL)   |')
+    print(f'|                         |                |              |             |             |            | VDF: Mason + 2015 |  VDF: Geng + 2021 |')
     print()
     if hasattr(surveys_selection, '__len__') is False:
         surveys_selection = [surveys_selection]
@@ -221,7 +222,8 @@ def print_summary_surveys(surveys_selection):
         sky_bckgnd_m = survey_params['sky_bckgnd_m']
         photo_band   = survey_params['photo_band']
         try:
-          matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = load_pickled_files(title)
+            matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = load_pickled_files(title)
+            matrix_LG, Theta_E_LG, prob_LG, matrix_noLG, Theta_E_noLG, prob_noLG = load_pickled_files(title + ' VDF Geng')
         except ValueError:
             print('FILE do NOT exist - RUNNING MODEL')
             M_array     = np.linspace(-13 , -25 , 25)
@@ -242,9 +244,23 @@ def print_summary_surveys(surveys_selection):
                                                     photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
                                                     Phi_vel_disp = VDF, LENS_LIGHT_FLAG = True)
             save_pickled_files(title,  matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL)
-            matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = load_pickled_files(title)
+
+            VDF = ls.Phi_vel_disp_Geng
+            matrix_noLG, Theta_E_noLG, prob_noLG = ls.calculate_num_lenses_and_prob(
+                                                    sigma_array, zl_array, zs_array, M_array, limit, area,
+                                                    seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
+                                                    photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
+                                                    Phi_vel_disp = VDF, LENS_LIGHT_FLAG = False)
+            matrix_LG, Theta_E_LG, prob_LG = ls.calculate_num_lenses_and_prob(
+                                                    sigma_array, zl_array, zs_array, M_array, limit, area,
+                                                    seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
+                                                    photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
+                                                    Phi_vel_disp = VDF, LENS_LIGHT_FLAG = True)
+            save_pickled_files(title + ' VDF Geng',  matrix_LG, Theta_E_LG, prob_LG, matrix_noLG, Theta_E_noLG, prob_noLG)
         N_LL, N_noLL = f'{np.sum(matrix_LL):.0f}', f'{np.sum(matrix_noLL):.0f}'
+        N_LG, N_noLG = f'{np.sum(matrix_LG):.0f}', f'{np.sum(matrix_noLG):.0f}'
         if np.sum(matrix_noLL)>10_000:
             N_LL, N_noLL = f'{np.sum(matrix_LL):.1e}', f'{np.sum(matrix_noLL):.1e}'
-        print(f'|{title:^25}|{seeing:16.3f}|{area:14.3f}|{cut:13.1f}|{limit:13.1f}|{(np.sum(matrix_noLL)/area):12.0f}|{N_noLL:>9} ({N_LL:>9})|')
+            N_LG, N_noLG = f'{np.sum(matrix_LG):.1e}', f'{np.sum(matrix_noLG):.1e}'
+        print(f'|{title:^25}|{seeing:16.3f}|{area:14.3f}|{cut:13.1f}|{limit:13.1f}|{(np.sum(matrix_noLL)/area):12.0f}|{N_noLL:>12} ({N_LL:>5}){:>2}|{N_noLG:>12} ({N_LG:>5}){:>2}')
         print()
