@@ -262,5 +262,5 @@ def print_summary_surveys(surveys_selection):
         if np.sum(matrix_noLL)>10_000:
             N_LL, N_noLL = f'{np.sum(matrix_LL):.1e}', f'{np.sum(matrix_noLL):.1e}'
             N_LG, N_noLG = f'{np.sum(matrix_LG):.1e}', f'{np.sum(matrix_noLG):.1e}'
-        print(f'|{title:^25}|{seeing:16.3f}|{area:14.3f}|{cut:13.1f}|{limit:13.1f}|{(np.sum(matrix_noLL)/area):12.0f}|{N_noLL:>12} ({N_LL:>5}){:>2}|{N_noLG:>12} ({N_LG:>5}){:>2}')
+        print(f'|{title:^25}|{seeing:16.3f}|{area:14.3f}|{cut:13.1f}|{limit:13.1f}|{(np.sum(matrix_noLL)/area):12.0f}|{N_noLL:>14} ({N_LL:>5})|{N_noLG:>14} ({N_LG:>5})')
         print()
