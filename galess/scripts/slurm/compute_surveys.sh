@@ -1,9 +1,8 @@
-#!/bin/bash
+#!/bin/bash -l
 #
 #SBATCH --job-name=SL_surveys
 #SBATCH --output=outputs/slurm_%x_%a.out
 #SBATCH --error=outputs/slurm_%x_%a.err
-#SBATCH --export=ALL
 #
 #SBATCH --ntasks=1
 #SBATCH --time=20:00
@@ -13,4 +12,4 @@
 
 SURVEYS=(COSMOS Web F115W, 'EUCLID Wide VIS')
 
-srun calc_survey.py ${SURVEYS[$SLURM_ARRAY_TASK_ID]}
+srun --export=ALL calc_survey.py ${SURVEYS[$SLURM_ARRAY_TASK_ID]}
