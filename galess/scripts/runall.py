@@ -20,4 +20,4 @@ surveys_titles = [
      'DES i band',
      'SUBARU HSC SuGOHI i band',]
 
-cs.Compute_SL_distributions(surveys = [surveys_titles], VDF = ls.Phi_vel_disp_Mason)
+cs.Compute_SL_distributions(surveys = surveys_titles, VDF = ls.Phi_vel_disp_Mason)
