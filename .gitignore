@@ -14,6 +14,7 @@ galess/RareLensStat
 examples/paper*
 examples/Requests
 examples/img
+scripts/remove*
 profile.html
 profile.json
 build*
