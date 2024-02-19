@@ -40,6 +40,11 @@ def Compute_SL_distributions(surveys = surveys_titles,
           sky_bckgnd_m = survey_params['sky_bckgnd_m']
           photo_band   = survey_params['photo_band']
 
+          if VDF == ls.Phi_vel_disp_Geng:
+               title = title + ' VDF Geng'
+          if VDF == ls.Phi_vel_disp_SDSS:
+               title = title + ' VDF Choi'
+
           try:
                matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
           except ValueError:
