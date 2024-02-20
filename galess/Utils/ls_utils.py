@@ -205,8 +205,8 @@ def print_summary_surveys(surveys_selection):
             Returns:
                     None
     '''
-    print(f'|     Survey - Filter     | PSF/Seeing ["] | Area [deg^2] | m_cut [mag] | m_lim [mag] | N [deg^-1] |   N_lenses (LL)   |   N_lenses (LL)   |')
-    print(f'|                         |                |              |             |             |            | VDF: Mason + 2015 |  VDF: Geng + 2021 |')
+    print(f'|     Survey - Filter     | PSF/Seeing ["] | Area [deg^2] | m_cut [mag] | m_lim [mag] |   N_lenses (LL)   |   N_lenses (LL)   | N [deg^-1] |')
+    print(f'|                         |                |              |             |             | VDF: Mason + 2015 |  VDF: Geng + 2021 |            |')
     print()
     if hasattr(surveys_selection, '__len__') is False:
         surveys_selection = [surveys_selection]
@@ -262,4 +262,5 @@ def print_summary_surveys(surveys_selection):
         if np.sum(matrix_noLL)>10_000:
             N_LL, N_noLL = f'{np.sum(matrix_LL):.1e}', f'{np.sum(matrix_noLL):.1e}'
             N_LG, N_noLG = f'{np.sum(matrix_LG):.1e}', f'{np.sum(matrix_noLG):.1e}'
-        print(f'|{title:^25}|{seeing:16.3f}|{area:14.3f}|{cut:13.1f}|{limit:13.1f}|{(np.sum(matrix_noLL)/area):12.0f}|{N_noLL:>9} ({N_LL:^7})|{N_noLG:>9} ({N_LG:^7})|')
+        print(f'|{title:^25}|{seeing:16.3f}|{area:14.3f}|{cut:13.1f}|{limit:13.1f}|{N_noLL:>9} ({N_LL:^7})|{N_noLG:>9} ({N_LG:^7})|\
+            {(np.sum(matrix_LL)/area):6.0f} - {(np.sum(matrix_LG)/area):6.0f}|')
