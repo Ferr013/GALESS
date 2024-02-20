@@ -262,30 +262,4 @@ def print_summary_surveys(surveys_selection):
         if np.sum(matrix_noLL)>10_000:
             N_LL, N_noLL = f'{np.sum(matrix_LL):.1e}', f'{np.sum(matrix_noLL):.1e}'
             N_LG, N_noLG = f'{np.sum(matrix_LG):.1e}', f'{np.sum(matrix_noLG):.1e}'
-        print(f'|{title:^25}|{seeing:16.3f}|{area:14.3f}|{cut:13.1f}|{limit:13.1f}|{(np.sum(matrix_noLL)/area):12.0f}|title = 'EUCLID Wide VIS'
-# title = 'COSMOS Web F115W'
-
-survey_params = utils.read_survey_params(title, VERBOSE = 0)
-limit    = survey_params['limit']
-cut      = survey_params['cut']
-area     = survey_params['area']
-seeing   = survey_params['seeing']
-exp_time_sec = survey_params['exp_time_sec']
-pixel_arcsec = survey_params['pixel_arcsec']
-zero_point_m = survey_params['zero_point_m']
-sky_bckgnd_m = survey_params['sky_bckgnd_m']
-photo_band   = survey_params['photo_band']
-
-matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
-matrix_LG, Theta_E_LG, prob_LG, matrix_noLG, Theta_E_noLG, prob_noLG = utils.load_pickled_files(title + ' VDF Geng')
-N_LL, N_noLL = f'{np.sum(matrix_LL):.0f}', f'{np.sum(matrix_noLL):.0f}'
-N_LG, N_noLG = f'{np.sum(matrix_LG):.0f}', f'{np.sum(matrix_noLG):.0f}'
-if np.sum(matrix_noLL)>10_000:
-    N_LL, N_noLL = f'{np.sum(matrix_LL):.1e}', f'{np.sum(matrix_noLL):.1e}'
-    N_LG, N_noLG = f'{np.sum(matrix_LG):.1e}', f'{np.sum(matrix_noLG):.1e}'
-
-print(f'|     Survey - Filter     | PSF/Seeing ["] | Area [deg^2] | m_cut [mag] | m_lim [mag] | N [deg^-1] |   N_lenses (LL)   |   N_lenses (LL)   |')
-print(f'|                         |                |              |             |             |            | VDF: Mason + 2015 |  VDF: Geng + 2021 |')
-print()
-print(f'|{title:^25}|{seeing:16.3f}|{area:14.3f}|{cut:13.1f}|{limit:13.1f}|{(np.sum(matrix_noLL)/area):12.0f}|{N_noLL:>9} ({N_LL:^7})|{N_noLG:>9} ({N_LG:^7})|')
-print()
+        print(f'|{title:^25}|{seeing:16.3f}|{area:14.3f}|{cut:13.1f}|{limit:13.1f}|{(np.sum(matrix_noLL)/area):12.0f}|{N_noLL:>9} ({N_LL:^7})|{N_noLG:>9} ({N_LG:^7})|')
