@@ -1,0 +1,10 @@
+title: Roman HLWA J
+limit: 29.12
+cut: 27.1
+area: 1700
+seeing: 0.12
+exp_time_sec: 146
+pixel_arcsec: 0.11
+zero_point_m: 26.4
+sky_bckgnd_m: 22
+photo_band: ukirt_wfcam_H

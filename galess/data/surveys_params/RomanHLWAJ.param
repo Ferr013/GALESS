@@ -1,8 +1,8 @@
 title: Roman HLWA J
-limit: 29.12
-cut: 27.1
+limit: 26.7
+cut: 26.7
 area: 1700
-seeing: 0.12
+seeing: 0.3
 exp_time_sec: 146
 pixel_arcsec: 0.11
 zero_point_m: 26.4

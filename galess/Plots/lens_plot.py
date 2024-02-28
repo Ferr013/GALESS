@@ -62,7 +62,7 @@ def set_plt_param(PLOT_FOR_KEYNOTE = 0):
         "grid.color": "lightgray",
         "figure.facecolor": '#222222',
         "figure.edgecolor": 'lightgray',
-        "savefig.facecolor":'#222222',
+        "savefig.facecolor": '#222222',
         "savefig.edgecolor": 'lightgray',
         }
     line_c = 'k'
@@ -92,8 +92,8 @@ def plot_ALL_distributions(title, zl_array, zs_array, sigma_array,
 
     Ngal_zl_sigma_noLL, Ngal_zs_sigma_noLL, Ngal_zs_zl_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
     Ngal_zl_sigma_LL, Ngal_zs_sigma_LL, Ngal_zs_zl_LL, P_zs_LL, P_zl_LL, P_sg_LL = ls.get_N_and_P_projections(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH)
-    _nbins_Re = np.arange(0  , 4  , 0.25)
 
+    _nbins_Re = np.arange(0  , 4  , 0.25)
     fig, ax = plt.subplots(2, 3, figsize=(17, 10), sharex=False, sharey=False)
     plt.subplots_adjust(wspace=.15, hspace=.2)
     fig.suptitle(title, fontsize=25)
@@ -111,7 +111,7 @@ def plot_ALL_distributions(title, zl_array, zs_array, sigma_array,
     ax[0,2].hist(np.ravel(Theta_E_noLL), weights=np.ravel(matrix_noLL), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=col_D, ls = '-')
     ax[0,2].set_xlabel(r'$\Theta_E$ [arcsec]', fontsize=20)
 
-    level_array = [0.01, 0.05, 0.2, 0.4, 0.8]
+    level_array = [0.055, 0.1, 0.25, 0.5, 0.8]
     norm = np.sum(matrix_noLL)
     plotting_now = Ngal_zs_zl_noLL/norm
     _zs, _zl = np.meshgrid(zs_array, zl_array)
@@ -165,14 +165,20 @@ def plot_ALL_distributions(title, zl_array, zs_array, sigma_array,
             ax[1,0].legend([f'#Lenses w/ LL: {np.sum(matrix_LL):.1e}', f'#Lenses no LL: {np.sum(matrix_noLL):.1e}'], fontsize=20)
         else:
             ax[1,0].legend([f'#Lenses w/ LL: {np.sum(matrix_LL):.0f}', f'#Lenses no LL: {np.sum(matrix_noLL):.0f}'], fontsize=20)
-    # ax[1,1].set_xlim((100,400))
-    # ax[1,0].set_xlim((100,400))
-    # ax[1,0].set_ylim((0,2.5))
+
+    if(1):
+        ax[1,0].set_xlim((0,3.5))
+        ax[1,0].set_ylim((0,1.5))
+        ax[1,1].set_xlim((100,350))
+        ax[1,1].set_ylim((0,1.5))
+        ax[1,2].set_xlim((100,350))
+        ax[1,2].set_ylim((0,3.5))
+
     plt.tight_layout()
     if (SAVE):
-        folderpath = 'img/'+utils.remove_spaces_from_string(title)
-        if not os.path.exists(folderpath): os.makedirs(folderpath)
-        plt.savefig(folderpath+'/'+fn_prefix+'all_plts.jpg', dpi=200)
+        # folderpath = 'img/'+utils.remove_spaces_from_string(title)
+        # if not os.path.exists(folderpath): os.makedirs(folderpath)
+        plt.savefig('img/'+fn_prefix+'all_plts.png', dpi=200, bbox_inches='tight')
     plt.show()
 
 def plot_effect_vel_disp_function(zl_array, zs_array, sigma_array,
@@ -237,12 +243,12 @@ def plot_effect_vel_disp_function(zl_array, zs_array, sigma_array,
     ax[2].legend(fontsize=14, frameon=False)
     plt.tight_layout()
     if (SAVE):
-        folderpath = 'img/'+utils.remove_spaces_from_string(title)
-        if not os.path.exists(folderpath): os.makedirs(folderpath)
-        plt.savefig(folderpath+'/VDF_effect_corner_plts.jpg', dpi=200)
+        # folderpath = 'img/'+utils.remove_spaces_from_string(title)
+        # if not os.path.exists(folderpath): os.makedirs(folderpath)
+        plt.savefig('img/effect_VDF.png', dpi=200, bbox_inches='tight')
     plt.show()
 
-def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, zs_array, LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 0, SMOOTH = 1):
+def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, zs_array, LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 0, SMOOTH = 1, SAVE = 0):
     line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
     _col_  = iter(cmap_c(np.linspace(0, 1, len(surveys_selection)+1)))
     fig, ax = plt.subplots(1, 3, figsize=(17, 5), sharex=False, sharey=False)
@@ -295,6 +301,10 @@ def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, 
     ax[2].set_xlabel(r'$\Theta_E$ [arcsec]', fontsize=20)
     ax[2].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
     ax[0].legend(fontsize=12)
+    if (SAVE):
+        # folderpath = 'img/'+utils.remove_spaces_from_string(title)
+        # if not os.path.exists(folderpath): os.makedirs(folderpath)
+        plt.savefig('img/comp_surveys.png', dpi=200, bbox_inches='tight')
     plt.show()
 
 def plot_z_distribution_in_ax(ax, title, color, zl_array, zs_array, sigma_array, matrix, SMOOTH = 1):
@@ -309,19 +319,28 @@ def plot_s_distribution_in_ax(ax, title, color, zl_array, zs_array, sigma_array,
 def plot_R_distribution_in_ax(ax, title, color, _nbins_Re, matrix, Theta_E, SMOOTH = 1):
     ax.hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=color, ls = '-', label=title)
 
-
-def compare_SL2S(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 0):
+def compare_SL2S(zl_array, zs_array, sigma_array,
+                LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 0, SMOOTH = 1, SAVE = 0):
     SL2S_data       = pd.read_csv('../galess/data/LENS_SEARCHES/SL2S_Sonnenfeld/redshifts_sigma.csv')
     SL2S_data_names = SL2S_data['Name'].to_numpy()
     SL2S_data_zl    = SL2S_data['z_l'].to_numpy()
     SL2S_data_zs    = SL2S_data['z_s'].to_numpy()
     SL2S_data_sigma = SL2S_data['sigma'].to_numpy()
+    SL2S_data_grade = SL2S_data['Grade'].to_numpy()
     id = np.where(SL2S_data['Name'].notnull())
     SL2S_data_sigma = SL2S_data_sigma[id[0]]
-    SL2S_dataB      = pd.read_csv('../galess/data/LENS_SEARCHES/SL2S_Sonnenfeld/data.csv')
-    SL2S_data_nameB = SL2S_dataB['Name'].to_numpy()
-    SL2S_data_Rein  = SL2S_dataB['R_Ein'].to_numpy()
-    SL2S_data_msrc  = SL2S_dataB['mag_src'].to_numpy()
+    MASK_A = SL2S_data_grade == 'A'
+    SL2S_data_zl_A = SL2S_data_zl[MASK_A]
+    SL2S_data_zs_A = SL2S_data_zs[MASK_A]
+    SL2S_data_sg_A = SL2S_data_sigma[MASK_A]
+    SL2S_data_2013a = pd.read_csv('../galess/data/LENS_SEARCHES/SL2S_Sonnenfeld/data.csv')
+    SL2S_data_name2 = SL2S_data_2013a['Name'].to_numpy()
+    MASK_bL = np.intersect1d(SL2S_data_name2, SL2S_data_names, return_indices=True)[1]
+    MASK_bA = np.intersect1d(SL2S_data_name2, SL2S_data_names[MASK_A], return_indices=True)[1]
+    SL2S_data_Rein  = SL2S_data_2013a['R_Ein'].to_numpy()
+    SL2S_data_Rein_A= SL2S_data_Rein[MASK_bA]
+    SL2S_data_Rein  = SL2S_data_Rein[MASK_bL]
+    # SL2S_data_msrc  = SL2S_data_2013a['mag_src'].to_numpy()
 
     ### PLOT DATA #################################################################################
     line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
@@ -330,7 +349,7 @@ def compare_SL2S(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNO
     if PLOT_FOR_KEYNOTE:
         ER_col1, ER_col2, _ALPHA_  = 'darkorange', 'lime', 1
     else:
-        ER_col1, ER_col2, _ALPHA_  = 'forestgreen', 'firebrick', 1
+        ER_col1, ER_col2, _ALPHA_  = 'forestgreen', 'orange', 1
 
     _nbins_zl = np.arange(0.0, 1.2, 0.3 )
     _nbins_zs = np.arange(0.5, 4  , 0.5 )
@@ -370,23 +389,51 @@ def compare_SL2S(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNO
                                                 photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
                                                 Phi_vel_disp = VDF, LENS_LIGHT_FLAG = True)
         utils.save_pickled_files(title,  matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL)
-    _ , __  , ___, P_zs_LL   , P_zl_LL   , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=1)
-    _ , __  , ___, P_zs_noLL , P_zl_noLL , P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
-    if LENS_LIGHT: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
-    else: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
-    fig, ax = plt.subplots(1, 3, figsize=(17, 5), sharex=False, sharey=False)
-    plt.subplots_adjust(wspace=.23, hspace=.2)
 
+    zl_lower, zl_upper = 0.1, 0.8
+    zs_lower, zs_upper = 0.0, 99
+    sg_lower, sg_upper = 180, 1000
+    matrix_noLL[np.logical_or(zs_array <= zs_lower, zs_array >= zs_upper), :, :] *= 0
+    matrix_noLL[:, np.logical_or(sigma_array <= sg_lower, sigma_array >= sg_upper), :] *= 0
+    matrix_noLL[:, :, np.logical_or(zl_array <= zl_lower, zl_array >= zl_upper)] *= 0
+    matrix_LL[np.logical_or(zs_array <= zs_lower, zs_array >= zs_upper), :, :] *= 0
+    matrix_LL[:, np.logical_or(sigma_array <= sg_lower, sigma_array >= sg_upper), :] *= 0
+    matrix_LL[:, :, np.logical_or(zl_array <= zl_lower, zl_array >= zl_upper)] *= 0
+    print('EXPECTED NUMBER OF LENSES AFTER PRIOR ON ZL, ZS, AND SIGMA:')
+    print(f'   COSMOS HST i band Mason VDF: {np.sum(matrix_noLL):.0f} ({np.sum(matrix_LL):.0f})')
+    _ , __  , ___, P_zs_LL   , P_zl_LL   , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=SMOOTH)
+    _ , __  , ___, P_zs_noLL , P_zl_noLL , P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=SMOOTH)
+    if LENS_LIGHT:
+        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
+    else:
+        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
+    fig, ax = plt.subplots(1, 3, figsize=(17, 5), sharex=False, sharey=False)
+    plt.subplots_adjust(wspace=.25, hspace=.2)
     line_thick = 3
     ### BEST SAMPLE ###
-    ax[0].hist( SL2S_data_zl    , bins=_nbins_zl, density=True , histtype='step' , lw=line_thick, color=ER_col1, alpha = _ALPHA_, label='Sonnenfeld et al. 2013 - Full Sample (53)')
+    _nbins_zl = np.histogram_bin_edges(SL2S_data_zl, bins='fd', range=(np.nanmin(SL2S_data_zl),np.nanmax(SL2S_data_zl)))
+    ax[0].hist( SL2S_data_zl    , bins=_nbins_zl, density=True , histtype='step' , lw=line_thick, color=ER_col1, alpha = _ALPHA_,
+                label=f'Sonnenfeld et al. 2013\n Full Sample ({len(SL2S_data_zl)})')
+    _nbins_zl = np.histogram_bin_edges(SL2S_data_zs, bins='fd', range=(np.nanmin(SL2S_data_zs),np.nanmax(SL2S_data_zs)))
     ax[0].hist( SL2S_data_zs    , bins=_nbins_zs, density=True , histtype='step' , lw=line_thick, color=ER_col1, alpha = _ALPHA_, ls='--')
+    _nbins_zl = np.histogram_bin_edges(SL2S_data_sigma, bins='fd', range=(np.nanmin(SL2S_data_sigma),np.nanmax(SL2S_data_sigma)))
     ax[1].hist( SL2S_data_sigma , bins=_nbins_sg, density=True , histtype='step' , lw=line_thick, color=ER_col1, alpha = _ALPHA_)
+    _nbins_zl = np.histogram_bin_edges(SL2S_data_Rein, bins='fd', range=(np.nanmin(SL2S_data_Rein),np.nanmax(SL2S_data_Rein)))
     ax[2].hist( SL2S_data_Rein  , bins=_nbins_Re, density=True , histtype='step' , lw=line_thick, color=ER_col1, alpha = _ALPHA_)
 
-    ax[0].plot(zl_array, P_zl, c=ccc, ls='-', label=title)
+    _nbins_zl = np.histogram_bin_edges(SL2S_data_zl_A, bins='fd', range=(np.nanmin(SL2S_data_zl_A),np.nanmax(SL2S_data_zl_A)))
+    ax[0].hist( SL2S_data_zl_A    , bins=_nbins_zl, density=True , histtype='step' , lw=line_thick, color=ER_col2, alpha = _ALPHA_,
+                label=f'Sonnenfeld et al. 2013\n Best Sample ({len(SL2S_data_zl_A)})')
+    _nbins_zl = np.histogram_bin_edges(SL2S_data_zs_A, bins='fd', range=(np.nanmin(SL2S_data_zs_A),np.nanmax(SL2S_data_zs_A)))
+    ax[0].hist( SL2S_data_zs_A    , bins=_nbins_zs, density=True , histtype='step' , lw=line_thick, color=ER_col2, alpha = _ALPHA_, ls='--')
+    _nbins_zl = np.histogram_bin_edges(SL2S_data_sg_A, bins='fd', range=(np.nanmin(SL2S_data_sg_A),np.nanmax(SL2S_data_sg_A)))
+    ax[1].hist( SL2S_data_sg_A , bins=_nbins_sg, density=True , histtype='step' , lw=line_thick, color=ER_col2, alpha = _ALPHA_)
+    _nbins_zl = np.histogram_bin_edges(SL2S_data_Rein_A, bins='fd', range=(np.nanmin(SL2S_data_Rein_A),np.nanmax(SL2S_data_Rein_A)))
+    ax[2].hist( SL2S_data_Rein_A  , bins=_nbins_Re, density=True , histtype='step' , lw=line_thick, color=ER_col2, alpha = _ALPHA_)
+
+    ax[0].plot(zl_array, P_zl, c=ccc, ls='-', label='CFHTLS i band\n Mason VDF')
     ax[0].plot(zs_array, P_zs, c=ccc, ls='--')
-    ax[0].set_xlim((0,5.2))
+    ax[0].set_xlim((0,3.6))
     ax[0].set_xlabel(r'$z$', fontsize=20)
     ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
     ax[1].plot(sigma_array, P_sg_noLL, c=ccc, ls = '-', label=title)
@@ -421,24 +468,30 @@ def compare_SL2S(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNO
                                                 photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
                                                 Phi_vel_disp = VDF, LENS_LIGHT_FLAG = True)
         utils.save_pickled_files(title,  matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL)
-    _ , __  , ___, P_zs_LL   , P_zl_LL   , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=1)
-    _ , __  , ___, P_zs_noLL , P_zl_noLL , P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
-    if LENS_LIGHT: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
-    else: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
-    ax[0].plot(zl_array, P_zl, c=cc2, ls='-', label=title)
+    matrix_noLL[np.logical_or(zs_array <= zs_lower, zs_array >= zs_upper), :, :] *= 0
+    matrix_noLL[:, np.logical_or(sigma_array <= sg_lower, sigma_array >= sg_upper), :] *= 0
+    matrix_noLL[:, :, np.logical_or(zl_array <= zl_lower, zl_array >= zl_upper)] *= 0
+    matrix_LL[np.logical_or(zs_array <= zs_lower, zs_array >= zs_upper), :, :] *= 0
+    matrix_LL[:, np.logical_or(sigma_array <= sg_lower, sigma_array >= sg_upper), :] *= 0
+    matrix_LL[:, :, np.logical_or(zl_array <= zl_lower, zl_array >= zl_upper)] *= 0
+    print('EXPECTED NUMBER OF LENSES AFTER PRIOR ON ZL, ZS, AND SIGMA:')
+    print(f'   COSMOS HST i band Geng VDF: {np.sum(matrix_noLL):.0f} ({np.sum(matrix_LL):.0f})')
+    _ , __  , ___, P_zs_LL   , P_zl_LL   , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=SMOOTH)
+    _ , __  , ___, P_zs_noLL , P_zl_noLL , P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=SMOOTH)
+    if LENS_LIGHT:
+        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
+    else:
+        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
+    ax[0].plot(zl_array, P_zl, c=cc2, ls='-', label='CFHTLS i band\n Geng VDF')
     ax[0].plot(zs_array, P_zs, c=cc2, ls='--')
-    ax[0].set_xlim((0,5.2))
-    ax[0].set_xlabel(r'$z$', fontsize=20)
-    ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
     ax[1].plot(sigma_array, P_sg_noLL, c=cc2, ls = '-', label=title)
-    ax[1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
-    ax[1].set_ylabel(r'$dP/d\sigma$', fontsize=20)
     ax[2].hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins = np.arange(0, 4, 0.2),
                 range=(0, 3), density=True, histtype='step', color=cc2, ls = '-', label=title)
-    ax[2].set_xlabel(r'$\Theta_E$ ["]', fontsize=20)
-    ax[2].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
-    ax[2].set_xlim((0,4))
-    ax[0].legend(fontsize=10)
+    ax[0].legend(fontsize=13)
+    if SAVE:
+        # folderpath = 'img/'+utils.remove_spaces_from_string(title)
+        # if not os.path.exists(folderpath): os.makedirs(folderpath)
+        plt.savefig('img/SL2S_Sonnenfeld.png', dpi=200, bbox_inches='tight')
     plt.show()
 
 def model_response_m_cut():

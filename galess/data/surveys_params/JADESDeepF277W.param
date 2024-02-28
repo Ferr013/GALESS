@@ -3,8 +3,8 @@ limit: 30.07
 cut: 29.07
 area: 0.007
 seeing: 0.092
-exp_time_sec: 11680 
+exp_time_sec: 11680
 pixel_arcsec: 0.03
-zero_point_m: 28.0865
+zero_point_m: 27.98
 sky_bckgnd_m: 22
 photo_band: ukirt_wfcam_K

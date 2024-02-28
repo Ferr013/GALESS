@@ -1581,6 +1581,31 @@ def get_N_and_P_projections(N_gal_matrix, sigma_array, zl_array, zs_array, SMOOT
         P_sg = np.append(P_sg[0], np.convolve(P_sg[1:], np.ones(3)/3, mode='same'))
     return Ngal_zl_sigma, Ngal_sigma_zs, Ngal_zl_zs, P_zs, P_zl, P_sg
 
+def app_magn_from_L_sigma_Nandini(sigma_array, z, obs_band = 'sdss_i0'):
+    '''
+    Returns the apparent magnitude in the obs_band given velocity dispersion and redshift.
+    The approximation maps the velocity dispersion to the absoulute V magnitude, using
+    Nandini et al. 2019 L-sigma relation
+    link: https://ui.adsabs.harvard.edu/abs/2019ApJ...887...10S/abstract
+    and then apply distance modulus and K correction to evaluate the apparent magnitude
+    in obs_band.
+
+            Parameters:
+                    sigma_array: ndarray(dtype=float, ndim=1)
+                        Velocity dispersion of the lens.
+                    z: (float)
+                        Redshift
+                    obs_band: (string)
+                        Observing photometric band.
+            Returns:
+                    m_array: ndarray(dtype=float, ndim=1)
+                        apparent magnitude in obs_band.
+    '''
+    M_array_V = -2.5 * (4.86 * np.log10(sigma_array / 200) + 8.52)
+    Kc = K_correction(z, obs_band, 'sdss_g0', M_array_V)
+    obs_band_to_intr_UV_corr = 5 * np.log10(cosmo.luminosity_distance(z).value * 1e5) + Kc
+    return M_array_V + obs_band_to_intr_UV_corr
+
 def get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix, obs_band = 'sdss_i0'):
     '''
     Returns the apparent magnitude distribution in the chosen observing band of the lens
@@ -1610,12 +1635,27 @@ def get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix, obs_band = 'sd
     '''
     m_num = np.zeros(len(m_obs))
     for izl, zl in enumerate(zl_array[zl_array>0]):
-        M_array_V = -2.5 * (4.86 * np.log10(sigma_array / 200) + 8.52)
-        Kc = K_correction(zl, obs_band, 'sdss_g0', M_array_V)
-        obs_band_to_intr_UV_corr = 5 * np.log10(cosmo.luminosity_distance(zl).value * 1e5) + Kc
-        m_array_i = M_array_V + obs_band_to_intr_UV_corr
+        m_array = app_magn_from_L_sigma_Nandini(sigma_array, zl, obs_band = obs_band)
         N_per_sg = np.sum(matrix, axis=0)[:, izl]
-        for imu, mu in enumerate(m_array_i):
+        for imu, mu in enumerate(m_array):
             m_idx = np.argmin(np.abs(m_obs - mu))
             m_num[m_idx] = m_num[m_idx] + N_per_sg[imu]
     return m_num
+
+def M_star_sigma_relation_Cannarozzo(M_star, z):
+    '''
+    Returns the velocity dispersion of an ETG given M_star and redshift
+    using the stellar mass - velocity dispersion relation from
+    Cannarozzzo, Sonnenfeld, Nipoti (2020)
+    link: https://ui.adsabs.harvard.edu/abs/2020MNRAS.498.1101C/abstract
+
+            Parameters:
+                    M_star: (float)
+                        Stellar mass [solar masses]
+                    z: (float)
+                        Redshift
+            Returns:
+                    sigma: (float)
+                        Velocity dispersion [km/s]
+    '''
+    return np.power(10, 2.21 + 0.18 * np.log10(M_star/1e11) + 0.48 * np.log10(1 + z))
