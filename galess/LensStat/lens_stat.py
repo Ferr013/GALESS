@@ -855,7 +855,7 @@ def Signal_to_noise_ratio(app_mag_src, src_size_arcsec,  sky_bckgnd_m_per_arcsec
     exposure_time_tot = num_exposures * exp_time_sec
     phc_src = magnitude2cps(app_mag_src, zero_point_m) * exposure_time_tot
     phc_sky = magnitude2cps(sky_bckgnd_m_per_arcsec_sq, zero_point_m) * exposure_time_tot
-    sig_sq_bkg = (phc_sky * np.pi * src_size_arcsec ** 2) / (exposure_time_tot ** 2)
+    sig_sq_bkg = (phc_sky * np.pi * src_size_arcsec ** 2)
     return phc_src / np.sqrt(phc_src + sig_sq_bkg)
 
 ############## Calculating K-correction ###########################################################
