@@ -30,7 +30,6 @@ def plot_Lens_Fraction(m_lim = 28.5, mu_arc_SIE = 3,
     if zs_array_plot == 0: zs_array_plot = np.asarray((1,2,3,4,5,6,7,8,9))
     if M_array == 0: M_array = np.linspace(-14,-26,37)
     line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
-    cmap_c = cm.viridis
     f, ax = plt.subplots(2, 2, figsize=(10, 10), sharex=True, sharey=True, squeeze=True)
     plt.subplots_adjust(wspace=.075, hspace=.075)
     color = iter(cmap_c(np.linspace(0, 1, len(zs_array_plot))))
@@ -605,7 +604,7 @@ def compare_COSMOS_HST_Faure(zl_array, zs_array, sigma_array, M_array_UV, mag_cu
     cc2 = 'r'
     _nbins_zl = np.arange(0.0, 1.6, 0.2 )
     _nbins_zs = np.arange(0.0, 5  , 0.5 )
-    _nbins_sg = np.arange(100, 400, 25  )
+    _nbins_sg = np.linspace(100 , 400 , 31)
     _nbins_Re = np.arange(0  , 4  , 0.25)
     m_obs = np.linspace(15, 30, 31)
     line_thick = 3
@@ -638,7 +637,7 @@ def compare_COSMOS_HST_Faure(zl_array, zs_array, sigma_array, M_array_UV, mag_cu
     # if DENSITY: _nbins_zl = np.histogram_bin_edges(FAURE_A_zl, bins='fd', range=(0,1.5))
     F_mI_hist, F_mI_bins, _ = ax[2].hist(FAURE_A_m_Ib, bins=m_obs, density=True, histtype='step', lw=line_thick,
                                         color=ER_col2, alpha = _ALPHA_, label=f'Faure et al. 2008\n Best Sample ({len(FAURE_A_zl)})')
-    title = 'COSMOS HST i band FAURE'
+    title = 'COSMOS HST i band'
     matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
     zl_lower, zl_upper = 0.2, 1
     zs_lower, zs_upper = 0.0, 99
@@ -678,7 +677,7 @@ def compare_COSMOS_HST_Faure(zl_array, zs_array, sigma_array, M_array_UV, mag_cu
     pval_zl_Mason = kstest(F_zl_hist, P_zl)[1]
     pval_Ra_Mason = kstest(F_Ra_hist, T_hist_Mason)[1]
     pval_mI_Mason = kstest(F_mI_hist, m_lens/norm)[1]
-    title = 'COSMOS HST i band FAURE Geng'
+    title = 'COSMOS HST i band VDFGeng'
     matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
     matrix_noLL[np.logical_or(zs_array <= zs_lower, zs_array >= zs_upper), :, :] *= 0
     matrix_noLL[:, np.logical_or(sigma_array <= sg_lower, sigma_array >= sg_upper), :] *= 0

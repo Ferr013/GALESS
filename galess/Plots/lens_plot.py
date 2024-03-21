@@ -50,7 +50,16 @@ def set_plt_param(PLOT_FOR_KEYNOTE = 0):
     plt.rcParams['ytick.major.width'] = 1.25
     plt.rcParams['ytick.minor.width'] = 0.75
 
-    params_keynote = {
+    line_c = 'k'
+    cmap_c = cm.inferno
+    _col_  = None
+    col_A  = 'k'
+    col_B  = 'r'
+    col_C  = 'm'
+    col_D  = 'orange'
+    fn_prefix = ''
+    if PLOT_FOR_KEYNOTE:
+        params_keynote = {
         "lines.color": "white",
         "patch.edgecolor": "white",
         "text.color": "white",
@@ -65,15 +74,6 @@ def set_plt_param(PLOT_FOR_KEYNOTE = 0):
         "savefig.facecolor": '#222222',
         "savefig.edgecolor": 'lightgray',
         }
-    line_c = 'k'
-    cmap_c = cm.inferno
-    _col_  = None
-    col_A  = 'k'
-    col_B  = 'r'
-    col_C  = 'm'
-    col_D  = 'orange'
-    fn_prefix = ''
-    if PLOT_FOR_KEYNOTE:
         plt.rcParams.update(params_keynote)
         line_c = 'w'
         cmap_c = cm.cool
@@ -255,16 +255,6 @@ def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, 
     plt.subplots_adjust(wspace=.235, hspace=.2)
     ax[1].get_yaxis().get_major_formatter().set_useOffset(True)
     for title in surveys_selection:
-        survey_params = utils.read_survey_params(title, VERBOSE = 0)
-        limit    = survey_params['limit']
-        cut      = survey_params['cut']
-        area     = survey_params['area']
-        seeing   = survey_params['seeing']
-        exp_time_sec = survey_params['exp_time_sec']
-        pixel_arcsec = survey_params['pixel_arcsec']
-        zero_point_m = survey_params['zero_point_m']
-        sky_bckgnd_m = survey_params['sky_bckgnd_m']
-        photo_band   = survey_params['photo_band']
         try:
           matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
         except ValueError:
@@ -276,6 +266,18 @@ def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, 
             min_SNR     = 20
             arc_mu_thr  = 3
             VDF = ls.Phi_vel_disp_Mason
+
+            survey_params = utils.read_survey_params(title, VERBOSE = 0)
+            limit    = survey_params['limit']
+            cut      = survey_params['cut']
+            area     = survey_params['area']
+            seeing   = survey_params['seeing']
+            exp_time_sec = survey_params['exp_time_sec']
+            pixel_arcsec = survey_params['pixel_arcsec']
+            zero_point_m = survey_params['zero_point_m']
+            sky_bckgnd_m = survey_params['sky_bckgnd_m']
+            photo_band   = survey_params['photo_band']
+
             matrix_noLL, Theta_E_noLL, prob_noLL = ls.calculate_num_lenses_and_prob(
                                                     sigma_array, zl_array, zs_array, M_array, limit, area,
                                                     seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
@@ -292,7 +294,7 @@ def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, 
         __col__ = next(_col_)
         plot_z_distribution_in_ax(ax[0], title, __col__, zl_array, zs_array, sigma_array, matrix, SMOOTH = SMOOTH)
         plot_s_distribution_in_ax(ax[1], title, __col__, zl_array, zs_array, sigma_array, matrix, SMOOTH = SMOOTH)
-        plot_R_distribution_in_ax(ax[2], title, __col__, np.arange(0  , 4  , 0.25), matrix, Theta_E, SMOOTH = SMOOTH)
+        plot_R_distribution_in_ax(ax[2], title, __col__, np.arange(0  , 4  , 0.25), matrix, Theta_E, SMOOTH = SMOOTH, label=f'# Lenses: {np.sum(matrix):.1e}')
 
     ax[0].set_xlabel(r'$z$', fontsize=20)
     ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
@@ -301,6 +303,7 @@ def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, 
     ax[2].set_xlabel(r'$\Theta_E$ [arcsec]', fontsize=20)
     ax[2].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
     ax[0].legend(fontsize=12)
+    ax[2].legend(fontsize=12)
     if (SAVE):
         # folderpath = 'img/'+utils.remove_spaces_from_string(title)
         # if not os.path.exists(folderpath): os.makedirs(folderpath)
@@ -316,8 +319,9 @@ def plot_s_distribution_in_ax(ax, title, color, zl_array, zs_array, sigma_array,
     _n, __n, ___n, P_zs, P_zl, P_sg = ls.get_N_and_P_projections(matrix, sigma_array, zl_array, zs_array, SMOOTH)
     ax.plot(sigma_array, P_sg, c=color, ls='-', label=title)
 
-def plot_R_distribution_in_ax(ax, title, color, _nbins_Re, matrix, Theta_E, SMOOTH = 1):
-    ax.hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=color, ls = '-', label=title)
+def plot_R_distribution_in_ax(ax, title, color, _nbins_Re, matrix, Theta_E, SMOOTH = 1, label = ''):
+    _label = title if label == '' else label
+    ax.hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=color, ls = '-', label=_label)
 
 def compare_SL2S(zl_array, zs_array, sigma_array,
                 LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 0, SMOOTH = 1, SAVE = 0):
@@ -356,8 +360,9 @@ def compare_SL2S(zl_array, zs_array, sigma_array,
     _nbins_sg = np.arange(100, 400, 25  )
     _nbins_Re = np.arange(0  , 4  , 0.25)
 
-    title = 'CFHTLS i band'
+    title = 'CFHTLS i band mu4'
     try:
+        # raise ValueError
         matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
     except ValueError:
         print('FILE do NOT exist - RUNNING MODEL')
@@ -366,9 +371,10 @@ def compare_SL2S(zl_array, zs_array, sigma_array,
         zl_array    = np.arange(0.  , 2.5 , 0.1)
         zs_array    = np.arange(0.  , 5.4 , 0.2)
         min_SNR     = 20
-        arc_mu_thr  = 3
+        arc_mu_thr  = 4 #!!!!!!!!!!!!!!!!!!!!!!!
+        print("!!!! mu = ", arc_mu_thr)
         VDF = ls.Phi_vel_disp_Mason
-        survey_params = utils.read_survey_params(title, VERBOSE = 0)
+        survey_params = utils.read_survey_params(''.join(title.split()[:-1]), VERBOSE = 0)
         limit    = survey_params['limit']
         cut      = survey_params['cut']
         area     = survey_params['area']
@@ -401,6 +407,8 @@ def compare_SL2S(zl_array, zs_array, sigma_array,
     matrix_LL[:, :, np.logical_or(zl_array <= zl_lower, zl_array >= zl_upper)] *= 0
     print('EXPECTED NUMBER OF LENSES AFTER PRIOR ON ZL, ZS, AND SIGMA:')
     print(f'   COSMOS HST i band Mason VDF: {np.sum(matrix_noLL):.0f} ({np.sum(matrix_LL):.0f})')
+    print('EXPECTED NUMBER OF LENSES AFTER PRIOR ON 25% completeness of search algorithm:')
+    print(f'   COSMOS HST i band Mason VDF: {np.sum(matrix_noLL/4):.0f} ({np.sum(matrix_LL/4):.0f})')
     _ , __  , ___, P_zs_LL   , P_zl_LL   , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=SMOOTH)
     _ , __  , ___, P_zs_noLL , P_zl_noLL , P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=SMOOTH)
     if LENS_LIGHT:
@@ -476,6 +484,8 @@ def compare_SL2S(zl_array, zs_array, sigma_array,
     matrix_LL[:, :, np.logical_or(zl_array <= zl_lower, zl_array >= zl_upper)] *= 0
     print('EXPECTED NUMBER OF LENSES AFTER PRIOR ON ZL, ZS, AND SIGMA:')
     print(f'   COSMOS HST i band Geng VDF: {np.sum(matrix_noLL):.0f} ({np.sum(matrix_LL):.0f})')
+    print('EXPECTED NUMBER OF LENSES AFTER PRIOR ON 25% completeness of search algorithm:')
+    print(f'   COSMOS HST i band Geng VDF: {np.sum(matrix_noLL/4):.0f} ({np.sum(matrix_LL/4):.0f})')
     _ , __  , ___, P_zs_LL   , P_zl_LL   , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=SMOOTH)
     _ , __  , ___, P_zs_noLL , P_zl_noLL , P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=SMOOTH)
     if LENS_LIGHT:
