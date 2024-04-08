@@ -95,21 +95,23 @@ def plot_ALL_distributions(title, zl_array, zs_array, sigma_array,
 
     _nbins_Re = np.arange(0  , 4  , 0.25)
     fig, ax = plt.subplots(2, 3, figsize=(17, 10), sharex=False, sharey=False)
-    plt.subplots_adjust(wspace=.15, hspace=.2)
+    plt.subplots_adjust(wspace=.14, hspace=.12)
+    plt.rcParams['font.size'] = 15
+    FONTS_CONT = 12
     fig.suptitle(title, fontsize=25)
     ax[0,0].plot(zl_array, P_zl_LL, c=col_A, ls=':')
     ax[0,0].plot(zs_array, P_zs_LL, c=col_B, ls=':' , label='w/ lens light')
     ax[0,0].plot(zl_array, P_zl_noLL, c=col_A, ls='-')
     ax[0,0].plot(zs_array, P_zs_noLL, c=col_B, ls='-', label='No lens light')
-    ax[0,0].set_ylabel(r'$P$', fontsize=20)
-    ax[0,0].set_xlabel(r'$z$', fontsize=20)
+    ax[0,0].set_ylabel(r'$P$', fontsize=22)
+    ax[0,0].set_xlabel(r'$z$', fontsize=22)
     ax[0,0].set_xlim((0,5.2))
     ax[0,1].plot(sigma_array, P_sg_LL, c=col_C, ls = ':')
     ax[0,1].plot(sigma_array, P_sg_noLL, c=col_C, ls = '-')
-    ax[0,1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
+    ax[0,1].set_xlabel(r'$\sigma$ [km/s]', fontsize=22)
     ax[0,2].hist(np.ravel(Theta_E_LL), weights=np.ravel(matrix_LL), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=col_D, ls = ':')
     ax[0,2].hist(np.ravel(Theta_E_noLL), weights=np.ravel(matrix_noLL), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=col_D, ls = '-')
-    ax[0,2].set_xlabel(r'$\Theta_E$ [arcsec]', fontsize=20)
+    ax[0,2].set_xlabel(r'$\Theta_E$ [arcsec]', fontsize=22)
 
     level_array = [0.055, 0.1, 0.25, 0.5, 0.8]
     norm = np.sum(matrix_noLL)
@@ -117,24 +119,24 @@ def plot_ALL_distributions(title, zl_array, zs_array, sigma_array,
     _zs, _zl = np.meshgrid(zs_array, zl_array)
     levels   = np.asarray(level_array)*(np.power(10,(np.log10(np.max(plotting_now)))))
     contours = ax[1,0].contour(_zs, _zl, plotting_now.T, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(levels), vmax=np.max(plotting_now)), linestyles='-')
-    ax[1,0].clabel(contours, inline=True, fontsize=8, fmt='%.0e')
-    ax[1,0].set_xlabel(r'$z_s$', fontsize=20)
-    ax[1,0].set_ylabel(r'$z_l$', fontsize=20)
+    ax[1,0].clabel(contours, inline=True, fontsize=FONTS_CONT, fmt='%.0e')
+    ax[1,0].set_xlabel(r'$z_s$', fontsize=22)
+    ax[1,0].set_ylabel(r'$z_l$', fontsize=22)
     plotting_now = Ngal_zl_sigma_noLL/norm
     _sigma, _zl = np.meshgrid(sigma_array, zl_array)
     levels   = np.asarray(level_array)*(np.power(10,(np.log10(np.max(plotting_now)))))
     contours = ax[1,1].contour(_sigma, _zl,plotting_now.T, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(levels), vmax=np.max(plotting_now)), linestyles='-')
     ax[1,1].scatter(200,1.0, label='', alpha=0)
-    ax[1,1].clabel(contours, inline=True, fontsize=8, fmt='%.0e')
-    ax[1,1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
-    ax[1,1].set_ylabel(r'$z_l$', fontsize=20)
+    ax[1,1].clabel(contours, inline=True, fontsize=FONTS_CONT, fmt='%.0e')
+    ax[1,1].set_xlabel(r'$\sigma$ [km/s]', fontsize=22)
+    ax[1,1].set_ylabel(r'$z_l$', fontsize=22)
     plotting_now = Ngal_zs_sigma_noLL/norm
     _sigma, _zs = np.meshgrid(sigma_array, zs_array)
     levels   = np.asarray(level_array)*(np.power(10,(np.log10(np.max(plotting_now)))))
     contours = ax[1,2].contour(_sigma, _zs, plotting_now, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(levels), vmax=np.max(plotting_now)), linestyles='-')
-    ax[1,2].clabel(contours, inline=True, fontsize=8, fmt='%.0e')
-    ax[1,2].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
-    ax[1,2].set_ylabel(r'$z_s$', fontsize=20)
+    ax[1,2].clabel(contours, inline=True, fontsize=FONTS_CONT, fmt='%.0e')
+    ax[1,2].set_xlabel(r'$\sigma$ [km/s]', fontsize=22)
+    ax[1,2].set_ylabel(r'$z_s$', fontsize=22)
 
     norm = np.sum(matrix_LL)
     plotting_now = Ngal_zs_zl_LL/norm
@@ -142,29 +144,29 @@ def plot_ALL_distributions(title, zl_array, zs_array, sigma_array,
     levels   = np.asarray(level_array)*(np.power(10,(np.log10(np.max(plotting_now)))))
     contours = ax[1,0].contour(_zs, _zl, plotting_now.T, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(levels), vmax=np.max(plotting_now)), linestyles=':')
     # ax[1,0].clabel(contours, inline=True, fontsize=8)
-    ax[1,0].set_xlabel(r'$z_s$', fontsize=20)
-    ax[1,0].set_ylabel(r'$z_l$', fontsize=20)
+    ax[1,0].set_xlabel(r'$z_s$', fontsize=22)
+    ax[1,0].set_ylabel(r'$z_l$', fontsize=22)
     plotting_now = Ngal_zl_sigma_LL/norm
     _sigma, _zl = np.meshgrid(sigma_array, zl_array)
     levels   = np.asarray(level_array)*(np.power(10,(np.log10(np.max(plotting_now)))))
     contours = ax[1,1].contour(_sigma, _zl,plotting_now.T, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(levels), vmax=np.max(plotting_now)), linestyles=':')
     ax[1,1].scatter(200,1.0, label='', alpha=0)
     # ax[1,1].clabel(contours, inline=True, fontsize=8)
-    ax[1,1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
-    ax[1,1].set_ylabel(r'$z_l$', fontsize=20)
+    ax[1,1].set_xlabel(r'$\sigma$ [km/s]', fontsize=22)
+    ax[1,1].set_ylabel(r'$z_l$', fontsize=22)
     plotting_now = Ngal_zs_sigma_LL/norm
     _sigma, _zs = np.meshgrid(sigma_array, zs_array)
     levels   = np.asarray(level_array)*(np.power(10,(np.log10(np.max(plotting_now)))))
     contours = ax[1,2].contour(_sigma, _zs, plotting_now, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(levels), vmax=np.max(plotting_now)), linestyles=':')
     # ax[1,2].clabel(contours, inline=True, fontsize=8)
-    ax[1,2].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
-    ax[1,2].set_ylabel(r'$z_s$', fontsize=20)
+    ax[1,2].set_xlabel(r'$\sigma$ [km/s]', fontsize=22)
+    ax[1,2].set_ylabel(r'$z_s$', fontsize=22)
 
     if LEGEND:
         if(np.sum(matrix_noLL))>10_000:
-            ax[1,0].legend([f'#Lenses w/ LL: {np.sum(matrix_LL):.1e}', f'#Lenses no LL: {np.sum(matrix_noLL):.1e}'], fontsize=20)
+            ax[1,0].legend([f'#Lenses w/ LL: {np.sum(matrix_LL):.1e}', f'#Lenses no LL: {np.sum(matrix_noLL):.1e}'], fontsize=22)
         else:
-            ax[1,0].legend([f'#Lenses w/ LL: {np.sum(matrix_LL):.0f}', f'#Lenses no LL: {np.sum(matrix_noLL):.0f}'], fontsize=20)
+            ax[1,0].legend([f'#Lenses w/ LL: {np.sum(matrix_LL):.0f}', f'#Lenses no LL: {np.sum(matrix_noLL):.0f}'], fontsize=22)
 
     if(1):
         ax[1,0].set_xlim((0,3.5))

@@ -706,8 +706,11 @@ def compare_COSMOS_HST_Faure(zl_array, zs_array, sigma_array, M_array_UV, mag_cu
         plt.savefig('img/COSMOS_HST_Faure.png', dpi=200, bbox_inches='tight')
     plt.show()
 
+
+
 def compare_JACOBS_CNN_DES(zl_array, zs_array, sigma_array,
-                        LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 0, SAVE = 0, DENSITY = 1, MU5 = 0):
+                        LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 0, SAVE = 0, DENSITY = 1, MU5 = 0,
+                        legend_size = 18):
     JAC_DES_data       = pd.read_csv('../galess/data/LENS_SEARCHES/Jacobs_CNN/JACOBS_2019_DES_CNN.tsv', sep=';')
     JAC_DES_data_zl    = JAC_DES_data['z'].to_numpy()
     JAC_DES_data_imag  = JAC_DES_data['imag'].to_numpy()
@@ -790,7 +793,7 @@ def compare_JACOBS_CNN_DES(zl_array, zs_array, sigma_array,
     m_lens = ls.get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix, obs_band = 'sdss_i0')
     norm = integrate.simps(m_lens, m_obs)
     ax[1].plot(m_obs, m_lens/norm, color=cc2)
-    ax[0].legend(fontsize=13)
+    ax[0].legend(fontsize=legend_size)
     if SAVE:
         # folderpath = 'img/'+utils.remove_spaces_from_string(title)
         # if not os.path.exists(folderpath): os.makedirs(folderpath)
@@ -798,7 +801,8 @@ def compare_JACOBS_CNN_DES(zl_array, zs_array, sigma_array,
     plt.show()
 
 
-def compare_SUGOHI(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 0, SAVE = 0, DENSITY = 1, SMOOTH = 1):
+def compare_SUGOHI(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 0,
+                   SAVE = 0, DENSITY = 1, SMOOTH = 1, legend_size = 18):
     # SUGOHI_upto_2020      = pd.read_csv('../galess/data/LENS_SEARCHES/SUGOHI/SUGOHI_SONNENFELD_2020.tsv', sep=';')
     # SUGOHI_SONN_2018      = SUGOHI_upto_2020[SUGOHI_upto_2020['Ref'] == 'c']
     # SUGOHI_SONN_2020      = SUGOHI_upto_2020[SUGOHI_upto_2020['Ref'] == 'i']
@@ -931,13 +935,13 @@ def compare_SUGOHI(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEY
     if DENSITY:
         ax[0].set_ylim((0,5.5))
         ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
-    ax[0].set_xlim((0,2.0))
+    ax[0].set_xlim((0,3.2))
     ax[1].set_xlabel(r'$m_\text{I814W}^\text{len}$ [mag]', fontsize=20)
     ax[1].set_ylim((0,0.55))
     ax[1].set_ylabel(r'$dP/dm$', fontsize=20)
     ax[1].set_xlim((15,25))
 
-    ax[0].legend(fontsize=13, loc=1)
+    ax[0].legend(fontsize=legend_size, loc=1)
     # ax[1].legend(fontsize=13, loc=1)
     if SAVE:
         # folderpath = 'img/'+utils.remove_spaces_from_string(title)
