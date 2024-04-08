@@ -5,16 +5,17 @@ __credits__ = "University of Melbourne"
 __citation__ = """
 % If this work is used to support a publication please
 % cite the following publication:
-% Description of This code
+% link: https://arxiv.org/pdf/2404.03143.pdf
+% bibref:
 @ARTICLE{Ferrami_GALESS,
    author = { {Ferrami}, G. and {Wyithe}, S. }
-    title = "{Awesome sauce code for astronomy projects}",
-  journal = {/mnras},
+    title = "{A model for galaxy-galaxy strong lensing statistics in surveys}",
+  journal = {arXiv},
  keywords = {},
      year = 2024,
-    month = feb,
-   volume = 1337,
-    pages = {11-15},
+    month = apr,
+   volume = {TBA},
+    pages = {TBA},
       doi = {TBA}
 }
 
