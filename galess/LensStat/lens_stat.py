@@ -16,6 +16,18 @@ import galess.Utils.ls_utils as utils
 
 cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
 
+def cosmo_luminosity_distance(zs):
+    '''
+    Returns luminosity distance in the adopted cosmology.
+        Parameters:
+                zs: (float)
+                    Redshift of the galaxy population
+        Returns:
+                D_l: (float)
+                    Luminosity distance (pc)
+    '''
+    return cosmo.luminosity_distance(zs).value
+
 def schechter_LF(M_int,zs):
     '''
     Returns the Schechter UV galaxy Luminosity Function.
