@@ -15,6 +15,7 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
                                     sky_bckgnd_m_per_arcsec_sq, zero_point_m, photo_band,
                                     mag_cut = None, arc_mu_threshold = 3, seeing_trsh = 1.5,
                                     num_exposures = 1, Phi_vel_disp = ls.Phi_vel_disp_Mason,
+                                    VDF_args = None,
                                     LF_func = ls.schechter_LF, restframe_band = 'galex_NUV',
                                     LENS_LIGHT_FLAG = False, SIE_FLAG = True, ncores = None):
     '''
@@ -61,9 +62,12 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
                     num_exposures: (int)
                         Number of exposures
                     Phi_vel_disp: (function)
-                        Velocity Dispersion Function function
+                        Velocity Dispersion Function (VDF) function
+                    VDF_args: (float, float, float, float, float, float)
+                        Parameters for the VDF profile and evolution with z
                     LF_func: (function)
                         Luminosity Function function
+                        [Phi_star, p, alpha_s, beta, Phi_star_exp, sigma_star]
                     restframe_band: (string)
                         Restframe band associated to the source magnitude M_array_UV
                     LENS_LIGHT_FLAG: (boolean)
@@ -75,12 +79,6 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
                         Number of lensed galaxies per bin of velocity dispersion, redshift
                         of the lens and the source, integrated over the source magnitude
                         up to the magnitude limit of the survey.
-                    Theta_E_mat: ndarray(dtype=float, ndim=3)
-                        Value of the Einstein Radius of a SIS lens per bin of velocity
-                        dispersion, redshift of the lens and of the source.
-                    Ngal_tensor: ndarray(dtype=float, ndim=4)
-                        Number of lensed galaxies per bin of velocity dispersion, redshift
-                        of the lens and the source, and abs magnitude of the source.
     '''
     supported_Lens_Light_photo_bands = [
         'sdss_g0', 'sdss_r0', 'sdss_i0', 'sdss_z0',
@@ -102,8 +100,8 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
         #cores = multiprocessing.cpu_count()
     _args_ = sigma_array, zl_array, M_array_UV, app_magn_limit, photo_band, mag_cut, LENS_LIGHT_FLAG,\
              survey_area_sq_degrees, seeing_arcsec, SNR, exp_time_sec, sky_bckgnd_m_per_arcsec_sq,\
-             zero_point_m, arc_mu_threshold, seeing_trsh, num_exposures, Phi_vel_disp, LF_func,\
-             restframe_band, SIE_FLAG, _dzs
+             zero_point_m, arc_mu_threshold, seeing_trsh, num_exposures, Phi_vel_disp, VDF_args,\
+             LF_func, restframe_band, SIE_FLAG, _dzs
     shape = (len(zs_array), len(sigma_array), len(zl_array))
     args =  [(i, shape, zs_array[i], _args_) for i in range(int(ncores))]
     exit = False
@@ -140,7 +138,7 @@ def cal_num_lens_prob_in_single(args):
     job_id, shape, zs, _args_ = args
     sigma_array, zl_array, M_array_UV, app_magn_limit, photo_band, mag_cut, LENS_LIGHT_FLAG,\
     survey_area_sq_deg, seeing_arcsec, SNR, exp_time_sec, sky_bckgnd_m_per_arcsec_sq,\
-    zero_point_m, arc_mu_threshold, seeing_trsh, num_exposures, Phi_vel_disp, LF_func,\
+    zero_point_m, arc_mu_threshold, seeing_trsh, num_exposures, Phi_vel_disp, VDF_args, LF_func,\
     restframe_band, SIE_FLAG, _dzs = _args_
     shmem = SharedMemory(name=f'{mem_id}', create=False)
     shres = np.ndarray(shape, buffer=shmem.buf, dtype=np.float64)
@@ -148,7 +146,7 @@ def cal_num_lens_prob_in_single(args):
                                          app_magn_limit, photo_band, mag_cut, LENS_LIGHT_FLAG,
                                          survey_area_sq_deg, seeing_arcsec, SNR, exp_time_sec,
                                          sky_bckgnd_m_per_arcsec_sq, zero_point_m, arc_mu_threshold,
-                                         seeing_trsh, num_exposures, Phi_vel_disp, LF_func,
+                                         seeing_trsh, num_exposures, Phi_vel_disp, VDF_args, LF_func,
                                          restframe_band, SIE_FLAG)
     return
 
@@ -156,7 +154,7 @@ def inner_integral(zs, _dzs, sigma_array, zl_array, M_array_UV, app_magn_limit,
                 photo_band, mag_cut, LENS_LIGHT_FLAG, survey_area_sq_degrees, seeing_arcsec,
                 SNR, exp_time_sec, sky_bckgnd_m_per_arcsec_sq, zero_point_m,
                 arc_mu_threshold = 3, seeing_trsh = 1.5,
-                num_exposures = 1, Phi_vel_disp = ls.Phi_vel_disp_Mason,
+                num_exposures = 1, Phi_vel_disp = ls.Phi_vel_disp_Mason, VDF_args = None,
                 LF_func = ls.schechter_LF, restframe_band = 'galex_NUV', SIE_FLAG = True):
     # Ngal_tensor will store the number of lenses for each (zs, zl, sigma, Mag_UV) combination
     Ngal_tensor  = np.zeros((len(sigma_array), len(zl_array), len(M_array_UV)))
@@ -217,7 +215,15 @@ def inner_integral(zs, _dzs, sigma_array, zl_array, M_array_UV, app_magn_limit,
                                                         LF_func = LF_func, SIE_FLAG = SIE_FLAG)
                     weighted_prob_lens = prob_lens * np.max(weight_final, axis=0)
                     Cone = ls.Lens_cone_volume_diff(zl, survey_area_sq_degrees, dz = _dzl)
-                    IVD = (Phi_vel_disp(sigma-_dsg/2, zl)+Phi_vel_disp(sigma+_dsg/2, zl))*_dsg/2
+                    if VDF_args == None:
+                        IVD = (Phi_vel_disp(sigma-_dsg/2,zl)+Phi_vel_disp(sigma+_dsg/2,zl))*_dsg/2
+                    else:
+                        Phi_star, p, alpha_s, beta, Phi_star_exp, sigma_star = VDF_args
+                        l = Phi_vel_disp(sigma-_dsg/2, zl,
+                                         Phi_star, p, alpha_s, beta, Phi_star_exp, sigma_star)
+                        r = Phi_vel_disp(sigma+_dsg/2, zl,
+                                         Phi_star, p, alpha_s, beta, Phi_star_exp, sigma_star)
+                        IVD = (l + r)*_dsg/2
                     number_of_ETGs = Cone * IVD
                     Ngal_tensor[isg][izl][:] = weighted_prob_lens * number_of_ETGs
                     ijk = idxM_matrix[isg][izl]

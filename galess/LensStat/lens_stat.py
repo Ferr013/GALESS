@@ -180,6 +180,29 @@ def Phi_vel_disp_Geng(sigma, zl):
     expctf = np.exp(-np.power(sigma/sigma_star_z,beta))
     return Phi_star_z*pwrlaw*(expctf/gammafunc(alpha/beta))*(beta/sigma)
 
+def Phi_vel_disp_GENERIC(sigma, zl,
+                         Phi_star = 3.75*1e-3, p = 0.24, alpha_s = -0.54,
+                         beta = 0.2, Phi_star_exp = -2.46, sigma_star = 216):
+    '''
+    Returns the velocity dispersion function (VDF) evolution with z.
+    Default parameters are taken from Mason et al. 2015
+    link: (https://ui.adsabs.harvard.edu/abs/2015ApJ...805...79M/abstract)
+
+            Parameters:
+                    sigma: (float)
+                        Velocity dispersion (km/s)
+                    zl: (float)
+                        Redshift of the lens
+            Returns:
+                    VDF: (float)
+                        Velocity Dispersion Function
+    '''
+    Phi_star_z = Phi_star*np.power(1+zl, Phi_star_exp)
+    sigma_z = sigma*np.power(1+zl,beta)
+    pwrlaw = np.power(sigma/sigma_star, (1+alpha_s)/p)
+    expctf = np.exp(-np.power(sigma/sigma_star,1/p))
+    return np.log(10) / p * (Phi_star_z/sigma_z) * pwrlaw * expctf
+
 def dTau_dz_dsigma(sigma, zl, zs, Phi_vel_disp = Phi_vel_disp_Mason):
     '''
     Returns the differential multiple image optical depth (tau)
