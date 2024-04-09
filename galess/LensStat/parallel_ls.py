@@ -96,16 +96,16 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
     zs_array = zs_array[zs_array<=ls.get_highest_LYA_rest_fram_observable(photo_band)]
     _dzs = zs_array[1]-zs_array[0]
     # Loop over zs, sigma and zl
-    if cores is None:
+    if ncores is None:
         #TODO: Use 2/3 of cores and loop over the remainder
-        cores = len(zs_array)
+        ncores = len(zs_array)
         #cores = multiprocessing.cpu_count()
     _args_ = sigma_array, zl_array, M_array_UV, app_magn_limit, photo_band, mag_cut, LENS_LIGHT_FLAG,\
              survey_area_sq_degrees, seeing_arcsec, SNR, exp_time_sec, sky_bckgnd_m_per_arcsec_sq,\
              zero_point_m, arc_mu_threshold, seeing_trsh, num_exposures, Phi_vel_disp, LF_func,\
              restframe_band, SIE_FLAG, _dzs
     shape = (len(zs_array), len(sigma_array), len(zl_array))
-    args =  [(i, shape, zs_array[i], _args_) for i in range(int(cores))]
+    args =  [(i, shape, zs_array[i], _args_) for i in range(int(ncores))]
     exit = False
     try:
         global mem_id
@@ -117,7 +117,7 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
         if sys.platform.startswith('linux'):
             method = 'fork'
         ctx = multiprocessing.get_context(method)
-        pool = ctx.Pool(processes=cores, maxtasksperchild=1,
+        pool = ctx.Pool(processes=ncores, maxtasksperchild=1,
                         initializer=init, initargs=(mem_id,))
         try:
             pool.map_async(cal_num_lens_prob_in_single, args, chunksize=1).get(timeout=10_000)
