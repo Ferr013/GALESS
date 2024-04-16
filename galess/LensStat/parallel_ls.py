@@ -63,8 +63,8 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
                         Number of exposures
                     Phi_vel_disp: (function)
                         Velocity Dispersion Function (VDF) function
-                    VDF_args: (float, float, float, float, float, float)
-                        Parameters for the VDF profile and evolution with z
+                    VDF_args: (float, float, float, float)
+                        Parameters for the VDF evolution with z
                     LF_func: (function)
                         Luminosity Function function
                         [Phi_star, p, alpha_s, beta, Phi_star_exp, sigma_star]
@@ -218,11 +218,11 @@ def inner_integral(zs, _dzs, sigma_array, zl_array, M_array_UV, app_magn_limit,
                     if VDF_args == None:
                         IVD = (Phi_vel_disp(sigma-_dsg/2,zl)+Phi_vel_disp(sigma+_dsg/2,zl))*_dsg/2
                     else:
-                        Phi_star, p, alpha_s, beta, Phi_star_exp, sigma_star = VDF_args
+                        nu_n, nu_v, nu_a, nu_b = VDF_args
                         l = Phi_vel_disp(sigma-_dsg/2, zl,
-                                         Phi_star, p, alpha_s, beta, Phi_star_exp, sigma_star)
+                                         nu_n, nu_v, nu_a, nu_b)
                         r = Phi_vel_disp(sigma+_dsg/2, zl,
-                                         Phi_star, p, alpha_s, beta, Phi_star_exp, sigma_star)
+                                         nu_n, nu_v, nu_a, nu_b)
                         IVD = (l + r)*_dsg/2
                     number_of_ETGs = Cone * IVD
                     Ngal_tensor[isg][izl][:] = weighted_prob_lens * number_of_ETGs
