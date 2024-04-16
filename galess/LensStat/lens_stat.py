@@ -181,11 +181,11 @@ def Phi_vel_disp_Geng(sigma, zl):
     return Phi_star_z*pwrlaw*(expctf/gammafunc(alpha/beta))*(beta/sigma)
 
 def Phi_vel_disp_GENERIC(sigma, zl,
-                         Phi_star = 3.75*1e-3, p = 0.24, alpha_s = -0.54,
-                         beta = 0.2, Phi_star_exp = -2.46, sigma_star = 216):
+                         nu_n = -1.2, nu_v = 0.2,
+                         nu_a = 1, nu_b = 1):
     '''
     Returns the velocity dispersion function (VDF) evolution with z.
-    Default parameters are taken from Mason et al. 2015
+    Default parameters are taken from Choi et al. 2007
     link: (https://ui.adsabs.harvard.edu/abs/2015ApJ...805...79M/abstract)
 
             Parameters:
@@ -197,11 +197,26 @@ def Phi_vel_disp_GENERIC(sigma, zl,
                     VDF: (float)
                         Velocity Dispersion Function
     '''
-    Phi_star_z = Phi_star*np.power(1+zl, Phi_star_exp)
-    sigma_z = sigma*np.power(1+zl,beta)
-    pwrlaw = np.power(sigma/sigma_star, (1+alpha_s)/p)
-    expctf = np.exp(-np.power(sigma/sigma_star,1/p))
-    return np.log(10) / p * (Phi_star_z/sigma_z) * pwrlaw * expctf
+    ### Choi + 2007 parameters at z=0 ###############
+    Phi_star = 8e-3*(cosmo.H0.value/100)**3 #Mpc^-3
+    sigma_star = 161 #km/s
+    alpha = 2.32
+    beta = 2.67
+    ### Evolution arameters (to fit) ################
+    # nu_n = -1.2 # Best fit from Geng+2021
+    # nu_v = 0.2  # Best fit from Geng+2021
+    # nu_a = 1
+    # nu_b = 1
+    #################################################
+    Phi_star_z = Phi_star * np.power(1+zl, nu_n)
+    sigma_star_z = sigma_star * np.power(1+zl, nu_v)
+    alpha_z = alpha * np.power(1+zl, nu_a)
+    beta_z  = beta * np.power(1+zl, nu_b)
+    #################################################
+    pwrlaw = np.power(sigma/sigma_star_z, alpha_z)
+    expctf = np.exp(-np.power(sigma/sigma_star_z,beta_z))
+    #################################################
+    return Phi_star_z*pwrlaw*(expctf/gammafunc(alpha_z/beta_z))*(beta_z/sigma)
 
 def dTau_dz_dsigma(sigma, zl, zs, Phi_vel_disp = Phi_vel_disp_Mason):
     '''
