@@ -187,6 +187,9 @@ def Phi_vel_disp_GENERIC(sigma, zl,
     Returns the velocity dispersion function (VDF) evolution with z.
     Default parameters are taken from Choi et al. 2007
     link: (https://ui.adsabs.harvard.edu/abs/2015ApJ...805...79M/abstract)
+    See Section 2.1 of Sheth et al. 2003 for the choice of tha analytical form
+    link: (https://iopscience.iop.org/article/10.1086/376794/pdf)
+
 
             Parameters:
                     sigma: (float)
