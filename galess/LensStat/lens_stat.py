@@ -182,7 +182,7 @@ def Phi_vel_disp_Geng(sigma, zl):
 
 def Phi_vel_disp_GENERIC(sigma, zl,
                          nu_n = -1.2, nu_v = 0.2,
-                         nu_a = 1, nu_b = 1):
+                         nu_a = 0, nu_b = 0):
     '''
     Returns the velocity dispersion function (VDF) evolution with z.
     Default parameters are taken from Choi et al. 2007
