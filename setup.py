@@ -29,7 +29,7 @@ extra_files = package_files('galess/data')
 
 setup(
     name='galess',
-    version=0.1,
+    version=0.2,
     description="Model for strong lens populations distribution estimates in surveys",
     author="Giovanni Ferrami",
     author_email="gferrami@student.unimelb.edu.au",
