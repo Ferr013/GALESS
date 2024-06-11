@@ -221,6 +221,96 @@ def Phi_vel_disp_GENERIC(sigma, zl,
     #################################################
     return Phi_star_z*pwrlaw*(expctf/gammafunc(alpha_z/beta_z))*(beta_z/sigma)
 
+def Phi_vel_disp_Capelo_Natarajan(
+        sigma, zl, VDF_z0_ARGS = None, VDF_EVO_ARGS = None,
+        VDF_NAME = 'IVDF', VDF_ARGS_TYPE = 'nu'):
+    '''
+    Returns the velocity dispersion function (VDF) evolution with z.
+    See Capelo and Natarajan (2007) for definitions and derivations.
+            Parameters:
+                    sigma: (float)
+                        Velocity dispersion (km/s)
+                    zl: (float)
+                        Redshift of the lens
+            Returns:
+                    VDF: (float)
+                        Velocity Dispersion Function
+    '''
+    ### Evolution parameters (to fit) ################
+    if VDF_ARGS_TYPE == 'nu':
+        if VDF_EVO_ARGS == None:
+            nu_n = -1.18 # Best fit from Geng+2021
+            nu_v = 0.18  # Best fit from Geng+2021
+            nu_a = 0
+            nu_b = 0
+        else:
+            nu_n, nu_v, nu_a, nu_b = VDF_EVO_ARGS
+        n_evo = np.power(1+zl, nu_n)
+        v_evo = np.power(1+zl, nu_v)
+        a_evo = np.power(1+zl, nu_a)
+        b_evo = np.power(1+zl, nu_b)
+    elif VDF_ARGS_TYPE == 'PU':
+        if VDF_EVO_ARGS == None:
+            P = -0.87 # Best fit from Geng+2021
+            U = 0.09  # Best fit from Geng+2021
+            A = 0
+            B = 0
+        else:
+            P, U, A, B= VDF_EVO_ARGS
+        n_evo = np.power(10, P*zl)
+        v_evo = np.power(10, U*zl)
+        a_evo = np.power(10, A*zl)
+        b_evo = np.power(10, B*zl)
+    else:
+        return np.zeros(len(sigma))
+    #################################################
+
+    if VDF_NAME == 'IVDF':
+        #### Init parameters ############################
+        if VDF_z0_ARGS == None:
+            ### Capelo & Natarajan use Ofek et al. 2003 #####
+            Phi_star_E  = 0.0039*(cosmo.H0.value/100)**3
+            sigma_star, alpha, gamma = 225, -0.54, 4
+            # Phi_star_S0 = 0.0061*(cosmo.H0.value/100)**3
+        else:
+            Phi_star_E, sigma_star, alpha, gamma = VDF_z0_ARGS
+        #################################################
+        Phi_star_E_z = Phi_star_E * n_evo
+        sigma_star_z = sigma_star * v_evo
+        alpha_z = alpha * a_evo
+        gamma_z  = gamma * b_evo
+        # Phi_star_S0z = Phi_star_S0 * n_evo
+        #################################################
+        prefac = gamma*(Phi_star_E_z/sigma_star_z)
+        pwrlaw = np.power(sigma/sigma_star_z, gamma_z*(alpha_z + 1)-1)
+        expctf = np.exp(-np.power(sigma/sigma_star_z, gamma_z))
+        #################################################
+        return prefac*pwrlaw*expctf
+
+    elif VDF_NAME == 'MVDF':
+        #### Init parameters ############################
+        if VDF_z0_ARGS == None:
+            ### Capelo & Natarajan use Sheth et al. 2003#
+            Phi_star  = 0.0041*(cosmo.H0.value/100)**3
+            sigma_star, alpha, beta = 88.8, 6.5, 1.93
+        else:
+            Phi_star, sigma_star, alpha, beta = VDF_z0_ARGS
+        #################################################
+        Phi_star_z = Phi_star * n_evo
+        sigma_star_z = sigma_star * v_evo
+        alpha_z = alpha * a_evo
+        beta_z  = beta * b_evo
+        # Phi_star_S0z = Phi_star_S0 * n_evo
+        #################################################
+        prefac = beta_z/gammafunc(alpha_z/beta_z)*(Phi_star_z/sigma_star_z)
+        pwrlaw = np.power(sigma/sigma_star_z, alpha_z-1)
+        expctf = np.exp(-np.power(sigma/sigma_star_z, beta_z))
+        #################################################
+        return prefac*pwrlaw*expctf
+    else:
+        return np.zeros(len(sigma))
+
+
 def dTau_dz_dsigma(sigma, zl, zs, Phi_vel_disp = Phi_vel_disp_Mason):
     '''
     Returns the differential multiple image optical depth (tau)
