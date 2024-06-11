@@ -116,6 +116,7 @@ def plot_ALL_distributions(title, zl_array, zs_array, sigma_array,
     level_array = [0.055, 0.1, 0.25, 0.5, 0.8]
     norm = np.sum(matrix_noLL)
     plotting_now = Ngal_zs_zl_noLL/norm
+    plotting_now = Ngal_zs_zl_noLL/np.trapz(np.trapz(Ngal_zs_zl_noLL, zs_array, axis=0), zl_array)
     _zs, _zl = np.meshgrid(zs_array, zl_array)
     levels   = np.asarray(level_array)*(np.power(10,(np.log10(np.max(plotting_now)))))
     contours = ax[1,0].contour(_zs, _zl, plotting_now.T, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(levels), vmax=np.max(plotting_now)), linestyles='-')
@@ -123,6 +124,7 @@ def plot_ALL_distributions(title, zl_array, zs_array, sigma_array,
     ax[1,0].set_xlabel(r'$z_s$', fontsize=22)
     ax[1,0].set_ylabel(r'$z_l$', fontsize=22)
     plotting_now = Ngal_zl_sigma_noLL/norm
+    plotting_now = Ngal_zl_sigma_noLL/np.trapz(np.trapz(Ngal_zl_sigma_noLL, sigma_array, axis=0), zl_array)
     _sigma, _zl = np.meshgrid(sigma_array, zl_array)
     levels   = np.asarray(level_array)*(np.power(10,(np.log10(np.max(plotting_now)))))
     contours = ax[1,1].contour(_sigma, _zl,plotting_now.T, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(levels), vmax=np.max(plotting_now)), linestyles='-')
@@ -131,6 +133,7 @@ def plot_ALL_distributions(title, zl_array, zs_array, sigma_array,
     ax[1,1].set_xlabel(r'$\sigma$ [km/s]', fontsize=22)
     ax[1,1].set_ylabel(r'$z_l$', fontsize=22)
     plotting_now = Ngal_zs_sigma_noLL/norm
+    plotting_now = Ngal_zs_sigma_noLL/np.trapz(np.trapz(Ngal_zs_sigma_noLL, zs_array, axis=0), sigma_array)
     _sigma, _zs = np.meshgrid(sigma_array, zs_array)
     levels   = np.asarray(level_array)*(np.power(10,(np.log10(np.max(plotting_now)))))
     contours = ax[1,2].contour(_sigma, _zs, plotting_now, levels, cmap=cmap_c, norm=colors.Normalize(vmin=np.min(levels), vmax=np.max(plotting_now)), linestyles='-')
@@ -250,7 +253,9 @@ def plot_effect_vel_disp_function(zl_array, zs_array, sigma_array,
         plt.savefig('img/effect_VDF.png', dpi=200, bbox_inches='tight')
     plt.show()
 
-def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, zs_array, LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 0, SMOOTH = 1, SAVE = 0):
+def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, zs_array,
+                                      LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 0, SMOOTH = 1, SAVE = 0,
+                                      LABEL_NUMBERS = 0, LOG = 0):
     line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
     _col_  = iter(cmap_c(np.linspace(0, 1, len(surveys_selection)+1)))
     fig, ax = plt.subplots(1, 3, figsize=(17, 5), sharex=False, sharey=False)
@@ -297,7 +302,9 @@ def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, 
         plot_z_distribution_in_ax(ax[0], title, __col__, zl_array, zs_array, sigma_array, matrix, SMOOTH = SMOOTH)
         plot_s_distribution_in_ax(ax[1], title, __col__, zl_array, zs_array, sigma_array, matrix, SMOOTH = SMOOTH)
         plot_R_distribution_in_ax(ax[2], title, __col__, np.arange(0  , 4  , 0.25), matrix, Theta_E, SMOOTH = SMOOTH, label=f'# Lenses: {np.sum(matrix):.1e}')
-
+    if LOG:
+        for j in range(3):
+            ax[j].set_yscale('log')
     ax[0].set_xlabel(r'$z$', fontsize=20)
     ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
     ax[1].set_xlabel(r'$\sigma$', fontsize=20)
@@ -305,7 +312,7 @@ def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, 
     ax[2].set_xlabel(r'$\Theta_E$ [arcsec]', fontsize=20)
     ax[2].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
     ax[0].legend(fontsize=12)
-    ax[2].legend(fontsize=12)
+    if LABEL_NUMBERS: ax[2].legend(fontsize=12)
     if (SAVE):
         # folderpath = 'img/'+utils.remove_spaces_from_string(title)
         # if not os.path.exists(folderpath): os.makedirs(folderpath)

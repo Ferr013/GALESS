@@ -1,0 +1,141 @@
+"objname","old objnames","Photometry Proposal ID","Status","z_spec_Deflector","z_spec_Source","z_phot_Deflector","Nandini","Comments","Michelle","Comments","Makai","Comments","Final Classification"
+AGEL221912-434835A,"DESJ2219-4348, ‘Counter-top’
+","SOAR,GLAZEBROOK_16773_HST",Observed,0.71,2.167,,Group,,Group,Small arc next to the 2 objects on the right of main deflector,,,Group
+AGEL000316-334804A,DESJ0003-3348,"M/2018B/09,GLAZEBROOK_16773_HST",Observed,,1.8342,0.68,Single,,Single,Colour of point source to the left seems to not belong to same redshift as main deflector,,,Single
+AGEL000645-442950A,DESJ0006-4429,GLAZEBROOK_16773_HST,Observed,,"2.096918, 2.096790",0.53,Single,,Single,Nice example of einstein ring,,,Single
+AGEL001702-100911A,DESI-004.2564-10.1530,HUANG_15867_HST,Observed,0.52,"1.83, n/a",,Group?,,Group,Potential multiple imaging around 3-4 deflectors,,,DISCUSS
+AGEL002527+101107A,DESI-006.3643+10.1853,HUANG_15867_HST,Observed,0.458,2.397,,Cluster,,Cluster,"Great for thesis, many objects",,,Cluster
+AGEL010158-491738A,DESJ0101-4917,"M/2018B/09,GLAZEBROOK_16773_HST",Observed,,2.6323,0.77,Single (?),,Group,The arcs are not equal distance from the central deflector,,,DISCUSS
+AGEL012429-291856A,DESJ0124-2918,GLAZEBROOK_16773_HST,Observed,,1.6057,0.56,Group (?),"Is it even a lens? arcs are not very clear, but they are there. It looks like a single deflector lens but the messy multiple image configuration makes me question the contribution from neighbouring galaxy. not sure how the only main deflector at the centre can cause this. ",Single,The sources seem to be fairly equidistant from the central deflector,,,DISCUSS
+AGEL013204-160014A,DESI-023.0157-16.0040,HUANG_15867_HST,Observed,,,,Single,,Single,,,,Single
+AGEL013355-643413A,DESJ0133-6434,GLAZEBROOK_16773_HST,Observed,,2.0931,0.39,Single,,Single,Beautiful arc,,,Single
+AGEL013442+043350A,DESI-023.6765+04.5639,HUANG_15867_HST,Observed,0.551,"1.5, 2.03",,Cluster/Group,"Einstein radius seems big enough, like a cluster would cause, but it maybe a group",Cluster (?),Can see multiple lensed sources,,,DISCUSS
+AGEL013639+000818A,DESI-024.1631+00.1384,HUANG_15867_HST,Observed,0.344125,2.629,,Group,2 big galaxies act as deflector,Group,"2 deflectors, good test lens",,,Group
+AGEL014156+304531A,DESI-025.4848+30.7585,HUANG_15867_HST,Observed,0.524,,,Single,"my god, is this a lens?",Single,Only the very centre with the einstein ring is the lensed source,,,Single
+AGEL014253-183116A,DESJ0142-1831,"M/2018B/09,GLAZEBROOK_16773_HST",Observed,0.637,2.47,,Single,,Single,,,,Single
+AGEL020145-273942A,DESI-030.4360-27.6618,HUANG_15867_HST,Observed,,,,Group?,,Group,2 deflectors,,,DISCUSS
+AGEL021225-085211A,DESJ0212-0852,"M/2018B/09,GLAZEBROOK_16773_HST",Observed,0.7592573,2.201,,Single,,Single,,,,Single
+AGEL021514-290925A,DESI-033.8095-29.1570,HUANG_15867_HST,Observed,,,,Single,,Single,4 multiple images of same source?,,,Single
+AGEL022709-471856A,DESJ0227-4718,GLAZEBROOK_16773_HST,Observed,0.603,,,Single,,Single,,,,Single
+AGEL025029-410418A,DESJ0250-4104,GLAZEBROOK_16773_HST,Observed,,,,Single,Shell like structure formed by arcs,Single (?),"Multiple, overlapping arcs",,,DISCUSS
+AGEL030022-500129A,DESJ0300-5001,GLAZEBROOK_16773_HST,Observed,,,,Group,,Group,Wide arcs which may be due to multiple deflectors,,,Group
+AGEL032216-523440A,DESJ0322-5234,GLAZEBROOK_16773_HST,Observed,,,,Single,big nearby perturber,Single ,,,,DISCUSS
+AGEL032904-565658A,DESJ0329-5656,GLAZEBROOK_16773_HST,Observed,,,,Single,"Non a lens? a very faint arc, it may be unmodellable",Single,,,,Single
+AGEL034131-513045A,DESJ0341-5130,GLAZEBROOK_16773_HST,Observed,,2.0353,0.42,Group,"Very interesting, perturber clearly affecting the arc",Group,,,,Group
+AGEL035346-170639A,DCLS0353-1706,GLAZEBROOK_16773_HST,Observed,,"1.672, 1.46",0.6,Single,,Single,,,,Single
+AGEL041645-552500A,DESJ0416-5525,GLAZEBROOK_16773_HST,Observed,,,,Group?,"A pertuber near arc, also tiny possible perturbers near main deflector",Single,,,,DISCUSS
+AGEL042439-331742A,DESJ0424-3317,GLAZEBROOK_16773_HST,Observed,0.566,1.18,,Single,"Very clear einstein cross, lensed starf forming galaxy",Single,Nice example of quad,,,Single
+AGEL042816-321800A,DESJ0428-3218,GLAZEBROOK_16773_HST,Observed,,,,Single,,Single,,,,Single
+AGEL044821-192502A,DESI-072.0873-19.4172,HUANG_15867_HST,Observed,,,,Group,,Cluster ,There seems to be multiple lensed sources at a larger einstein radius,,,DISCUSS
+AGEL053724-464702A,DESJ0537-4647,GLAZEBROOK_16773_HST,Observed,,2.3443,0.41,Single,,Single,,,,Single
+AGEL053746-471120A,DESJ0537-4711,GLAZEBROOK_16773_HST,Observed,,,,Group,,Single/Group,The 2 sources next to deflector might be deflectors,,,DISCUSS
+AGEL060357-355806A,"DESJ0603-3558, DESI-090.9854-35.9683",GLAZEBROOK_16773_HST,Observed,,1.431,0.51,Cluster,Look at the second farther lensed source :-p,Cluster,Multiple arcs and brilliant example of cluster lens. Used in Tania proposal,,,Cluster
+AGEL060359-355835A,DESJ0603-3558A,GLAZEBROOK_16773_HST,Observed,,,,Same as above,,Same as above,Same as above,,,Same as above
+AGEL061815+501821A,DESI-094.5639+50.3059,HUANG_15867_HST,Observed,,,0.52,Single,,Single,,,,Single
+AGEL075524+344540A,DESI-118.8480+34.7610,HUANG_15867_HST,Observed,0.722,2.635,,Single,Huge perturber closeby,Single,,,,Single
+AGEL080820+103142A,DESI-122.0852+10.5284,HUANG_15867_HST,Observed,0.475,"1.3025, 1.4524",,Group,Can be a cluster,Group/Cluster,"Multiple lensed sources, good for thesis to confirm",,,DISCUSS
+AGEL085331+232155A,DESI-133.3800+23.3652,HUANG_15867_HST,Observed,,2.188,0.28,No image,,Single,No image,,,DISCUSS
+AGEL085413-042409A,DCLS0854-0424         ,GLAZEBROOK_16773_HST,Observed,,2.393,,Single,,Single (?),"This was a point of discussion, so not gonna touch",,,DISCUSS
+AGEL092315+182943A,DESI-140.8110+18.4954,HUANG_15867_HST,Observed,0.873,2.417,,Group,,Group,Great for thesis,,,Group
+AGEL101807-000812A,DESI-154.5307-00.1368,HUANG_15867_HST,Observed,0.372,2.59,,Single,,Single ,,,,DISCUSS
+AGEL101847-012132A,DESI-154.6972-01.3590,HUANG_15867_HST,Observed,0.388,1.43,,Single,Big perturber closeby,Single,,,,Single
+AGEL103255+751854A,DESI-158.2306+75.3149,HUANG_15867_HST,Observed,,,,No image,,Single,No image,,,DISCUSS
+AGEL104056-010359A,DESI-160.2351-01.0663,HUANG_15867_HST,Observed,0.25,1.21,,Single,,Single,Huge galaxy deflector,,,Single
+AGEL105100-055628A,DLS432021848,GLAZEBROOK_16773_HST,Observed,,1.94,,Single,,Group,Very interesting configuration,,,DISCUSS
+AGEL110154-060232A,DESI-165.4754-06.0423,HUANG_15867_HST,Observed,0.487,1.68,,Single,clear einstein cross,Single,Nice quad example,,,Single
+AGEL110245+121111A,DESI-165.6876+12.1864,HUANG_15867_HST,Observed,,1.907,1.02,Group,,Cluster,Lens within lens,,,DISCUSS
+AGEL120535+411044A,DESI-181.3974+41.1790,HUANG_15867_HST,Observed,0.476,2.65,,Group,,Group,,,,Group
+AGEL122537-072508A,DESI-186.4028-07.4188,HUANG_15867_HST,Observed,0.369,,,Single,,Single,,,,Single
+AGEL122719+172557A,DESI-186.8292+17.4324,HUANG_15867_HST,Observed,,,0.37,Group,"WTH, it has two nested single lens configuration.It is complicated",Group,"might be worthy to model, but not prefered currently",,,Group
+AGEL123736+553343A,DESI-189.4008+55.5619,HUANG_15867_HST,Observed,0.41,1.864,,Group/Cluster,Big Eintein radius,Group,Interesting arcs,,,DISCUSS
+AGEL123809+150151A,DESI-189.5370+15.0309,HUANG_15867_HST,Observed,,1.16,,Cluster/Group,"Wow, I see shells",Cluster,Perfect for thesis,,,DISCUSS
+AGEL125146+014256A,DESI-192.9428+01.7155,HUANG_15867_HST,Observed,0.673,,,Cluster/Group,Big Eintein radius,Cluster,Quite a lot of deflectors,,,DISCUSS
+AGEL131330-064211A,DCLS1313-0642,GLAZEBROOK_16773_HST,Observed,,,,Group,,Single,,,,DISCUSS
+AGEL132227-050135A,DCLS1322-0501,GLAZEBROOK_16773_HST,Observed,,,,Single,,Single,,,,Single
+AGEL132304+034319A,DCLS1323+0343,GLAZEBROOK_16773_HST,Observed,0.352558,1.016,,Group,,Group,Rosetta Stone,,,Group
+AGEL132557+263659A,DCLS1325+2636,GLAZEBROOK_16773_HST,Observed,0.4304085,,,Group?,Is the magnified blue object counter image?,Group,Interesting Shape,,,DISCUSS
+AGEL133041+044015A,DESI-202.6690+04.6707,HUANG_15867_HST,Observed,0.336,1.168,,Single,Big nearby perturber,Single,,,,Single
+AGEL133145+513431A,DESI-202.9388+51.5753,HUANG_15867_HST,Observed,0.289379,2.051,,Group,,Group,2 deflectors,,,Group
+AGEL140839+253104A,DCLS1408+2531,GLAZEBROOK_16773_HST,Observed,0.6632969,1.2865,,Single,,Single,,,,Single
+AGEL142104+002219A,DESI-215.2654+00.3719,HUANG_15867_HST,Observed,,2.195,0.72,Single,,Single,,,,Single
+AGEL142719-064515A,DCLS1427-0645,GLAZEBROOK_16773_HST,Observed,,1.512,,Single,,Group,There seems to be additional sources multiplied imaged besides the arc,,,DISCUSS
+AGEL142749+081045A,DESI-216.9538+08.1792,HUANG_15867_HST,Observed,0.5337887,,,Group,,Group/Cluster,Arc seems too close to the deflectors for it to be a cluster,,,DISCUSS
+AGEL142822+031800A,DESI-217.0936+03.3000,HUANG_15867_HST,Observed,0.5884678,,,No image,,Single,No image,,,DISCUSS
+AGEL144133-005401A,DESI-220.3861-00.8995,HUANG_15867_HST,Observed,,1.667,,Cluster,,Cluster,Arcs seem to be at larger einstein radius,,,Cluster
+AGEL144149+144121A,DESI-220.4549+14.6891,HUANG_15867_HST,Observed,0.741,1.433,,Single/Group,"Single lens nested in a group. There is tiny perturber, near big galaxy, but main lens config seems single lens case",Group,Might be 2 deflectors,,,DISCUSS
+AGEL144149+144121B,DESI-220.4549+14.6891,HUANG_15867_HST,Observed,0.741,2.2,,Group,,Same as above,Same as above,,,DISCUSS
+AGEL144431+241843A,DCLS1444+2418,GLAZEBROOK_16773_HST,Observed,0.6719189,,,Group,,Group,2 deflectors,,,Group
+AGEL144640-000350A,DCLS1446-0003,GLAZEBROOK_16773_HST,Observed,,,,Single,crazy lens,Single (?),Interesting arc shape,,,DISCUSS
+AGEL144743-065709A,DCLS1447-0657,GLAZEBROOK_16773_HST,Observed,,,,Group?,is the tiny object adjoint with deflector a perturber or counter image?,Group,Perfect for project,,,DISCUSS
+AGEL144802-081249A,DCLS1448-0812,GLAZEBROOK_16773_HST,Observed,,,,Single,lensed galaxy looks more like a nebula,Single,,,,Single
+AGEL150137+520830A,DESI-225.4050+52.1417,HUANG_15867_HST,Observed,0.553,2.418,,Single,,Single ,,,,DISCUSS
+AGEL150511+172042A,DESI-226.2950+17.3451,HUANG_15867_HST,Observed,0.484,,,Cluster,,Cluster,Perfect for thesis,,,Cluster
+AGEL150745+052256A,DCLS1507+0522,GLAZEBROOK_16773_HST,Observed,0.5945449,2.164,,Single/Group,"I have modelled it as single lens, by masking out the tiny pertuber. Also, pertubers redshift is not known",Group,need confirmation of redshift,,,DISCUSS
+AGEL150745+052256B,DCLS1507+0522,GLAZEBROOK_16773_HST,Observed,0.5945449,2.6,,Single/Group,,Same as above ,Same as above,,,DISCUSS
+AGEL150925+390140A,DESI-227.3528+39.0279,HUANG_15867_HST,Observed,0.598,,,Group,,Group,2 deflectors,,,Group
+AGEL151009+203725A,DESI-227.5364+20.6236,HUANG_15867_HST,Observed,0.585,,,Group,"Big Einstein radii, could be a cluster",Group,2 deflectors,,,Group
+AGEL152509+422753A,DESI-231.2858+42.4643,HUANG_15867_HST,Observed,0.297,2.26,,Group,,Group,A little hard to tell which are deflectors,,,Group
+AGEL153755+144324A,DESI-234.4783+14.7232,HUANG_15867_HST,Observed,0.26,2.478,,Single,,Single,,,,Single
+AGEL153929+165016A,DESI-234.8707+16.8379,HUANG_15867_HST,Observed,0.398,,,Single,,Single,,,,Single
+AGEL155417+044339A,DESI-238.5690+04.7276,HUANG_15867_HST,Observed,,1.72,,Single,,Single,,,,Single
+AGEL162300+213721A,DESI-245.7514+21.6226,HUANG_15867_HST,Observed,,1.727,,Group,,Group,3 deflectors,,,Group
+AGEL162401+012901A,DESI-246.0062+01.4836,HUANG_15867_HST,Observed,,2.368,,Single,"Perturbers are affecting arcs, so this could be called a group lens perhaps",Single,,,,Single
+AGEL165140+280517A,DESI-252.9173+28.0881,HUANG_15867_HST,Observed,,2.379,0.72,Group,,Group,3 deflectors?,,,Group
+AGEL165742+344858A,DESI-254.4235+34.8162,HUANG_15867_HST,Observed,0.578,2.465,,Group/Cluster,,Group/Cluster,Require larger cutout to identify more arcs,,,Group/Cluster
+AGEL170944+315417A,DESI-257.4348+31.9046,HUANG_15867_HST,Observed,0.367,2.12,,Single,,Single,,,,Single
+AGEL171922+244117A,DESI-259.8396+24.6880,HUANG_15867_HST,Observed,0.528725,2.277,,Group,,Group,2 deflectors,,,Group
+AGEL172703+110008A,DCLS1727+1100,GLAZEBROOK_16773_HST,Observed,,1.336,,Cluster/Group,The open end of the arc because of nested lensing of perturber?,Cluster,"Wow, this is great",,,DISCUSS
+AGEL183520+460627A,DESI-278.8338+46.1076,HUANG_15867_HST,Observed,,3.39,0.42,Single/Group,"Big Einstein ring, there are few fain looking objects between arc and lens",Single,,,,DISCUSS
+AGEL193558+580909A,DESI-293.9927+58.1525,HUANG_15867_HST,Observed,0.32,3.55,,Group/Cluster,,Group ,3 deflectors,,,DISCUSS
+AGEL201419-575701A,DESJ2014-5757,GLAZEBROOK_16773_HST,Observed,,2.191,0.8,Single,,Single,,,,Single
+AGEL203911-545945A,DESJ2039-5459,GLAZEBROOK_16773_HST,Observed,,,,Group,,Group (?),May have multiple sources,,,DISCUSS
+AGEL204312-060954A,DESI-310.8019-06.1649,HUANG_15867_HST,Observed,0.508,1.89,,Cluster,,Single (?),Only the 3 sources around the central deflector seems to be from lensing,,,DISCUSS
+AGEL204555+003148A,DCLS2045+0031,GLAZEBROOK_16773_HST,Observed,,,,Single,,Single,,,,Single
+AGEL205616-423857A,DESJ2056-4238,GLAZEBROOK_16773_HST,Observed,,,0.71,Single,,Single,,,,Single
+AGEL211005-563931A,DESJ2110-5639,GLAZEBROOK_16773_HST,Observed,,1.182,0.59,Single,,Single,,,,Single
+AGEL211243+000921A,DESJ2112+0009,GLAZEBROOK_16773_HST,Observed,0.4451601,2.359,,Single,,Single (?),Arcs are a little lopsided,,,DISCUSS
+AGEL212447-412816A,DESJ2124-4128,GLAZEBROOK_16773_HST,Observed,,,,Group?,How close in terms of redshift are the nearby objects?,Single ,,,,DISCUSS
+AGEL215122+134718A,DESI-327.8408+13.7884,HUANG_15867_HST,Observed,0.202,0.89,,Group,,Group,2 deflectors,,,Group
+AGEL215844+025730A,DESI-329.6820+02.9584,HUANG_15867_HST,Observed,0.289,2.081,,Single,,Single,,,,Single
+AGEL230305-511502A,DESJ2303-5115,GLAZEBROOK_16773_HST,Observed,,2.5689,0.53,Group,Is it repeated in Huangs catalog?,Group,Larger einstein radii,,,Group
+AGEL231812-110604A,DESI-349.5492-11.1012,HUANG_15867_HST,Observed,,2.656,0.71,Single,small perturber nearby,Single,,,,Single
+AGEL232128-463049A,DESJ2321-4630,GLAZEBROOK_16773_HST,Observed,,1.7487,0.64,Group,,Group,2-3 deflectors,,,Group
+AGEL233459-640407A,DESJ2334-6404,GLAZEBROOK_16773_HST,Observed,,2.495,0.72,Single/Group,one small perturber near main deflector. Should be tested,Group,2-3 deflectors,,,DISCUSS
+AGEL233552-515218A,DESJ2335-5152,GLAZEBROOK_16773_HST,Observed,0.556,2.23,,Single,,Single,,,,Single
+AGEL234930-511339A,DESJ2349-5113,GLAZEBROOK_16773_HST,Observed,,1.3931,0.48,Group,,Group,"2 deflectors, but near 2 nice arcs",,,Group
+AGEL020613-011417A,DESJ0206-0114,GLAZEBROOK_16773_HST,Observed,0.7143014,1.302,,Cluster/Group,"This seems like a cutoff image of a big cluster, I do not see bi defelector, this must be a dark matter hot spot",Cluster (?),"Not know how to classify, maybe arcs near edge of image of lookbook",,,DISCUSS
+AGEL021408-020629A,DCLS0214-0206,GLAZEBROOK_16773_HST,Observed,,,,Cluster/Group,,Cluster,Perfect for thesis,,,DISCUSS
+AGEL233610-020735A,PS1J2336,GLAZEBROOK_16773_HST,Observed,0.4941696,2.662,,Single,,Single,,,,Single
+AGEL000729-443446A,DESJ0007-4434,GLAZEBROOK_16773_HST,Observed,,1.0094,0.52,Single,,Single,,,,Single
+AGEL035606-560729A,DESJ0356-5607,GLAZEBROOK_16773_HST,Observed,,,,Group,,Single,Nice example of arcs,,,DISCUSS
+AGEL010238+015857A,DESJ0102+0158,GLAZEBROOK_16773_HST,Observed,0.86,1.816,,Single,,Single,,,,Single
+AGEL212326+015312A,CSWA157,GLAZEBROOK_16773_HST,Observed,0.525,1.18,,Group?,,Single (?),"multiple sources, which may indicate more deflectors?",,,DISCUSS
+AGEL033203-132510A,DCLS0332-1325,GLAZEBROOK_16773_HST,Observed,,"2.334, n/a",0.64,Single,,Single,,,,Single
+AGEL211515+101153A,DCLS2115+1011,GLAZEBROOK_16773_HST,Observed,,,,Group,"The bright object on the right seems another deflector, its too bright to be lensed background source. need check",Single (?),Not sure if the 2 sources are in the background or foreground,,,DISCUSS
+AGEL214915-001252A,DESJ2149-0012,GLAZEBROOK_16773_HST,Observed,0.4525166,1.943,,Group,two extra small perturbers near counter arc?,Single ,,,,DISCUSS
+AGEL004257-371858A,DESJ0042-3718,GLAZEBROOK_16773_HST,Observed,,3.0936,0.77,Single,,Single,,,,Single
+AGEL213758-012924A,DESJ2137-0129,GLAZEBROOK_16773_HST,Observed,0.27,1.49,,Single,I see shells,Single,,,,Single
+AGEL025220-473238A,DESJ0252-4732,GLAZEBROOK_16773_HST,Observed,0.494,1.5,,Group,,Group,Perfect for thesis,,,Group
+AGEL001310+004004A,DESJ0013+0040,GLAZEBROOK_16773_HST,Observed,0.6929675,2.07,,Single,,Single (?),Arcs are weird,,,DISCUSS
+AGEL222609+004142A,DESJ2226+0041,GLAZEBROOK_16773_HST,Observed,0.6470755,1.896,,Group,,Cluster/Group,Some smears that may be another arc,,,DISCUSS
+AGEL043806-322852A,DESJ0438-3228,GLAZEBROOK_16773_HST,Observed,,0.88,,Group,,Group,2-4 deflectors,,,Group
+AGEL090115+095624A,DESI-135.3125+09.9401,GLAZEBROOK_16773_HST,Observed,,2.635,0.81,Group,,Group,There seems to be larger arcs,,,Group
+AGEL094412+322039A,DCLS0944+3220,GLAZEBROOK_16773_HST,Observed,0.5952291,2.827,,Group/Single,need z check for 2nd small deflector,Group,2 deflectors,,,DISCUSS
+AGEL014106-171324A,DESJ0141-1713,GLAZEBROOK_16773_HST,Observed,0.608,2.436,,Group,,Group (?),The arc seems mostly centred around the central deflector,,,DISCUSS
+AGEL211627-594702A,DESJ2116-5947,GLAZEBROOK_16773_HST,Observed,0.395,1.41,,Group,double lensing,Cluster (?),Multiple lensed sources,,,DISCUSS
+AGEL024229-294305A,DESJ0242-2943,GLAZEBROOK_16773_HST,Observed,,,,Single,,Single,,,,Single
+AGEL212512-650427A,DESJ2125-6504,GLAZEBROOK_16773_HST,Observed,0.779,2.221,,Group,I might model it as a single deflector case,Group ,2 deflectors,,,DISCUSS
+AGEL040823-532714A,DESJ0408-5327,GLAZEBROOK_16773_HST,Observed,,,0.62,No image,,Group,No image,,,DISCUSS
+,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+,,,,,,,11,Cluster,14,,,,
+,,,,,,,50,Group,43,,,,
+,,,,,,,60,Single,66,,,,
+,,,,,,,121,,123,,,,
+,,,,,,,,,3 repeats,,,,
+,,,,,,,,,4 no images,,,,
+,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+,,,,,,,,Percentage of group/cluster lenses,46.34146341,,,,
