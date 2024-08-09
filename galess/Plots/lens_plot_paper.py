@@ -553,7 +553,7 @@ def plot_angular_separation(survey_title, _theta_arcsec, omega, cmap_c = cm.cool
 
 def compare_COSMOS_HST_Faure(zl_array, zs_array, sigma_array, M_array_UV, mag_cut,
                             ONLY_FULL_SAMPLE = 1, LENS_LIGHT = 1, __MAG_OVER_ARCSEC_SQ__ = 0,
-                            PLOT_FOR_KEYNOTE = 0, SMOOTH = 1, SAVE = 0):
+                            PLOT_FOR_KEYNOTE = 0, SMOOTH = 1, SAVE = 0, SIMPLE = 0):
     ### FAURE DATA #################################################################################
     ### from FAURE+(2008) --- selection of high grade lenses from COSMOS-HST
     FAURE_title=['Name'       ,'zl' , 'zs', 'sig', 'Rein', 'mag_814W_len', 'mag_814W_src_arcsec_sq']
@@ -628,15 +628,16 @@ def compare_COSMOS_HST_Faure(zl_array, zs_array, sigma_array, M_array_UV, mag_cu
                                         lw=line_thick, color=ER_col1, alpha = _ALPHA_,
                                         label=f'Faure et al. 2008\n Full Sample ({len(np.append(FAURE_A_zl,  FAURE_B_zl))})')
     ### BEST SAMPLE ###
-    _nbins_zl = np.histogram_bin_edges(FAURE_A_zl, bins='fd', range=(0,1.5))
-    F_zl_hist, F_zl_bins, _ = ax[0].hist(FAURE_A_zl, bins=_nbins_zl, density=True, histtype='step', lw=line_thick,
-                                        color=ER_col2, alpha = _ALPHA_, label=f'Faure et al. 2008\n Best Sample ({len(FAURE_A_zl)})')
-    _nbins_Re = np.histogram_bin_edges(FAURE_A_Rarc/1.5, bins='fd', range=(0,4))
-    F_Ra_hist, F_Ra_bins, _ = ax[1].hist(FAURE_A_Rarc/1.5, bins=_nbins_Re, density=True, histtype='step', lw=line_thick,
-                                        color=ER_col2, alpha = _ALPHA_, label=f'Faure et al. 2008\n Best Sample ({len(FAURE_A_zl)})')
-    # if DENSITY: _nbins_zl = np.histogram_bin_edges(FAURE_A_zl, bins='fd', range=(0,1.5))
-    F_mI_hist, F_mI_bins, _ = ax[2].hist(FAURE_A_m_Ib, bins=m_obs, density=True, histtype='step', lw=line_thick,
-                                        color=ER_col2, alpha = _ALPHA_, label=f'Faure et al. 2008\n Best Sample ({len(FAURE_A_zl)})')
+    if not SIMPLE:
+        _nbins_zl = np.histogram_bin_edges(FAURE_A_zl, bins='fd', range=(0,1.5))
+        F_zl_hist, F_zl_bins, _ = ax[0].hist(FAURE_A_zl, bins=_nbins_zl, density=True, histtype='step', lw=line_thick,
+                                            color=ER_col2, alpha = _ALPHA_, label=f'Faure et al. 2008\n Best Sample ({len(FAURE_A_zl)})')
+        _nbins_Re = np.histogram_bin_edges(FAURE_A_Rarc/1.5, bins='fd', range=(0,4))
+        F_Ra_hist, F_Ra_bins, _ = ax[1].hist(FAURE_A_Rarc/1.5, bins=_nbins_Re, density=True, histtype='step', lw=line_thick,
+                                            color=ER_col2, alpha = _ALPHA_, label=f'Faure et al. 2008\n Best Sample ({len(FAURE_A_zl)})')
+        # if DENSITY: _nbins_zl = np.histogram_bin_edges(FAURE_A_zl, bins='fd', range=(0,1.5))
+        F_mI_hist, F_mI_bins, _ = ax[2].hist(FAURE_A_m_Ib, bins=m_obs, density=True, histtype='step', lw=line_thick,
+                                            color=ER_col2, alpha = _ALPHA_, label=f'Faure et al. 2008\n Best Sample ({len(FAURE_A_zl)})')
     title = 'COSMOS HST i band'
     matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
     zl_lower, zl_upper = 0.2, 1
@@ -677,28 +678,29 @@ def compare_COSMOS_HST_Faure(zl_array, zs_array, sigma_array, M_array_UV, mag_cu
     pval_zl_Mason = kstest(F_zl_hist, P_zl)[1]
     pval_Ra_Mason = kstest(F_Ra_hist, T_hist_Mason)[1]
     pval_mI_Mason = kstest(F_mI_hist, m_lens/norm)[1]
-    title = 'COSMOS HST i band VDFGeng'
-    matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
-    matrix_noLL[np.logical_or(zs_array <= zs_lower, zs_array >= zs_upper), :, :] *= 0
-    matrix_noLL[:, np.logical_or(sigma_array <= sg_lower, sigma_array >= sg_upper), :] *= 0
-    matrix_noLL[:, :, np.logical_or(zl_array <= zl_lower, zl_array >= zl_upper)] *= 0
-    matrix_LL[np.logical_or(zs_array <= zs_lower, zs_array >= zs_upper), :, :] *= 0
-    matrix_LL[:, np.logical_or(sigma_array <= sg_lower, sigma_array >= sg_upper), :] *= 0
-    matrix_LL[:, :, np.logical_or(zl_array <= zl_lower, zl_array >= zl_upper)] *= 0
-    _ , __  , ___, P_zs_LL  , P_zl_LL  , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH=SMOOTH)
-    _ , __  , ___, P_zs_noLL  , P_zl_noLL  , P_sg_noLL   = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=SMOOTH)
-    if LENS_LIGHT:
-        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
-    else:
-        matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
-    print(f'   COSMOS HST i band Geng VDF: {np.sum(matrix_noLL):.0f} ({np.sum(matrix_LL):.0f})')
-    ax[0].plot(zl_array, P_zl, c=cc2, ls='-', label='COSMOS HST\n i band\n Geng VDF')
-    ax[0].plot(zs_array, P_zs, c=cc2, ls='--')
-    ax[1].hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins = np.arange(0, 4, 0.2),
-                range=(0, 3), density=True, histtype='step', color=cc2, ls = '-')
-    m_lens = ls.get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix)
-    norm = integrate.simps(m_lens, m_obs)
-    ax[2].plot(m_obs, m_lens/norm, color=cc2, label=title)
+    if not SIMPLE:
+        title = 'COSMOS HST i band VDFGeng'
+        matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
+        matrix_noLL[np.logical_or(zs_array <= zs_lower, zs_array >= zs_upper), :, :] *= 0
+        matrix_noLL[:, np.logical_or(sigma_array <= sg_lower, sigma_array >= sg_upper), :] *= 0
+        matrix_noLL[:, :, np.logical_or(zl_array <= zl_lower, zl_array >= zl_upper)] *= 0
+        matrix_LL[np.logical_or(zs_array <= zs_lower, zs_array >= zs_upper), :, :] *= 0
+        matrix_LL[:, np.logical_or(sigma_array <= sg_lower, sigma_array >= sg_upper), :] *= 0
+        matrix_LL[:, :, np.logical_or(zl_array <= zl_lower, zl_array >= zl_upper)] *= 0
+        _ , __  , ___, P_zs_LL  , P_zl_LL  , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH=SMOOTH)
+        _ , __  , ___, P_zs_noLL  , P_zl_noLL  , P_sg_noLL   = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=SMOOTH)
+        if LENS_LIGHT:
+            matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
+        else:
+            matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
+        print(f'   COSMOS HST i band Geng VDF: {np.sum(matrix_noLL):.0f} ({np.sum(matrix_LL):.0f})')
+        ax[0].plot(zl_array, P_zl, c=cc2, ls='-', label='COSMOS HST\n i band\n Geng VDF')
+        ax[0].plot(zs_array, P_zs, c=cc2, ls='--')
+        ax[1].hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins = np.arange(0, 4, 0.2),
+                    range=(0, 3), density=True, histtype='step', color=cc2, ls = '-')
+        m_lens = ls.get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix)
+        norm = integrate.simps(m_lens, m_obs)
+        ax[2].plot(m_obs, m_lens/norm, color=cc2, label=title)
     ax[0].legend(fontsize=13)
     if (SAVE):
         # folderpath = 'img/'+utils.remove_spaces_from_string(title)
@@ -794,10 +796,6 @@ def compare_JACOBS_CNN_DES(zl_array, zs_array, sigma_array,
     norm = integrate.simps(m_lens, m_obs)
     ax[1].plot(m_obs, m_lens/norm, color=cc2)
     ax[0].legend(fontsize=legend_size)
-    if SAVE:
-        # folderpath = 'img/'+utils.remove_spaces_from_string(title)
-        # if not os.path.exists(folderpath): os.makedirs(folderpath)
-        plt.savefig('img/Jacobs_DES.png', dpi=200, bbox_inches='tight')
     plt.show()
 
 
