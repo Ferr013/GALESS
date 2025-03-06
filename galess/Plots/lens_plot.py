@@ -319,18 +319,18 @@ def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, 
         plt.savefig('img/comp_surveys.png', dpi=200, bbox_inches='tight')
     plt.show()
 
-def plot_z_distribution_in_ax(ax, title, color, zl_array, zs_array, sigma_array, matrix, SMOOTH = 1):
+def plot_z_distribution_in_ax(ax, title, color, zl_array, zs_array, sigma_array, matrix, SMOOTH = 1, lw=1):
     _n, __n, ___n, P_zs, P_zl, P_sg = ls.get_N_and_P_projections(matrix, sigma_array, zl_array, zs_array, SMOOTH)
-    ax.plot(zl_array, P_zl, c=color, ls='-' , label=title)
-    ax.plot(zs_array, P_zs, c=color, ls=':' )
+    ax.plot(zl_array, P_zl, c=color, ls='-' , lw=lw, label=title)
+    ax.plot(zs_array, P_zs, c=color, ls=':' , lw=lw)
 
-def plot_s_distribution_in_ax(ax, title, color, zl_array, zs_array, sigma_array, matrix, SMOOTH = 1):
+def plot_s_distribution_in_ax(ax, title, color, zl_array, zs_array, sigma_array, matrix, SMOOTH = 1, lw=1):
     _n, __n, ___n, P_zs, P_zl, P_sg = ls.get_N_and_P_projections(matrix, sigma_array, zl_array, zs_array, SMOOTH)
-    ax.plot(sigma_array, P_sg, c=color, ls='-', label=title)
+    ax.plot(sigma_array, P_sg, c=color, ls='-', label=title, lw=lw)
 
-def plot_R_distribution_in_ax(ax, title, color, _nbins_Re, matrix, Theta_E, SMOOTH = 1, label = ''):
+def plot_R_distribution_in_ax(ax, title, color, _nbins_Re, matrix, Theta_E, SMOOTH = 1, label = '', lw=1):
     _label = title if label == '' else label
-    ax.hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=color, ls = '-', label=_label)
+    ax.hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=color, ls = '-', lw=lw, label=_label)
 
 def compare_SL2S(zl_array, zs_array, sigma_array,
                 LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 0, SMOOTH = 1, SAVE = 0):

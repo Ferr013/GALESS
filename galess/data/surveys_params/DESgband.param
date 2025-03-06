@@ -1,0 +1,10 @@
+title: DES g band
+limit: 24.7
+cut: 23
+area: 5000
+seeing: 0.96
+exp_time_sec: 900
+pixel_arcsec: 0.263
+zero_point_m: 30
+sky_bckgnd_m: 20.1
+photo_band: sdss_g0
