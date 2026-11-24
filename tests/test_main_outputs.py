@@ -191,7 +191,8 @@ class SurveyComparison(unittest.TestCase):
             return np.longdouble(ls.Phi_vel_disp_Mason(s, z))
         expected = self.reference.calculate_num_lenses_and_prob(*args, Phi_vel_disp=population)[0]
         serial = ls.calculate_num_lenses_and_prob(*args, Phi_vel_disp=population)[0]
-        parallel = parallel_ls.calculate_num_lenses_and_prob(*args, Phi_vel_disp=population, ncores=1)
+        parallel = parallel_ls.calculate_num_lenses_and_prob(
+            *args, Phi_vel_disp=population, ncores=1)
         for actual in (serial, parallel):
             self.assertEqual(expected.dtype, actual.dtype)
             self.assertEqual(expected.tobytes(), actual.tobytes())

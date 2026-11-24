@@ -8,6 +8,7 @@ galess/.DS_Store
 galess/PROFILING
 galess/environment.*
 examples/paper*
+!examples/paper_figures.ipynb
 examples/Requests
 examples/img
 scripts/remove*
