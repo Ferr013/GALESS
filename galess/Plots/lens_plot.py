@@ -3,15 +3,12 @@
 import os.path
 import numpy as np
 import pandas as pd
-from scipy import integrate
-from scipy.stats import kstest
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib import colors
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib.patches import Rectangle
 from astropy.cosmology import FlatLambdaCDM
 
+from galess.ComputeSurveys import compute_surveys as surveys
 import galess.LensStat.lens_stat as ls
 import galess.Utils.ls_utils as utils
 
@@ -207,10 +204,9 @@ def plot_effect_vel_disp_function(zl_array, zs_array, sigma_array,
                                                                             seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
                                                                             photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
                                                                             Phi_vel_disp = VDF, LENS_LIGHT_FLAG = False, SIE_FLAG = True)
-        if LENS_LIGHT:
-            Ngal_zl_sigma_noLL, Ngal_zs_sigma_noLL, Ngal_zs_zl_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_LL, sigma_array, zl_array, zs_array, SMOOTH)
-        else:
-            Ngal_zl_sigma_noLL, Ngal_zs_sigma_noLL, Ngal_zs_zl_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH)
+        matrix, theta = (matrix_LL, Theta_E_LL) if LENS_LIGHT else (matrix_noLL, Theta_E_noLL)
+        *_, P_zs_noLL, P_zl_noLL, P_sg_noLL = ls.get_N_and_P_projections(
+            matrix, sigma_array, zl_array, zs_array, SMOOTH)
         ax[0].plot(zl_array, P_zl_noLL, c=col_A, ls=lstyle, label=f'{label}')
         ax[0].plot(zs_array, P_zs_noLL, c=col_B, ls=lstyle)
         ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
@@ -220,8 +216,8 @@ def plot_effect_vel_disp_function(zl_array, zs_array, sigma_array,
         ax[1].set_ylabel(r'$dP/d\sigma$', fontsize=20)
         ax[1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
         _nbins_Re = np.arange(0  , 4  , 0.25)
-        ax[2].hist(np.ravel(Theta_E_noLL), weights=np.ravel(matrix_noLL), bins=_nbins_Re, range=(0, 3),
-                   density=True, histtype='step', color=col_D, ls = lstyle, label=f'# Lenses: {np.sum(matrix_noLL):.1e}')
+        ax[2].hist(theta.ravel(), weights=matrix.ravel(), bins=_nbins_Re, density=True,
+            histtype='step', color=col_D, ls=lstyle, label=f'# Lenses: {np.sum(matrix):.1e}')
         ax[2].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
         ax[2].set_xlabel(r'$\Theta_E$ [arcsec]', fontsize=20)
     ax[0].legend(fontsize=14, frameon=False)
@@ -233,203 +229,130 @@ def plot_effect_vel_disp_function(zl_array, zs_array, sigma_array,
         plt.savefig(folderpath+'/VDF_effect_corner_plts.jpg', dpi=200)
     plt.show()
 
-def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, zs_array, LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 0, SMOOTH = 1):
-    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
-    _col_  = iter(cmap_c(np.linspace(0, 1, len(surveys_selection)+1)))
-    fig, ax = plt.subplots(1, 3, figsize=(17, 5), sharex=False, sharey=False)
-    plt.subplots_adjust(wspace=.235, hspace=.2)
-    for title in surveys_selection:
-        survey_params = utils.read_survey_params(title, VERBOSE = 0)
-        limit    = survey_params['limit']
-        cut      = survey_params['cut']
-        area     = survey_params['area']
-        seeing   = survey_params['seeing']
-        exp_time_sec = survey_params['exp_time_sec']
-        pixel_arcsec = survey_params['pixel_arcsec']
-        zero_point_m = survey_params['zero_point_m']
-        sky_bckgnd_m = survey_params['sky_bckgnd_m']
-        photo_band   = survey_params['photo_band']
-        try:
-          matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
-        except ValueError:
-            print('FILE do NOT exist - RUNNING MODEL')
-            M_array     = np.linspace(-13 , -25 , 25)
-            sigma_array = np.linspace(100 , 400 , 31)
-            zl_array    = np.arange(0.  , 2.5 , 0.1)
-            zs_array    = np.arange(0.  , 5.4 , 0.2)
-            min_SNR     = 20
-            arc_mu_thr  = 3
-            VDF = ls.Phi_vel_disp_Mason
-            matrix_noLL, Theta_E_noLL, prob_noLL = ls.calculate_num_lenses_and_prob(
-                                                    sigma_array, zl_array, zs_array, M_array, limit, area,
-                                                    seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
-                                                    photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
-                                                    Phi_vel_disp = VDF, LENS_LIGHT_FLAG = False)
-            matrix_LL, Theta_E_LL, prob_LL = ls.calculate_num_lenses_and_prob(
-                                                    sigma_array, zl_array, zs_array, M_array, limit, area,
-                                                    seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
-                                                    photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
-                                                    Phi_vel_disp = VDF, LENS_LIGHT_FLAG = True)
-            utils.save_pickled_files(title,  matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL)
-        matrix  = matrix_LL  if LENS_LIGHT else matrix_noLL
-        Theta_E = Theta_E_LL if LENS_LIGHT else Theta_E_noLL
-        __col__ = next(_col_)
-        plot_z_distribution_in_ax(ax[0], title, __col__, zl_array, zs_array, sigma_array, matrix, SMOOTH = SMOOTH)
-        plot_s_distribution_in_ax(ax[1], title, __col__, zl_array, zs_array, sigma_array, matrix, SMOOTH = SMOOTH)
-        plot_R_distribution_in_ax(ax[2], title, __col__, np.arange(0  , 4  , 0.25), matrix, Theta_E, SMOOTH = SMOOTH)
+def _survey_results(title, sigma_array, zl_array, zs_array, read=True, survey=None,
+    VDF=ls.Phi_vel_disp_Mason, arc_mu_threshold=3):
+    """Load the saved light/no-light pair, or calculate it on the supplied grid."""
+    standard = (np.array_equal(sigma_array, surveys.sigma_array)
+        and np.array_equal(zl_array, surveys.zl_array)
+        and np.array_equal(zs_array, surveys.zs_array))
+    # Existing named results are explicit inputs to the plot. Fresh plot forecasts
+    # use SIE in both light treatments. Keep them apart from the batch SIS-light model.
+    plot_title = title + ' SIE lens light'
+    if standard and read:
+        for key in (title, plot_title):
+            try:
+                result = utils.load_pickled_files(key)
+            except ValueError:
+                continue
+            if result[0].shape == (len(zs_array), len(sigma_array), len(zl_array)):
+                return result
+    p = utils.read_survey_params(survey or title)
+    args = (sigma_array, zl_array, zs_array, np.linspace(-13, -25, 25), p['limit'],
+        p['area'], p['seeing'], 20, p['exp_time_sec'], p['sky_bckgnd_m'], p['zero_point_m'],
+        p['photo_band'])
+    result = tuple(value for light in (True, False)
+        for value in ls.calculate_num_lenses_and_prob(*args, mag_cut=p['cut'],
+            Phi_vel_disp=VDF, LENS_LIGHT_FLAG=light, arc_mu_threshold=arc_mu_threshold))
+    if standard:
+        utils.save_pickled_files(plot_title, *result)
+    return result
 
-    ax[0].set_xlabel(r'$z$', fontsize=20)
-    ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
-    ax[1].set_xlabel(r'$\sigma$', fontsize=20)
-    ax[1].set_ylabel(r'$dP/d\sigma$', fontsize=20)
-    ax[2].set_xlabel(r'$\Theta_E$ [arcsec]', fontsize=20)
-    ax[2].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
+
+def compare_ALL_distributions_surveys(surveys_selection, sigma_array, zl_array, zs_array,
+    LENS_LIGHT=1, PLOT_FOR_KEYNOTE=0, SMOOTH=1, SAVE=0, LABEL_NUMBERS=0, LOG=0):
+    """Compare the redshift, velocity dispersion and radius distributions of surveys."""
+    _, cmap, *_ = set_plt_param(PLOT_FOR_KEYNOTE)
+    fig, ax = plt.subplots(1, 3, figsize=(17, 5))
+    fig.subplots_adjust(wspace=.235)
+    colors = cmap(np.linspace(0, 1, len(surveys_selection) + 1))
+    for title, color in zip(surveys_selection, colors):
+        result = _survey_results(title, sigma_array, zl_array, zs_array)
+        matrix, theta, _ = result[:3] if LENS_LIGHT else result[3:]
+        *_, P_zs, P_zl, P_sg = ls.get_N_and_P_projections(
+            matrix, sigma_array, zl_array, zs_array, SMOOTH)
+        ax[0].plot(zl_array, P_zl, c=color, label=title)
+        ax[0].plot(zs_array, P_zs, c=color, ls=':')
+        ax[1].plot(sigma_array, P_sg, c=color, label=title)
+        label = f'{title} ({matrix.sum():.1e})' if LABEL_NUMBERS else title
+        plot_R_distribution_in_ax(ax[2], title, color, np.arange(0, 4, .25), matrix, theta,
+            label=label)
+    for a, x, y in zip(ax, ('$z$', r'$\sigma$', r'$\Theta_E$ [arcsec]'),
+        ('$dP/dz$', r'$dP/d\sigma$', r'$dP/d\Theta_E$')):
+        a.set_xlabel(x, fontsize=20)
+        a.set_ylabel(y, fontsize=20)
+        if LOG:
+            a.set_yscale('log')
     ax[0].legend(fontsize=12)
+    if LABEL_NUMBERS:
+        ax[2].legend(fontsize=12)
+    if SAVE:
+        os.makedirs('img', exist_ok=True)
+        fig.savefig('img/comp_surveys.png', dpi=200, bbox_inches='tight')
     plt.show()
 
-def plot_z_distribution_in_ax(ax, title, color, zl_array, zs_array, sigma_array, matrix, SMOOTH = 1):
-    _n, __n, ___n, P_zs, P_zl, P_sg = ls.get_N_and_P_projections(matrix, sigma_array, zl_array, zs_array, SMOOTH)
-    ax.plot(zl_array, P_zl, c=color, ls='-' , label=title)
-    ax.plot(zs_array, P_zs, c=color, ls=':' )
 
-def plot_s_distribution_in_ax(ax, title, color, zl_array, zs_array, sigma_array, matrix, SMOOTH = 1):
-    _n, __n, ___n, P_zs, P_zl, P_sg = ls.get_N_and_P_projections(matrix, sigma_array, zl_array, zs_array, SMOOTH)
-    ax.plot(sigma_array, P_sg, c=color, ls='-', label=title)
-
-def plot_R_distribution_in_ax(ax, title, color, _nbins_Re, matrix, Theta_E, SMOOTH = 1):
-    ax.hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins=_nbins_Re, range=(0, 3), density=True, histtype='step', color=color, ls = '-', label=title)
+def plot_z_distribution_in_ax(ax, title, color, zl_array, zs_array, sigma_array, matrix,
+    SMOOTH=1, lw=None):
+    *_, P_zs, P_zl, P_sg = ls.get_N_and_P_projections(matrix, sigma_array, zl_array,
+        zs_array, SMOOTH)
+    ax.plot(zl_array, P_zl, c=color, lw=lw, label=title)
+    ax.plot(zs_array, P_zs, c=color, lw=lw, ls=':')
 
 
-def compare_SL2S(zl_array, zs_array, sigma_array, LENS_LIGHT = 1, PLOT_FOR_KEYNOTE = 0):
-    SL2S_data       = pd.read_csv('../galess/data/LENS_SEARCHES/SL2S_Sonnenfeld/redshifts_sigma.csv')
-    SL2S_data_names = SL2S_data['Name'].to_numpy()
-    SL2S_data_zl    = SL2S_data['z_l'].to_numpy()
-    SL2S_data_zs    = SL2S_data['z_s'].to_numpy()
-    SL2S_data_sigma = SL2S_data['sigma'].to_numpy()
-    id = np.where(SL2S_data['Name'].notnull())
-    SL2S_data_sigma = SL2S_data_sigma[id[0]]
-    SL2S_dataB      = pd.read_csv('../galess/data/LENS_SEARCHES/SL2S_Sonnenfeld/data.csv')
-    SL2S_data_nameB = SL2S_dataB['Name'].to_numpy()
-    SL2S_data_Rein  = SL2S_dataB['R_Ein'].to_numpy()
-    SL2S_data_msrc  = SL2S_dataB['mag_src'].to_numpy()
+def plot_s_distribution_in_ax(ax, title, color, zl_array, zs_array, sigma_array, matrix,
+    SMOOTH=1, lw=None):
+    P_sg = ls.get_N_and_P_projections(matrix, sigma_array, zl_array, zs_array, SMOOTH)[-1]
+    ax.plot(sigma_array, P_sg, c=color, label=title, lw=lw)
 
-    ### PLOT DATA #################################################################################
-    line_c, cmap_c, _col_, col_A, col_B, col_C, col_D, fn_prefix = set_plt_param(PLOT_FOR_KEYNOTE)
-    ccc = 'w' if PLOT_FOR_KEYNOTE else 'k'
-    cc2 = 'r'
-    if PLOT_FOR_KEYNOTE:
-        ER_col1, ER_col2, _ALPHA_  = 'darkorange', 'lime', 1
-    else:
-        ER_col1, ER_col2, _ALPHA_  = 'forestgreen', 'firebrick', 1
 
-    _nbins_zl = np.arange(0.0, 1.2, 0.3 )
-    _nbins_zs = np.arange(0.5, 4  , 0.5 )
-    _nbins_sg = np.arange(100, 400, 25  )
-    _nbins_Re = np.arange(0  , 4  , 0.25)
+def plot_R_distribution_in_ax(ax, title, color, _nbins_Re, matrix, Theta_E, SMOOTH=1,
+    label='', lw=None):
+    ax.hist(Theta_E.ravel(), weights=matrix.ravel(), bins=_nbins_Re, density=True,
+        histtype='step', color=color, lw=lw, label=label or title)
 
-    title = 'CFHTLS i band'
-    try:
-        matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
-    except ValueError:
-        print('FILE do NOT exist - RUNNING MODEL')
-        M_array     = np.linspace(-13 , -25 , 25)
-        sigma_array = np.linspace(100 , 400 , 31)
-        zl_array    = np.arange(0.  , 2.5 , 0.1)
-        zs_array    = np.arange(0.  , 5.4 , 0.2)
-        min_SNR     = 20
-        arc_mu_thr  = 3
-        VDF = ls.Phi_vel_disp_Mason
-        survey_params = utils.read_survey_params(title, VERBOSE = 0)
-        limit    = survey_params['limit']
-        cut      = survey_params['cut']
-        area     = survey_params['area']
-        seeing   = survey_params['seeing']
-        exp_time_sec = survey_params['exp_time_sec']
-        pixel_arcsec = survey_params['pixel_arcsec']
-        zero_point_m = survey_params['zero_point_m']
-        sky_bckgnd_m = survey_params['sky_bckgnd_m']
-        photo_band   = survey_params['photo_band']
-        matrix_noLL, Theta_E_noLL, prob_noLL = ls.calculate_num_lenses_and_prob(
-                                                sigma_array, zl_array, zs_array, M_array, limit, area,
-                                                seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
-                                                photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
-                                                Phi_vel_disp = VDF, LENS_LIGHT_FLAG = False)
-        matrix_LL, Theta_E_LL, prob_LL = ls.calculate_num_lenses_and_prob(
-                                                sigma_array, zl_array, zs_array, M_array, limit, area,
-                                                seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
-                                                photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
-                                                Phi_vel_disp = VDF, LENS_LIGHT_FLAG = True)
-        utils.save_pickled_files(title,  matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL)
-    _ , __  , ___, P_zs_LL   , P_zl_LL   , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=1)
-    _ , __  , ___, P_zs_noLL , P_zl_noLL , P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
-    if LENS_LIGHT: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
-    else: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
-    fig, ax = plt.subplots(1, 3, figsize=(17, 5), sharex=False, sharey=False)
-    plt.subplots_adjust(wspace=.23, hspace=.2)
 
-    line_thick = 3
-    ### BEST SAMPLE ###
-    ax[0].hist( SL2S_data_zl    , bins=_nbins_zl, density=True , histtype='step' , lw=line_thick, color=ER_col1, alpha = _ALPHA_, label='Sonnenfeld et al. 2013 - Full Sample (53)')
-    ax[0].hist( SL2S_data_zs    , bins=_nbins_zs, density=True , histtype='step' , lw=line_thick, color=ER_col1, alpha = _ALPHA_, ls='--')
-    ax[1].hist( SL2S_data_sigma , bins=_nbins_sg, density=True , histtype='step' , lw=line_thick, color=ER_col1, alpha = _ALPHA_)
-    ax[2].hist( SL2S_data_Rein  , bins=_nbins_Re, density=True , histtype='step' , lw=line_thick, color=ER_col1, alpha = _ALPHA_)
-
-    ax[0].plot(zl_array, P_zl, c=ccc, ls='-', label=title)
-    ax[0].plot(zs_array, P_zs, c=ccc, ls='--')
-    ax[0].set_xlim((0,5.2))
-    ax[0].set_xlabel(r'$z$', fontsize=20)
-    ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
-    ax[1].plot(sigma_array, P_sg_noLL, c=ccc, ls = '-', label=title)
-    ax[1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
-    ax[1].set_ylabel(r'$dP/d\sigma$', fontsize=20)
-    ax[2].hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins = np.arange(0, 4, 0.2),
-                range=(0, 3), density=True, histtype='step', color=ccc, ls = '-', label=title)
-    ax[2].set_xlabel(r'$\Theta_E$ ["]', fontsize=20)
-    ax[2].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
-    ax[2].set_xlim((0,4))
-
-    title = 'CFHTLS i band Geng'
-    try:
-          matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL = utils.load_pickled_files(title)
-    except ValueError:
-        print('FILE do NOT exist - RUNNING MODEL')
-        M_array     = np.linspace(-13 , -25 , 25)
-        sigma_array = np.linspace(100 , 400 , 31)
-        zl_array    = np.arange(0.  , 2.5 , 0.1)
-        zs_array    = np.arange(0.  , 5.4 , 0.2)
-        min_SNR     = 20
-        arc_mu_thr  = 3
-        VDF = ls.Phi_vel_disp_Geng
-        matrix_noLL, Theta_E_noLL, prob_noLL = ls.calculate_num_lenses_and_prob(
-                                                sigma_array, zl_array, zs_array, M_array, limit, area,
-                                                seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
-                                                photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
-                                                Phi_vel_disp = VDF, LENS_LIGHT_FLAG = False)
-        matrix_LL, Theta_E_LL, prob_LL = ls.calculate_num_lenses_and_prob(
-                                                sigma_array, zl_array, zs_array, M_array, limit, area,
-                                                seeing, min_SNR, exp_time_sec, sky_bckgnd_m, zero_point_m,
-                                                photo_band = photo_band, mag_cut=cut, arc_mu_threshold = arc_mu_thr,
-                                                Phi_vel_disp = VDF, LENS_LIGHT_FLAG = True)
-        utils.save_pickled_files(title,  matrix_LL, Theta_E_LL, prob_LL, matrix_noLL, Theta_E_noLL, prob_noLL)
-    _ , __  , ___, P_zs_LL   , P_zl_LL   , P_sg_LL   = ls.get_N_and_P_projections(matrix_LL  , sigma_array, zl_array, zs_array, SMOOTH=1)
-    _ , __  , ___, P_zs_noLL , P_zl_noLL , P_sg_noLL = ls.get_N_and_P_projections(matrix_noLL, sigma_array, zl_array, zs_array, SMOOTH=1)
-    if LENS_LIGHT: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_LL, Theta_E_LL, prob_LL, P_zs_LL, P_zl_LL, P_sg_LL
-    else: matrix, Theta_E, prob, P_zs, P_zl, P_sg = matrix_noLL, Theta_E_noLL, prob_noLL, P_zs_noLL, P_zl_noLL, P_sg_noLL
-    ax[0].plot(zl_array, P_zl, c=cc2, ls='-', label=title)
-    ax[0].plot(zs_array, P_zs, c=cc2, ls='--')
-    ax[0].set_xlim((0,5.2))
-    ax[0].set_xlabel(r'$z$', fontsize=20)
-    ax[0].set_ylabel(r'$dP/dz$', fontsize=20)
-    ax[1].plot(sigma_array, P_sg_noLL, c=cc2, ls = '-', label=title)
-    ax[1].set_xlabel(r'$\sigma$ [km/s]', fontsize=20)
-    ax[1].set_ylabel(r'$dP/d\sigma$', fontsize=20)
-    ax[2].hist(np.ravel(Theta_E), weights=np.ravel(matrix), bins = np.arange(0, 4, 0.2),
-                range=(0, 3), density=True, histtype='step', color=cc2, ls = '-', label=title)
-    ax[2].set_xlabel(r'$\Theta_E$ ["]', fontsize=20)
-    ax[2].set_ylabel(r'$dP/d\Theta_E$', fontsize=20)
-    ax[2].set_xlim((0,4))
+def compare_SL2S(zl_array, zs_array, sigma_array, LENS_LIGHT=1, PLOT_FOR_KEYNOTE=0,
+    SMOOTH=1, SAVE=0, BEST_SAMPLE=False):
+    """Compare the SL2S measurements with the Mason and Geng VDF forecasts."""
+    folder = os.path.join(utils.BASEPATH, 'LENS_SEARCHES', 'SL2S_Sonnenfeld')
+    spectra = pd.read_csv(os.path.join(folder, 'redshifts_sigma.csv'))
+    radii = pd.read_csv(os.path.join(folder, 'data.csv'))
+    line, _, _, _, col_B, *_ = set_plt_param(PLOT_FOR_KEYNOTE)
+    fig, ax = plt.subplots(1, 3, figsize=(17, 5))
+    fig.subplots_adjust(wspace=.23)
+    samples = [(spectra, radii, 'Full sample', 'darkorange' if PLOT_FOR_KEYNOTE else 'forestgreen')]
+    if BEST_SAMPLE:
+        best = spectra[spectra['Grade'] == 'A']
+        samples.append((best, radii[radii['Name'].isin(best['Name'])], 'Grade A', 'orange'))
+    for data, lenses, label, color in samples:
+        for a, values, bins, style, name in (
+            (ax[0], data['z_l'], np.arange(0, 1.2, .3), '-', label),
+            (ax[0], data['z_s'], np.arange(.5, 4, .5), '--', ''),
+            (ax[1], data['sigma'], np.arange(100, 400, 25), '-', ''),
+            (ax[2], lenses['R_Ein'], np.arange(0, 4, .25), '-', '')
+        ):
+            a.hist(values.dropna(), bins=bins, density=True, histtype='step',
+                lw=3, color=color, ls=style, label=name)
+    for title, vdf, color in (('CFHTLS i band', ls.Phi_vel_disp_Mason, line),
+        ('CFHTLS i band VDF Geng', ls.Phi_vel_disp_Geng, col_B)):
+        result = _survey_results(title, sigma_array, zl_array, zs_array, survey='CFHTLS i band',
+            VDF=vdf)
+        matrix, theta, _ = result[:3] if LENS_LIGHT else result[3:]
+        *_, P_zs, P_zl, P_sg = ls.get_N_and_P_projections(matrix, sigma_array,
+            zl_array, zs_array, SMOOTH)
+        ax[0].plot(zl_array, P_zl, c=color, label=title)
+        ax[0].plot(zs_array, P_zs, c=color, ls='--')
+        ax[1].plot(sigma_array, P_sg, c=color)
+        plot_R_distribution_in_ax(ax[2], title, color, np.arange(0, 4, .2), matrix, theta)
+    ax[0].set(xlabel='$z$', ylabel='$dP/dz$', xlim=(0, 5.2))
+    ax[1].set(xlabel=r'$\sigma$ [km/s]', ylabel=r'$dP/d\sigma$')
+    ax[2].set(xlabel=r'$\Theta_E$ [arcsec]', ylabel=r'$dP/d\Theta_E$', xlim=(0, 4))
     ax[0].legend(fontsize=10)
+    if SAVE:
+        os.makedirs('img', exist_ok=True)
+        fig.savefig('img/SL2S_Sonnenfeld.png', dpi=200, bbox_inches='tight')
     plt.show()
+
 
 def model_response_m_cut():
     ### COMPUTING effect of m_cut on the number of lenses and the parameters distributions ###
