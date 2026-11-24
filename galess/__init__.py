@@ -1,6 +1,6 @@
 __author__ = "Giovanni Ferrami"
-__email__ = "gferrami@student.unimelb.edu.au"
-__version__ = "0.2.0"
+__email__ = "gferrami@mpa-garching.mpg.de"
+__version__ = "0.3"
 __credits__ = "University of Melbourne"
 __citation__ = """
 % If this work is used to support a publication please

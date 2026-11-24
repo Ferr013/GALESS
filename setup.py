@@ -12,10 +12,10 @@ data_files = ['data/SIE_dPdmu/*.txt', 'data/SIE_dPdmu/*/*.dat', 'data/surveys_pa
 
 setup(
     name='galess',
-    version='0.2',
+    version='0.3',
     description="Model for strong lens populations distribution estimates in surveys",
     author="Giovanni Ferrami",
-    author_email="gferrami@student.unimelb.edu.au",
+    author_email="gferrami@mpa-garching.mpg.de",
     url="https://github.com/Ferr013/GALESS",
     packages=['galess', 'galess.LensStat', 'galess.Plots', 'galess.Utils',
               'galess.ComputeSurveys', 'galess.RareLensStat'],

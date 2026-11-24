@@ -7,6 +7,10 @@ signal-to-noise threshold and treatment of foreground light enter the selection.
 The model and its comparison with observed lens searches are described in
 [Ferrami & Wyithe (2024)](https://arxiv.org/abs/2404.03143).
 
+**GaLeSS 0.3 delivered a 45× speedup over 0.2** when running both Euclid Wide
+VIS lens-light forecasts on the full benchmark grid. Their combined serial
+runtime fell from 80.27 s to 1.775 s, with bitwise-identical survey outputs.
+
 ## Installation
 
 From this checkout, run `python -m pip install .` in a Python 3.9–3.11 environment.
@@ -87,10 +91,10 @@ geometry for each foreground redshift. The magnitude sum retains its original
 order. A timed run on macOS with Python 3.9.18 and the pinned dependencies
 gave the following results for the Euclid VIS grid above.
 
-| SIE forecast | Original main (`77a0960`) | Optimized | Expected lenses |
-| --- | ---: | ---: | ---: |
-| Lens light subtracted | 27.76 s | 0.267 s | 149,922 |
-| Lens light included | 52.51 s | 1.508 s | 88,611 |
+| SIE forecast | 0.2 (`77a0960`) | 0.3 | Speedup | Expected lenses |
+| --- | ---: | ---: | ---: | ---: |
+| Lens light subtracted | 27.76 s | 0.267 s | 104× | 149,922 |
+| Lens light included | 52.51 s | 1.508 s | 35× | 88,611 |
 
 The comparison checks shapes, dtypes and every output byte, including all
 four-dimensional magnitude bins and the six projections. From a Git checkout
@@ -122,4 +126,4 @@ different bands, magnitude orderings and custom population functions.
 Please cite [Ferrami & Wyithe (2024)](https://arxiv.org/abs/2404.03143) when
 using GaLeSS in a publication and link to the
 [GaLeSS repository](https://github.com/Ferr013/GALESS).
-Questions are welcome at [gferrami@student.unimelb.edu.au](mailto:gferrami@student.unimelb.edu.au).
+Questions are welcome at [gferrami@mpa-garching.mpg.de](mailto:gferrami@mpa-garching.mpg.de).
