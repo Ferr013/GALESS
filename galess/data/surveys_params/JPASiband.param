@@ -1,0 +1,10 @@
+title: JPAS i band
+limit: 23
+cut: 23
+area: 17
+seeing: 0.67
+exp_time_sec: 1000
+pixel_arcsec: 0.42
+zero_point_m: 25
+sky_bckgnd_m: 25
+photo_band: sdss_i0
