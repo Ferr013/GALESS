@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 import zipfile
 
 import numpy as np
@@ -118,6 +119,27 @@ class SurveyComparison(unittest.TestCase):
                 self.assertEqual(expected.shape, actual.shape)
                 self.assertEqual(expected.dtype, actual.dtype)
                 self.assertEqual(expected.tobytes(), actual.tobytes())
+
+    def test_plot_forecasts_use_the_requested_grid(self):
+        from galess.Plots.lens_plot import _survey_results
+
+        title = 'EUCLID Wide VIS'
+        p = utils.read_survey_params(title)
+        zl, zs = np.array([0., 0.2]), np.array([0., 1.])
+        # Different velocity grids can have exactly the same tensor shape.
+        with patch.object(utils, 'load_pickled_files') as read, patch.object(
+            utils, 'save_pickled_files') as write:
+            for sigma in (np.array([150., 230.]), np.array([180., 260.])):
+                result = _survey_results(title, sigma, zl, zs)
+                for index, light in ((0, True), (3, False)):
+                    expected = self.reference.calculate_num_lenses_and_prob(
+                        sigma, zl, zs, np.linspace(-13, -25, 25), p['limit'], p['area'],
+                        p['seeing'], 20, p['exp_time_sec'], p['sky_bckgnd_m'], p['zero_point_m'],
+                        p['photo_band'], mag_cut=p['cut'], LENS_LIGHT_FLAG=light)
+                    for old, new in zip(expected, result[index:index+3]):
+                        self.assertEqual(new.tobytes(), old.tobytes())
+        read.assert_not_called()
+        write.assert_not_called()
 
     def test_third_and_fourth_images_against_main_luminosity_functions(self):
         # Dev's cusp/quad selection applied to the independent original main routines.
