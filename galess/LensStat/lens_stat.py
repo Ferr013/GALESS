@@ -1761,6 +1761,19 @@ def get_N_and_P_projections(N_gal_matrix, sigma_array, zl_array, zs_array, SMOOT
         P_sg = np.append(P_sg[0], np.convolve(P_sg[1:], np.ones(3)/3, mode='same'))
     return Ngal_zl_sigma, Ngal_sigma_zs, Ngal_zl_zs, P_zs, P_zl, P_sg
 
+def app_magn_from_L_sigma_Nandini(sigma_array, z, obs_band='sdss_i0'):
+    """Return apparent lens magnitudes from velocity dispersions in km/s.
+
+    The Sahu et al. (2019) luminosity–dispersion relation gives the absolute
+    V magnitude. As in the lens magnitude distribution, use the nearby SDSS g
+    band for the rest-frame K correction.
+    https://ui.adsabs.harvard.edu/abs/2019ApJ...887...10S/abstract
+    """
+    M_array_V = -2.5 * (4.86 * np.log10(sigma_array / 200) + 8.52)
+    correction = K_correction(z, obs_band, 'sdss_g0', M_array_V)
+    distance_modulus = 5 * np.log10(cosmo.luminosity_distance(z).value * 1e5)
+    return M_array_V + (distance_modulus + correction)
+
 def get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix, obs_band = 'sdss_i0'):
     '''
     Returns the apparent magnitude distribution in the chosen observing band of the lens
@@ -1789,13 +1802,18 @@ def get_len_magnitude_distr(m_obs, zl_array, sigma_array, matrix, obs_band = 'sd
                         multiple image is brighter than the foreground lens light profile.
     '''
     m_num = np.zeros(len(m_obs))
-    for izl, zl in enumerate(zl_array[zl_array>0]):
-        M_array_V = -2.5 * (4.86 * np.log10(sigma_array / 200) + 8.52)
-        Kc = K_correction(zl, obs_band, 'sdss_g0', M_array_V)
-        obs_band_to_intr_UV_corr = 5 * np.log10(cosmo.luminosity_distance(zl).value * 1e5) + Kc
-        m_array_i = M_array_V + obs_band_to_intr_UV_corr
-        N_per_sg = np.sum(matrix, axis=0)[:, izl]
-        for imu, mu in enumerate(m_array_i):
-            m_idx = np.argmin(np.abs(m_obs - mu))
-            m_num[m_idx] = m_num[m_idx] + N_per_sg[imu]
+    lens_counts = np.sum(matrix, axis=0)
+    # Use indices from the original redshift grid when excluding the observer.
+    for izl in np.flatnonzero(zl_array > 0):
+        magnitudes = app_magn_from_L_sigma_Nandini(sigma_array, zl_array[izl], obs_band)
+        for isg, magnitude in enumerate(magnitudes):
+            m_idx = np.argmin(np.abs(m_obs - magnitude))
+            m_num[m_idx] += lens_counts[isg, izl]
     return m_num
+
+def M_star_sigma_relation_Cannarozzo(M_star, z):
+    """Return velocity dispersion (km/s) for an early-type galaxy of stellar
+    mass M_star (solar masses) at redshift z, from Cannarozzo et al. (2020).
+    https://ui.adsabs.harvard.edu/abs/2020MNRAS.498.1101C/abstract
+    """
+    return np.power(10, 2.21 + 0.18 * np.log10(M_star/1e11) + 0.48 * np.log10(1 + z))

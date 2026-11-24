@@ -70,6 +70,40 @@ class SurveyComparison(unittest.TestCase):
         self.compare('DES i band', sigma, zl, zs, M[::-1], Phi_vel_disp=ls.Phi_vel_disp_SDSS,
                      arc_mu_threshold=4, seeing_trsh=0.7, SIE_FLAG=False)
 
+    def test_lens_magnitude_bins_exclude_the_observer(self):
+        sigma = np.array([150., 180., 225., 270.])
+        zl = np.array([0., 0.2, 0.8, 1.2])
+        m = np.linspace(14., 30., 25)
+        counts = np.arange(3 * len(sigma) * len(zl)).reshape(3, len(sigma), len(zl))
+        expected = self.reference.get_len_magnitude_distr(m, zl[1:], sigma, counts[:, :, 1:])
+        actual = ls.get_len_magnitude_distr(m, zl, sigma, counts)
+        self.assertEqual(actual.tobytes(), expected.tobytes())
+        self.assertEqual(actual.sum(), counts[:, :, 1:].sum())
+        direct = np.zeros_like(m)
+        for izl in range(1, len(zl)):
+            magnitudes = ls.app_magn_from_L_sigma_Nandini(sigma, zl[izl])
+            bins = [np.argmin(abs(m - magnitude)) for magnitude in magnitudes]
+            np.add.at(direct, bins, counts[:, :, izl].sum(axis=0))
+        self.assertEqual(actual.tobytes(), direct.tobytes())
+
+    def test_optical_depth_and_lensed_fractions(self):
+        zs = 2.1
+        old = self.reference
+        for vdf in (old.Phi_vel_disp_Mason, old.Phi_vel_disp_Geng):
+            self.assertEqual(old.dTau_dz(0.35, zs, vdf).hex(), ls.dTau_dz(0.35, zs, vdf).hex())
+            self.assertEqual(old.Tau(zs, vdf).hex(), ls.Tau(zs, vdf).hex())
+        for mag in (-21., np.linspace(-24., -16., 9)):
+            for module, other, args in [
+                (old.Fraction_lensed, ls.Fraction_lensed,
+                 (mag, old.dPdMu_Point_SIS, old.schechter_LF, old.Phi_vel_disp_Geng, zs)),
+                (old.Fraction_lensed_SIE, ls.Fraction_lensed_SIE,
+                 (1, mag, old.schechter_LF, old.Phi_vel_disp_Geng, zs))
+            ]:
+                expected, actual = module(*args), other(*args)
+                self.assertEqual(expected.shape, actual.shape)
+                self.assertEqual(expected.dtype, actual.dtype)
+                self.assertEqual(expected.tobytes(), actual.tobytes())
+
     def test_parallel_schedules_every_visible_plane(self):
         sigma = np.array([140., 250., 320.])
         zl = np.array([0., 0.18, 0.7])
