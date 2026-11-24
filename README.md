@@ -10,12 +10,7 @@ The model and its comparison with observed lens searches are described in
 ## Installation
 
 From this checkout, run `python -m pip install .` in a Python 3.9–3.11 environment.
-The core package uses the dependencies pinned in [requirements.txt](requirements.txt).
-
-The halo occupation model includes halo mass and power tables at redshift zero
-and from 1.2 to 2.2 in steps of 0.1. To generate tables at other redshifts,
-install `python -m pip install '.[hod]'`. Generated tables go in
-`~/.cache/galess/HMF_tables` or the directory set by `GALESS_HMF_CACHE`.
+The package uses the dependencies pinned in [requirements.txt](requirements.txt).
 
 ## Calculate a survey
 
@@ -65,7 +60,7 @@ of workers. When using multiprocessing in a script, put the call inside
 | --- | --- |
 | [Basic survey forecast](examples/basic_example.ipynb) | Compare lens-light selections, change the VDF and magnitude cut, and plot the distributions. |
 | [Euclid lens population](examples/Euclid_lenses.ipynb) | Draw a reproducible mock catalog, inspect joint distributions and compare marginals with Collett (2015). |
-| [Rare lenses and halo occupations](examples/other_figures.ipynb) | Count detectable cusps and quads, forecast double-source systems in two bands, and calculate host masses and satellite fractions. |
+| [Rare lens configurations](examples/other_figures.ipynb) | Count detectable cusps and quads, forecast double-source systems in two bands, and explore lens scaling relations. |
 | [Paper figures](examples/paper_figures.ipynb) | Plot image-selection fractions and compare the forecast with graded SuGOHI candidates. |
 
 The cusp and quad calculation selects on third- and fourth-image brightness
@@ -121,9 +116,6 @@ different bands, magnitude orderings and custom population functions.
   the nearer source's photometry. The two selections are now independent.
   Empty conditional magnitude bins return zero. The source-magnitude
   histogram also applies its cut to the correct positive-redshift slices.
-- The HOD model evaluates tabulated nonlinear power at each integration
-  wavenumber. Effective Tinker bias uses peak height. Pass
-  `USE_MY_BIAS=True` to reproduce dev's original squared-peak-height bias.
 
 ## Attribution
 

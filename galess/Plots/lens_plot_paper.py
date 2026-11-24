@@ -4,7 +4,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib import cm
 
 from galess.LensStat import lens_stat as ls
 from galess.RareLensStat import rare_lens_stat as rls
@@ -213,33 +212,6 @@ def compare_sigma_distributions_surveys(surveys_selection, sigma_array, zl_array
     PLOT_FOR_KEYNOTE=0):
     _compare_marginals(single_compare_sigma_distributions_surveys, surveys_selection,
         sigma_array, zl_array, zs_array, PLOT_FOR_KEYNOTE)
-
-
-def plot_angular_separation(survey_title, _theta_arcsec, omega, cmap_c=cm.cool, frac_lens=0.1,
-    PLOT_FOR_KEYNOTE=0, A_w=0.4, beta=0.6):
-    """Show the cumulative separation from the lens and one-halo angular correlation models."""
-    set_plt_param(PLOT_FOR_KEYNOTE)
-    theta = np.asarray(_theta_arcsec)
-    key = _saved_title(survey_title)
-    radius = utils._load_survey_result(key, 'Theta_E_noLL')
-    matrix = utils._load_survey_result(key, 'matrix_noLL')
-    # Average the bright image position over the interval [1, 2] Einstein radii.
-    position = sum(radius * factor for factor in np.linspace(1, 2, 11)) / 11
-    hist = np.histogram(position, bins=theta, weights=matrix)[0]
-    lens = np.r_[0., np.cumsum(hist) / hist.sum()]
-    # Use the one-halo correlation over the same separation interval as the paper figure.
-    corr = np.where((theta >= 1) & (theta <= 10), omega, 0)
-    density = 2 * np.pi * theta * (theta[1] - theta[0]) * (corr + 1)
-    halo = np.cumsum(density) / density.sum()
-    curves = ((lens, 'Lenses only', '--'), (halo, 'One-halo term', ':'),
-        (frac_lens * lens + (1 - frac_lens) * halo, 'Observed ACF', '-'))
-    for count in ((3, 1, 2) if PLOT_FOR_KEYNOTE else (3,)):
-        _, ax = plt.subplots(figsize=(6, 5))
-        for values, label, style in curves[:count]:
-            ax.plot(theta, values, ls=style, label=label)
-        ax.set(xlabel=r'$\theta$ [arcsec]', ylabel=r'$P(<\theta)$', xlim=(0, 10), ylim=(0, 1.1))
-        ax.legend()
-        plt.show()
 
 
 def _search_catalog(name):
