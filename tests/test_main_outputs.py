@@ -86,6 +86,20 @@ class SurveyComparison(unittest.TestCase):
             np.add.at(direct, bins, counts[:, :, izl].sum(axis=0))
         self.assertEqual(actual.tobytes(), direct.tobytes())
 
+    def test_smoothing_short_population_grids(self):
+        sigma, zl, zs = np.array([120., 280.]), np.array([0., .2, .8]), np.array([0., .5, 2.])
+        counts = np.arange(1., 19.).reshape(len(zs), len(sigma), len(zl))
+        raw = self.reference.get_N_and_P_projections(counts, sigma, zl, zs, SMOOTH=False)
+        smooth = ls.get_N_and_P_projections(counts, sigma, zl, zs)
+        for original, result in zip(raw[3:], smooth[3:]):
+            padded = np.pad(original[1:], (1, 1))
+            expected = [original[0]]
+            for i in range(len(original)-1):
+                expected.append(np.dot(padded[i:i+3], np.ones(3) / 3))
+            self.assertEqual(result.shape, original.shape)
+            np.testing.assert_allclose(result, expected, rtol=1e-15)
+        self.assertFalse(smooth[2][np.less_equal.outer(zs, zl)].any())
+
     def test_optical_depth_and_lensed_fractions(self):
         zs = 2.1
         old = self.reference

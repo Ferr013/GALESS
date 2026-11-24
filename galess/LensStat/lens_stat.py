@@ -1722,7 +1722,7 @@ def get_N_and_P_projections(N_gal_matrix, sigma_array, zl_array, zs_array, SMOOT
                     zs_array: ndarray(dtype=float, ndim=1)
                         Redshift of the source
                     SMOOTH: (boolean)
-                        Flag to use Singular Isothermal Ellipsoid (SIE) for the lens mass profile
+                        Apply a three-bin rolling average to the projections
             Returns:
                     Ngal_zl_sigma: ndarray(dtype=float, ndim=2)
                         Number of identifiable lenses distribution over lens redshift and vel.disp.
@@ -1738,28 +1738,29 @@ def get_N_and_P_projections(N_gal_matrix, sigma_array, zl_array, zs_array, SMOOT
                         Probability distribution of identifiable lenses over lens vel. disp. sigma
     '''
     Ngal_zl_sigma = np.sum(N_gal_matrix, axis=0)
-    Ngal_zl_zs    = np.sum(N_gal_matrix, axis=1)
+    Ngal_zl_zs = np.sum(N_gal_matrix, axis=1)
     Ngal_sigma_zs = np.sum(N_gal_matrix, axis=2)
-    P_zs = np.sum(N_gal_matrix, axis=(1,2))/np.sum(N_gal_matrix)/(zs_array[1]-zs_array[0])
-    P_zl = np.sum(N_gal_matrix, axis=(0,1))/np.sum(N_gal_matrix)/(zl_array[1]-zl_array[0])
-    P_sg = np.sum(N_gal_matrix, axis=(0,2))/np.sum(N_gal_matrix)/(sigma_array[1]-sigma_array[0])
-    if SMOOTH: ### ROLLING AVERAGE ###
-        Ngal_zl_sigma = signal.convolve2d(Ngal_zl_sigma, np.ones((3,3))/9, mode='same')
-        Ngal_zl_zs    = signal.convolve2d(Ngal_zl_zs   , np.ones((3,3))/9, mode='same')
-        Ngal_sigma_zs = signal.convolve2d(Ngal_sigma_zs, np.ones((3,3))/9, mode='same')
+    total = np.sum(N_gal_matrix)
+    axes = (((1, 2), zs_array), ((0, 1), zl_array), ((0, 2), sigma_array))
+    densities = [np.sum(N_gal_matrix, axis=ax) / total / (grid[1] - grid[0])
+        for ax, grid in axes]
+    if SMOOTH:
+        kernel = np.ones((3, 3)) / 9
+        Ngal_zl_sigma = signal.convolve2d(Ngal_zl_sigma, kernel, mode='same')
+        Ngal_zl_zs = signal.convolve2d(Ngal_zl_zs, kernel, mode='same')
+        Ngal_sigma_zs = signal.convolve2d(Ngal_sigma_zs, kernel, mode='same')
         if zl_array[0] == 0:
-            Ngal_zl_sigma[:,0] = 0
-            Ngal_zl_zs[:,0] = 0
+            Ngal_zl_sigma[:, 0] = 0
+            Ngal_zl_zs[:, 0] = 0
         if zs_array[0] == 0:
-            Ngal_zl_zs[0,:] = 0
-            Ngal_sigma_zs[0,:] = 0
-        for izl,zl in enumerate(zl_array):
-             for izs,zs in enumerate(zs_array):
-                if zl >= zs: Ngal_zl_zs[izs][izl] = 0
-        P_zs = np.append(P_zs[0], np.convolve(P_zs[1:], np.ones(3)/3, mode='same'))
-        P_zl = np.append(P_zl[0], np.convolve(P_zl[1:], np.ones(3)/3, mode='same'))
-        P_sg = np.append(P_sg[0], np.convolve(P_sg[1:], np.ones(3)/3, mode='same'))
-    return Ngal_zl_sigma, Ngal_sigma_zs, Ngal_zl_zs, P_zs, P_zl, P_sg
+            Ngal_zl_zs[0, :] = 0
+            Ngal_sigma_zs[0, :] = 0
+        Ngal_zl_zs[np.less_equal.outer(zs_array, zl_array)] = 0
+        # Keep the first bin fixed; center the rolling mean on each remaining bin.
+        kernel = np.ones(3) / 3
+        densities = [np.append(p[0], signal.convolve(p[1:], kernel, mode='same', method='direct'))
+            for p in densities]
+    return Ngal_zl_sigma, Ngal_sigma_zs, Ngal_zl_zs, *densities
 
 def app_magn_from_L_sigma_Nandini(sigma_array, z, obs_band='sdss_i0'):
     """Return apparent lens magnitudes from velocity dispersions in km/s.
