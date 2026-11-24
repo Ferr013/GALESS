@@ -11,6 +11,7 @@ import zipfile
 
 import numpy as np
 from galess.LensStat import lens_stat as ls
+from galess.LensStat import parallel_ls
 from galess.Utils import ls_utils as utils
 
 
@@ -68,6 +69,23 @@ class SurveyComparison(unittest.TestCase):
                      LF_func=lambda M, z: 0.75 * ls.schechter_LF(M, z))
         self.compare('DES i band', sigma, zl, zs, M[::-1], Phi_vel_disp=ls.Phi_vel_disp_SDSS,
                      arc_mu_threshold=4, seeing_trsh=0.7, SIE_FLAG=False)
+
+    def test_parallel_schedules_every_visible_plane(self):
+        sigma = np.array([140., 250., 320.])
+        zl = np.array([0., 0.18, 0.7])
+        zs = np.array([0., 0.4, 0.95, 2., 11.])
+        args = (sigma, zl, zs, np.linspace(-24., -16., 8), 26., 30.,
+                0.13, 10, 1000., 21., 25., 'sdss_i0')
+        evolution = (-1.1, 0.25, 0.05, -0.05)
+        expected = self.reference.calculate_num_lenses_and_prob(
+            *args, Phi_vel_disp=lambda s, z: ls.Phi_vel_disp_GENERIC(s, z, *evolution))[0]
+        visible = zs <= ls.get_highest_LYA_rest_fram_observable('sdss_i0')
+        for workers in (1, 2, 7):
+            with self.subTest(workers=workers):
+                actual = parallel_ls.calculate_num_lenses_and_prob(
+                    *args, Phi_vel_disp=ls.Phi_vel_disp_GENERIC, VDF_args=evolution, ncores=workers)
+                self.assertEqual(actual.shape, expected[visible].shape)
+                self.assertEqual(actual.tobytes(), expected[visible].tobytes())
 
     @unittest.skipUnless(os.environ.get('GALESS_FULL_GRID'), 'set GALESS_FULL_GRID=1')
     def test_euclid_full_grid(self):
