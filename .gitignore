@@ -1,16 +1,12 @@
 .vscode
 *.pyc
 *.egg-info/
-galess/HOD*
 galess/__pycache__
 galess/data/omega
-galess/data/HMF_tables
 galess/data/surveys_results
-galess/Plots/lens_plot_paper*
 galess/.DS_Store
 galess/PROFILING
 galess/environment.*
-galess/RareLensStat
 examples/paper*
 examples/Requests
 examples/img
@@ -18,4 +14,5 @@ scripts/remove*
 profile.html
 profile.json
 build*
-test*
+/tests/*.ipynb
+/tests/test_import.py

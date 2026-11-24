@@ -50,6 +50,17 @@ def read_survey_params(title, VERBOSE = 0):
             print(f"{key}: {value}")
     return params
 
+def _survey_result_path(title, field):
+    name = remove_spaces_from_string(title)
+    return os.path.join(BASEPATH, 'surveys_results', name, name + '_' + field + '.pkl')
+
+
+def _load_survey_result(title, field):
+    """Read one saved distribution without loading the magnitude tensors."""
+    with open(_survey_result_path(title, field), 'rb') as pickle_file:
+        return pickle.load(pickle_file)
+
+
 def load_pickled_files(title, DOUBLE_LENS = 0):
     '''
     Returns the resulting distributions for a given combination of survey and photometric band.
@@ -59,7 +70,7 @@ def load_pickled_files(title, DOUBLE_LENS = 0):
                     title: (string)
                         Title of the survey + photo band
                     DOUBLE_LENS: (boolean)
-                        Flag to extract a double lens file structure
+                        When true, each model returns separate radii for the two source planes.
             Returns:
                     Ngal_matrix_LL: ndarray(dtype=float, ndim=3)
                         (Model with Lens Light) Number of lensed galaxies per bin
@@ -86,34 +97,17 @@ def load_pickled_files(title, DOUBLE_LENS = 0):
                         of velocity dispersion, redshift of the lens and the source,
                         and abs magnitude of the source.
     '''
-    TITLE = remove_spaces_from_string(title)
-    FOLDERPATH = BASEPATH + 'surveys_results/'+TITLE+'/'
-    if os.path.exists(FOLDERPATH):
-        FPATH = FOLDERPATH+TITLE+'_matrix_LL.pkl'
-        if os.path.isfile(FPATH):
-            with open(FPATH, 'rb') as pickle_file: _temp_LL = pickle.load(pickle_file)
-            FPATH = FOLDERPATH+TITLE+'_prob_LL.pkl'
-            with open(FPATH, 'rb') as pickle_file: _prob_LL = pickle.load(pickle_file)
-            FPATH = FOLDERPATH+TITLE+'_matrix_noLL.pkl'
-            with open(FPATH, 'rb') as pickle_file: _temp_noLL = pickle.load(pickle_file)
-            FPATH = FOLDERPATH+TITLE+'_prob_noLL.pkl'
-            with open(FPATH, 'rb') as pickle_file: _prob_noLL = pickle.load(pickle_file)
-            if DOUBLE_LENS:
-                FPATH = FOLDERPATH+TITLE+'_Theta_E_LL_z1.pkl'
-                with open(FPATH, 'rb') as pickle_file: _Theta_E_LL_z1 = pickle.load(pickle_file)
-                FPATH = FOLDERPATH+TITLE+'_Theta_E_noLL_z1.pkl'
-                with open(FPATH, 'rb') as pickle_file: _Theta_E_noLL_z1 = pickle.load(pickle_file)
-                FPATH = FOLDERPATH+TITLE+'_Theta_E_LL_z2.pkl'
-                with open(FPATH, 'rb') as pickle_file: _Theta_E_LL_z2 = pickle.load(pickle_file)
-                FPATH = FOLDERPATH+TITLE+'_Theta_E_noLL_z2.pkl'
-                with open(FPATH, 'rb') as pickle_file: _Theta_E_noLL_z2 = pickle.load(pickle_file)
-                return _temp_LL, _Theta_E_LL_z1, _Theta_E_LL_z2, _prob_LL, _temp_noLL, _Theta_E_noLL_z1, _Theta_E_noLL_z2, _prob_noLL
-            FPATH = FOLDERPATH+TITLE+'_Theta_E_LL.pkl'
-            with open(FPATH, 'rb') as pickle_file: _Theta_E_LL = pickle.load(pickle_file)
-            FPATH = FOLDERPATH+TITLE+'_Theta_E_noLL.pkl'
-            with open(FPATH, 'rb') as pickle_file: _Theta_E_noLL = pickle.load(pickle_file)
-            return _temp_LL, _Theta_E_LL, _prob_LL, _temp_noLL, _Theta_E_noLL, _prob_noLL
-    raise ValueError('Files do not exist. Run the model on this survey.')
+    if not os.path.isfile(_survey_result_path(title, 'matrix_LL')):
+        raise ValueError('Files do not exist. Run the model on this survey.')
+    result = []
+    for model in ('LL', 'noLL'):
+        result.append(_load_survey_result(title, 'matrix_' + model))
+        radii = ('_z1', '_z2') if DOUBLE_LENS else ('',)
+        for plane in radii:
+            result.append(_load_survey_result(title, 'Theta_E_' + model + plane))
+        result.append(_load_survey_result(title, 'prob_' + model))
+    return tuple(result)
+
 
 def save_pickled_files(
                     title,
@@ -152,47 +146,23 @@ def save_pickled_files(
                         of velocity dispersion, redshift of the lens and the source,
                         and abs magnitude of the source.
                     DOUBLE_LENS: (boolean)
-                        Flag to extract a double lens file structure
+                        When true, pass each model's radii as a (near, far) pair.
             Returns:
                     None
     '''
-    TITLE = remove_spaces_from_string(title)
-    FOLDERPATH = BASEPATH + 'surveys_results/'+TITLE+'/'
-    if not os.path.exists(FOLDERPATH):
-        os.makedirs(FOLDERPATH)
-    FPATH = FOLDERPATH+TITLE+'_matrix_LL.pkl'
-    with open(FPATH, 'wb') as pickle_file:
-        pickle.dump(temp_LL, pickle_file)
-    FPATH = FOLDERPATH+TITLE+'_prob_LL.pkl'
-    with open(FPATH, 'wb') as pickle_file:
-        pickle.dump(prob_LL, pickle_file)
-    FPATH = FOLDERPATH+TITLE+'_matrix_noLL.pkl'
-    with open(FPATH, 'wb') as pickle_file:
-        pickle.dump(temp_noLL, pickle_file)
-    FPATH = FOLDERPATH+TITLE+'_prob_noLL.pkl'
-    with open(FPATH, 'wb') as pickle_file:
-        pickle.dump(prob_noLL, pickle_file)
-    if DOUBLE_LENS:
-        FPATH = FOLDERPATH+TITLE+'_Theta_E_LL_z1.pkl'
-        with open(FPATH, 'wb') as pickle_file:
-            pickle.dump(Theta_E_LL[0], pickle_file)
-        FPATH = FOLDERPATH+TITLE+'_Theta_E_noLL_z1.pkl'
-        with open(FPATH, 'wb') as pickle_file:
-            pickle.dump(Theta_E_noLL[0], pickle_file)
-        FPATH = FOLDERPATH+TITLE+'_Theta_E_LL_z2.pkl'
-        with open(FPATH, 'wb') as pickle_file:
-            pickle.dump(Theta_E_LL[1], pickle_file)
-        FPATH = FOLDERPATH+TITLE+'_Theta_E_noLL_z2.pkl'
-        with open(FPATH, 'wb') as pickle_file:
-            pickle.dump(Theta_E_noLL[1], pickle_file)
-    else:
-        FPATH = FOLDERPATH+TITLE+'_Theta_E_LL.pkl'
-        with open(FPATH, 'wb') as pickle_file:
-            pickle.dump(Theta_E_LL, pickle_file)
-        FPATH = FOLDERPATH+TITLE+'_Theta_E_noLL.pkl'
-        with open(FPATH, 'wb') as pickle_file:
-            pickle.dump(Theta_E_noLL, pickle_file)
-    pass
+    os.makedirs(os.path.dirname(_survey_result_path(title, 'matrix_LL')), exist_ok=True)
+    for model, matrix, radii, prob in (('LL', temp_LL, Theta_E_LL, prob_LL),
+        ('noLL', temp_noLL, Theta_E_noLL, prob_noLL)):
+        fields = [('matrix_' + model, matrix), ('prob_' + model, prob)]
+        if DOUBLE_LENS:
+            fields.extend([('Theta_E_' + model + '_z1', radii[0]),
+                ('Theta_E_' + model + '_z2', radii[1])])
+        else:
+            fields.append(('Theta_E_' + model, radii))
+        for name, value in fields:
+            with open(_survey_result_path(title, name), 'wb') as pickle_file:
+                pickle.dump(value, pickle_file)
+
 
 def print_summary_surveys(surveys_selection):
     '''
