@@ -3,7 +3,6 @@
 lenses and lensed sources in a given survey."""
 
 import os.path
-from importlib.resources import files
 import numpy as np
 from scipy import integrate as integral
 from scipy import signal, stats
@@ -12,7 +11,6 @@ from scipy.special import ellipe as E_ell
 from scipy.ndimage import gaussian_filter1d
 from tqdm import tqdm
 from astropy.cosmology import FlatLambdaCDM
-import galess.Utils.ls_utils as utils
 
 cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
 
@@ -55,6 +53,11 @@ def schechter_LF(M_int,zs):
     expctf = np.exp(-1 * np.power(10, 0.4 * (Mstar - M_int)))
     return nrmlzt * pwrlaw * expctf
 
+def _theta_scale(zl, zs):
+    Ds = cosmo.angular_diameter_distance(zs).value
+    Dds = cosmo.angular_diameter_distance_z1z2(zl, zs).value
+    return 0.9 * Dds / Ds
+
 def Theta_E(sigma, zl, zs):
     '''
     Returns the Einstein radius of a Singular Isothermal lens.
@@ -70,10 +73,7 @@ def Theta_E(sigma, zl, zs):
                     Theta_E: (float)
                         Einstein radius (arcsec)
     '''
-    v_ref = 161 #km/s per SIE = 0.9 arcsec
-    Ds = cosmo.angular_diameter_distance(zs).value
-    Dds = cosmo.angular_diameter_distance_z1z2(zl,zs).value
-    return 0.9 * Dds/Ds * np.power (sigma/v_ref,2) #arcsec
+    return _theta_scale(zl, zs) * np.power(sigma / 161, 2) #arcsec
 
 def sigma_from_R_Ein(zs, zl, R_E):
     '''
@@ -311,6 +311,23 @@ def Phi_vel_disp_Capelo_Natarajan(
         return np.zeros(len(sigma))
 
 
+def _optical_depth_integrand(zl, zs, Phi_vel_disp):
+    # The cosmological distances and expansion rate stay fixed throughout
+    # the velocity-dispersion integral.
+    Hz = cosmo.H(zl).value
+    Dd = cosmo.angular_diameter_distance(zl).value
+    eps = 1e-8
+    theta_ref = _theta_scale(zl + eps, zs + eps + eps)
+    area_ref = np.pi * np.power(Dd + eps, 2)
+    redshift_factor = np.power(1 + zl, 2)
+    hubble_distance = 299792.458 / Hz
+
+    def integrand(sigma):
+        theta = theta_ref * np.power(sigma / 161, 2)
+        area = area_ref * np.power(theta, 2)
+        return Phi_vel_disp(sigma, zl) * redshift_factor * hubble_distance * area * (1/206265)**2
+    return integrand
+
 def dTau_dz_dsigma(sigma, zl, zs, Phi_vel_disp = Phi_vel_disp_Mason):
     '''
     Returns the differential multiple image optical depth (tau)
@@ -330,13 +347,7 @@ def dTau_dz_dsigma(sigma, zl, zs, Phi_vel_disp = Phi_vel_disp_Mason):
                         Differential multiple image optical depth
                         over dz and dsigma
     '''
-    rad_to_arcsec = 1/206265
-    c_sp = 299792.458 #km/s
-    Hz = cosmo.H(zl).value #km s^-1 Mpc^-1
-    Dd = cosmo.angular_diameter_distance(zl).value
-    eps = 1e-8
-    area = np.pi*np.power(Dd+eps,2)*np.power(Theta_E(sigma, zl+eps, zs+eps+eps),2)
-    return Phi_vel_disp(sigma, zl)*np.power(1+zl,2)*(c_sp/Hz)*area*(rad_to_arcsec**2)
+    return _optical_depth_integrand(zl, zs, Phi_vel_disp)(sigma)
 
 def dTau_dz(zl, zs, Phi_vel_disp = Phi_vel_disp_Mason):
     '''
@@ -356,7 +367,7 @@ def dTau_dz(zl, zs, Phi_vel_disp = Phi_vel_disp_Mason):
                         over dz
     '''
     #1-500km/s to integrate over
-    return integral.quad(dTau_dz_dsigma, 1, 500, args=(zl, zs, Phi_vel_disp))[0]
+    return integral.quad(_optical_depth_integrand(zl, zs, Phi_vel_disp), 1, 500)[0]
 
 def Tau(zs, Phi_vel_disp = Phi_vel_disp_Mason):
     '''
@@ -390,6 +401,13 @@ def integrand_Lens_cone_volume_diff(z):
     Hz = cosmo.H(z).value                              #km s^-1 Mpc^-1
     return np.power(cosmo.angular_diameter_distance(z).value*(1+z),2)*(c_sp/Hz)
 
+def _comoving_shell(z, dz):
+    # Shell volume per steradian; use a half-bin at the origin.
+    vol_r = integrand_Lens_cone_volume_diff(z + dz/2)
+    if z - dz/2 > 0:
+        return dz/2 * (integrand_Lens_cone_volume_diff(z - dz/2) + vol_r)
+    return dz/4 * (integrand_Lens_cone_volume_diff(z) + vol_r)
+
 def Lens_cone_volume_diff(z, area_sq_degree, dz=0.5):
     '''
     Returns the comoving volume of a cone underlying an area of A square degrees,
@@ -402,14 +420,7 @@ def Lens_cone_volume_diff(z, area_sq_degree, dz=0.5):
                     V: (float)
                         Comoving volume cone
     '''
-    area_sterad = area_sq_degree*1/(57.2958**2) #sterad
-    if z-dz/2 > 0:
-        vol_l = integrand_Lens_cone_volume_diff(z-dz/2)
-        vol_r = integrand_Lens_cone_volume_diff(z+dz/2)
-        return dz/2 * (vol_l + vol_r) * area_sterad
-    vol_l = integrand_Lens_cone_volume_diff(z)
-    vol_r = integrand_Lens_cone_volume_diff(z+dz/2)
-    return dz/4 * (vol_l + vol_r) * area_sterad
+    return _comoving_shell(z, dz) * (area_sq_degree / 57.2958**2)
 
 def N_distribution(x, mean, sigma):
     '''
@@ -482,6 +493,9 @@ def dPdMu_Point_SIS(mu):
         return np.append(np.zeros(len(mu[mu<2])), 2/np.power(mu[mu>=2]-1,3))
     return 2/np.power(mu-1,3) if mu>=2 else 0
 
+# The tabulated SIE distributions and the SIS quadrature use the same mu grid.
+_mu = np.logspace(-2, 3., 300)
+
 def Lensed_Point_LF(M_int, mu_min, dPdMu, LF_func, zs):
     '''
     Returns the Lensed Luminosity Function.
@@ -501,7 +515,7 @@ def Lensed_Point_LF(M_int, mu_min, dPdMu, LF_func, zs):
                     LensdLF: ndarray(dtype=float, ndim=1)
                         Lensed Luminosity Function
     '''
-    mu, _dPdMu_ = np.logspace(-2, 3., 300), dPdMu(np.logspace(-2, 3., 300))
+    mu, _dPdMu_ = _mu, dPdMu(_mu.copy())
     mu_index = np.argmin((mu-mu_min)**2)
     displ_LF = LF_func(M_int + 5 / 2 * np.log10(mu[mu_index:]), zs)
     return np.trapz(_dPdMu_[mu_index:] * displ_LF, mu[mu_index:])
@@ -553,13 +567,8 @@ def Fraction_lensed(M_int, dPdMu, LF_func, Phi_vel_disp, zs):
                         Fraction lensed galaxies
     '''
     tau = Tau(zs, Phi_vel_disp)
-    if hasattr(M_int, '__len__'):
-        res = [tau * Magnification_Bias(M, dPdMu, LF_func, zs)/\
-            (tau * Magnification_Bias(M, dPdMu, LF_func, zs)+(1-tau)) for M in M_int]
-    else:
-        res = tau * Magnification_Bias(M_int, dPdMu, LF_func, zs)/\
-            (tau * Magnification_Bias(M_int, dPdMu, LF_func, zs) + (1 - tau))
-    return np.array(res)
+    lensed = tau * Magnification_Bias(M_int, dPdMu, LF_func, zs)
+    return np.array(lensed / (lensed + (1 - tau)))
 
 def mu_lim_second_image(M, M_lim):
     '''
@@ -732,7 +741,7 @@ def Lensed_Point_LF_SIE(img_N, mu_min, M_int, LF_func, zs):
         dP_dmu_SIE, w = __dP_dmu_SIE3, __w3
     elif img_N==4:
         dP_dmu_SIE, w = __dP_dmu_SIE4, __w4
-    mu = np.logspace(-2,3.,300)
+    mu = _mu
     if hasattr(mu_min, '__len__') is False:
         mu_index = np.argmin((mu-mu_min)**2)
         displ_LF = LF_func(M_int + 5 / 2 * np.log10(mu[mu_index:]), zs)
@@ -795,13 +804,8 @@ def Fraction_lensed_SIE(img_N, M_int, LF_func, Phi_vel_disp, zs):
     '''
     #Elliptical caustic area averaged over axis ratio distribution obtained from SIE_avg_corr
     tau = Tau(zs, Phi_vel_disp) * 0.8979070411803386
-    if hasattr(M_int, '__len__'):
-        res = [tau * Magnification_Bias_SIE(img_N, M, LF_func, zs)/\
-            (tau * Magnification_Bias_SIE(img_N, M, LF_func, zs) + (1 - tau)) for M in M_int]
-    else:
-        res = tau * Magnification_Bias_SIE(img_N, M_int, LF_func, zs)/\
-            (tau * Magnification_Bias_SIE(img_N, M_int, LF_func, zs) + (1 - tau))
-    return np.nan_to_num(np.array(res))
+    lensed = tau * Magnification_Bias_SIE(img_N, M_int, LF_func, zs)
+    return np.nan_to_num(np.array(lensed / (lensed + (1 - tau))))
 
 def get_mu_rel_from_cumulative(P1, P2, mu_array, SMOOTH_FLAG=True):
     '''
@@ -820,14 +824,47 @@ def get_mu_rel_from_cumulative(P1, P2, mu_array, SMOOTH_FLAG=True):
                     mu_diff: (float)
                         Relation between mu1 and mu2
     '''
-    diff = np.zeros(0)
-    for id_mu2, mu2 in enumerate(mu_array):
-        id_mu1 = np.argmin((P1-P2[id_mu2])**2)
-        diff   = np.append(diff, mu_array[id_mu1]-mu2)
+    indices = [np.argmin((P1 - p)**2) for p in P2]
+    diff = np.asarray(mu_array)[indices] - mu_array
+    diff = diff.astype(float)
     if SMOOTH_FLAG:
         gauss_sigma, id_gf = 5, 10
         diff = np.append(diff[:id_gf], gaussian_filter1d(diff[id_gf:], gauss_sigma))
     return diff
+
+def _SIE_image_map(img_N):
+    # Match the cumulative magnification distributions once for all magnitudes.
+    if img_N == 2:
+        first, other = PM1, PM2
+    elif img_N == 3:
+        first, other = PM13, PM33
+    elif img_N == 4:
+        first, other = PM14, PM4
+    else:
+        return None
+    steps = np.diff(_mu, append=_mu[-1])
+    PA, PB = steps * first, steps * other
+    diff = get_mu_rel_from_cumulative(
+        np.cumsum(PA) / np.sum(PA), np.cumsum(PB) / np.sum(PB), _mu)
+    mu1 = _mu + diff
+    ratio = _mu / mu1
+    ratio[0] = 0
+    if img_N == 3:
+        ratio[mu1 < 1.45] = 0
+    return mu1, ratio
+
+def _SIE_image_limits(image_map, M, M_lim):
+    if image_map is None:
+        return 0
+    mu1, ratio = image_map
+    target = np.power(10, -0.4 * (M_lim - M))
+    crossings = mu1[:-1][np.diff(np.sign(ratio - target)) != 0]
+    limits = crossings[crossings < 175]
+    if len(limits) == 0:
+        return (9.9e2, 1e3)
+    if len(limits) == 1:
+        return (limits, 1e3)
+    return limits[-2:]
 
 def mu_lim_Nth_image_SIE(img_N, M, M_lim, zs):
     '''
@@ -852,42 +889,7 @@ def mu_lim_Nth_image_SIE(img_N, M, M_lim, zs):
                     mu_lim: (float)
                         Minimum magnification to satisfy M_nth < M_lim
     '''
-    mu_array = np.logspace(-2,3.,300)
-    mu_array_ext_steps = np.zeros(0)
-    for i in range(len(mu_array) - 1):
-        dist = mu_array[i+1] - mu_array[i]
-        mu_array_ext_steps = np.append(mu_array_ext_steps,dist)
-    mu_array_ext_steps = np.append(mu_array_ext_steps,0)
-    if img_N == 2:
-        dP_dmu_A, dP_dmu_B = __dP_dmu_SIE1  , __dP_dmu_SIE2
-    elif img_N == 3:
-        dP_dmu_A, dP_dmu_B = __dP_dmu_SIE1_3, __dP_dmu_SIE3_3
-    elif img_N == 4:
-        dP_dmu_A, dP_dmu_B = __dP_dmu_SIE1_4, __dP_dmu_SIE4
-    else:
-        return 0
-    PA = np.cumsum(mu_array_ext_steps*dP_dmu_A)/np.sum(mu_array_ext_steps*dP_dmu_A)
-    PB = np.cumsum(mu_array_ext_steps*dP_dmu_B)/np.sum(mu_array_ext_steps*dP_dmu_B)
-    diff = get_mu_rel_from_cumulative(PA, PB, mu_array)
-    ratiomuBmuA = mu_array/(mu_array+diff)
-    ratiomuBmuA[0] = 0
-    if img_N==3:
-        ratiomuBmuA[mu_array+diff<1.45] = 0
-    targetval  = np.power(10,-0.4*(M_lim-M))
-    idx = np.argwhere(np.diff(np.sign(ratiomuBmuA-targetval))).flatten()
-    mu1_best = np.zeros(0)
-    for _idx in idx:
-        mu1 = mu_array[_idx]+diff[_idx]
-        if mu1<175:
-            mu1_best = np.append(mu1_best,mu1)
-    if len(mu1_best) == 0:
-        return (9.9e2,1e3)
-    elif len(mu1_best) == 1:
-        return (mu1_best,1e3)
-    elif len(mu1_best) == 2:
-        return  mu1_best
-    else:
-        return  mu1_best[-2:]
+    return _SIE_image_limits(_SIE_image_map(img_N), M, M_lim)
 
 def Fraction_1st_image_arc_SIE(mu_arc, M_int, LF_func, zs):
     '''
@@ -947,13 +949,15 @@ def Fraction_Nth_image_above_Mlim_SIE(img_N, M_int, M_lim, LF_func, zs):
         w = __w4
     else:
         return 0
+    image_map = _SIE_image_map(img_N)
     if hasattr(M_int, '__len__'):
-        res = [Lensed_Point_LF_SIE(1, mu_lim_Nth_image_SIE(img_N, M, M_lim, zs), M, LF_func, zs)/\
-            Lensed_Point_LF_SIE(1, 0, M, LF_func, zs) for M in M_int]
+        res = [Lensed_Point_LF_SIE(
+            1, _SIE_image_limits(image_map, M, M_lim), M, LF_func, zs)
+            / Lensed_Point_LF_SIE(1, 0, M, LF_func, zs) for M in M_int]
     else:
-        mu_LIM = mu_lim_Nth_image_SIE(img_N, M_int, M_lim, zs)
-        res = Lensed_Point_LF_SIE(1, mu_LIM, M_int, LF_func, zs)/\
-            Lensed_Point_LF_SIE(1, 0, M_int, LF_func, zs)
+        limits = _SIE_image_limits(image_map, M_int, M_lim)
+        res = (Lensed_Point_LF_SIE(1, limits, M_int, LF_func, zs)
+            / Lensed_Point_LF_SIE(1, 0, M_int, LF_func, zs))
     return np.nan_to_num(np.array(res)) * w
 
 #### Signal-to-Noise Ratio ########################################################################
@@ -1401,6 +1405,35 @@ def get_FP_parameters(zl_rest_frame_photo_band, zl, n_sigma = 3, SAMPLE_INTERVAL
         return alpha_array, np.array([b]), gamma_array #beta is considered fixed
     else: return np.array([a]), np.array([b]), np.array([g])
 
+def _lens_light_profile(zl, obs_band, n_sigma=3, sample_interval=False):
+    # The foreground Fundamental Plane and size samples are shared by all
+    # lenses in a redshift bin.
+    band = get_rest_frame_band_from_obs_frame_band(zl, obs_band)
+    alpha, beta, gamma = get_FP_parameters(band, zl, n_sigma, sample_interval)
+    if alpha.mean() == 0:
+        return None
+    radii = get_log_R_eff_kpc(band, zl, True)
+    dist = cosmo.angular_diameter_distance(zl).value * 1e3
+    radii = np.array([np.power(10, r) / dist * 206265 for r in radii])
+    return radii, alpha, beta, gamma[::-1], 10 * np.log10(1 + zl)
+
+def _lens_light_weights(sigma, theta, source_SB, profile):
+    if profile is None:
+        return 0, 0
+    radii, alpha, beta, gamma, dimming = profile
+    SBe = (np.log10(radii[:, None]) - gamma - alpha * np.log10(sigma)) / beta + 1.393
+    images = np.linspace(1, 2, 10) * theta
+    weights = []
+    for positions in (images, images - theta):
+        # Compare the source and lens surface brightness at each image
+        # position, then average over FP samples in their original order.
+        profile_SB = 8.32678 * ((positions / radii[:, None])**0.25 - 1)
+        lens_SB = SBe[:, :, None] + profile_SB[:, None, :] + dimming
+        counts = np.sum(source_SB < lens_SB[..., None], axis=2)
+        per_radius = np.add.accumulate(counts / len(images), axis=1)[:, -1]
+        weights.append(np.add.accumulate(per_radius / len(alpha), axis=0)[-1] / len(radii))
+    return tuple(weights)
+
 def Check_R_from_sigma_FP(sigma, zl, zs, m_array, M_array_UV, obs_photo_band,
                             n_sigma = 3, SAMPLE_INTERVAL=False):
     '''
@@ -1435,37 +1468,20 @@ def Check_R_from_sigma_FP(sigma, zl, zs, m_array, M_array_UV, obs_photo_band,
                         Fraction of sources with magnitude M_UV for which the second brightest
                         multiple image is brighter than the foreground lens light profile.
     '''
-    zl_rest_frame_photo_band = get_rest_frame_band_from_obs_frame_band(zl, obs_photo_band)
-    alpha, beta, gamma = get_FP_parameters(zl_rest_frame_photo_band, zl, \
-                                        n_sigma = n_sigma, SAMPLE_INTERVAL=SAMPLE_INTERVAL)
-    if alpha.mean() == 0:
-        return (0, 0)  #FIXME: it does not throw a warning!
-    arr_logRe = get_log_R_eff_kpc(zl_rest_frame_photo_band, zl, True)
-    cosm_dimm_zl = 10 * np.log10(1+zl) #Account for cosmological dimming \propto(1+z)^4
-    Reinst = Theta_E(sigma, zl, zs)    #Einstein radius of the lens
-    SB_iLF = m_array + 2.5*np.log10(np.pi*np.power(Source_size_arcsec(M_array_UV, zs),2))
-    frac1st, frac2nd = 0, 0
-    for Re_logkpc in arr_logRe:
-        Re_arc  = np.power(10, Re_logkpc)/(cosmo.angular_diameter_distance(zl).value*1e3)*206265
-        FP_frac1st, FP_frac2nd = 0, 0
-        for _alpha, _gamma in zip(alpha, gamma[::-1]):
-            SBe_avg = (np.log10(Re_arc)-_gamma-_alpha*np.log10(sigma))/beta #SB [mag x arcsec^-2]
-            SBe = SBe_avg + 1.393 #for a deVac profile <SBe> = SBe - 1.393
-            img_ps = np.linspace(1,2,10)*Reinst
-            _frac1st, _frac2nd = 0, 0
-            for R_1st in img_ps:
-                # SB of the lens light profile at the position of the first image
-                SBr_1st = SBe + 8.32678 * ((R_1st/Re_arc)**0.25 - 1)
-                # SB of the lens light profile at the position of the second image
-                SBr_2nd = SBe + 8.32678 * (((R_1st-Reinst)/Re_arc)**0.25 - 1)
-                _frac1st = _frac1st + (SB_iLF<(SBr_1st+cosm_dimm_zl))
-                _frac2nd = _frac2nd + (SB_iLF<(SBr_2nd+cosm_dimm_zl))
-            FP_frac1st = FP_frac1st + _frac1st/len(img_ps)
-            FP_frac2nd = FP_frac2nd + _frac2nd/len(img_ps)
-        frac1st, frac2nd = frac1st + FP_frac1st/len(alpha), frac2nd + FP_frac2nd/len(alpha)
-    return frac1st/len(arr_logRe), frac2nd/len(arr_logRe)
+    profile = _lens_light_profile(zl, obs_photo_band, n_sigma, SAMPLE_INTERVAL)
+    theta = Theta_E(sigma, zl, zs)
+    size = Source_size_arcsec(M_array_UV, zs)
+    source_SB = m_array + 2.5 * np.log10(np.pi * np.power(size, 2))
+    return _lens_light_weights(sigma, theta, source_SB, profile)
 
-###################################################################################################
+def _lensed_source_LF(zs, M_array, LF_func, SIE_FLAG):
+    if SIE_FLAG:
+        # Elliptical caustic area averaged over the axis ratio distribution.
+        return np.array([Lensed_Point_LF_SIE(1, 0, M, LF_func, zs)
+            * 0.8979070411803386 for M in M_array])
+    return np.array([Lensed_Point_LF(M, 0, dPdMu_Point_SIS, LF_func, zs)
+        for M in M_array])
+
 def get_prob_lensed_bckgnd(sigma, zl, zs, M_array,
                             dzs=0.5, LF_func = schechter_LF, SIE_FLAG=False):
     '''
@@ -1494,15 +1510,96 @@ def get_prob_lensed_bckgnd(sigma, zl, zs, M_array,
     '''
     E_sq_deg = np.pi*(Theta_E(sigma, zl, zs) / 3600)**2 #deg^2
     cVol     = Lens_cone_volume_diff(zs, E_sq_deg, dzs) #Mpc^3
-    #Correction for elliptical caustic area in SIE lens averaged over axis ratio distribution
-    C = 0.8979070411803386
-    if SIE_FLAG:
-        LF = [Lensed_Point_LF_SIE(1, 0, M, LF_func, zs) * C for M in M_array]
-    else:
-        LF = [Lensed_Point_LF(M, 0, dPdMu_Point_SIS, LF_func, zs) for M in M_array]
-    return np.nan_to_num(cVol * np.array(LF) * np.abs(np.diff(M_array)[0]))
+    LF = _lensed_source_LF(zs, M_array, LF_func, SIE_FLAG)
+    return np.nan_to_num(cVol * LF * np.abs(np.diff(M_array)[0]))
 
-###################################################################################################
+def _source_geometry(sigma_array, zl_array, zs, dzs, M_array, LF_func, SIE_FLAG,
+    min_theta):
+    # The luminosity integral only depends on the source plane. Scale it
+    # by each lens cross section after the seeing cut.
+    LF = _lensed_source_LF(zs, M_array, LF_func, SIE_FLAG)
+    dM = np.abs(np.diff(M_array)[0])
+    sigma_squared = np.array([np.power(sigma / 161, 2) for sigma in sigma_array])
+    shell = _comoving_shell(zs, dzs)
+    for izl, zl in enumerate(zl_array):
+        if zl == 0 or zl >= zs:
+            continue
+        theta = _theta_scale(zl, zs) * sigma_squared
+        isg = np.flatnonzero(theta > min_theta)
+        if not len(isg):
+            continue
+        theta = theta[isg]
+        # Scalar squares retain the rounding used in the original cross section.
+        areas = np.array([np.pi * (radius / 3600)**2 for radius in theta])
+        volumes = shell * (areas / 57.2958**2)
+        prob = np.nan_to_num(volumes[:, None] * LF * dM)
+        yield izl, isg, theta, prob
+
+def _lens_counts(sigma_array, zl_array, survey_area_sq_degrees, Phi_vel_disp,
+    max_zs=None, min_theta=0):
+    # The most distant observable source gives the largest Einstein radius.
+    # Skip inaccessible bins before calling a user-supplied VDF.
+    dsg, dzl = np.diff(sigma_array), np.diff(zl_array)
+    sigma_squared = np.array([np.power(sigma / 161, 2) for sigma in sigma_array])
+    columns = []
+    for izl, zl in enumerate(zl_array):
+        if zl == 0 or (max_zs is not None and zl >= max_zs):
+            columns.append(np.zeros(len(sigma_array)))
+            continue
+        visible = np.ones(len(sigma_array), dtype=bool)
+        if max_zs is not None:
+            visible = _theta_scale(zl, max_zs) * sigma_squared > min_theta
+        cone = Lens_cone_volume_diff(zl, survey_area_sq_degrees, dzl[max(izl-1, 0)])
+        counts = []
+        for isg, sigma in enumerate(sigma_array):
+            if not visible[isg]:
+                counts.append(0.)
+                continue
+            width = dsg[max(isg-1, 0)]
+            vdf = Phi_vel_disp(sigma - width/2, zl) + Phi_vel_disp(sigma + width/2, zl)
+            counts.append(cone * (vdf * width / 2))
+        columns.append(counts)
+    return np.asarray(columns).reshape(len(zl_array), len(sigma_array)).T
+
+def _survey_source_plane(sigma_array, zl_array, zs, dzs, M_array,
+    app_magn_limit, seeing_arcsec, SNR, exp_time_sec, sky_bckgnd_m_per_arcsec_sq,
+    zero_point_m, photo_band, mag_cut, arc_mu_threshold, seeing_trsh,
+    num_exposures, LF_func, restframe_band, LENS_LIGHT_FLAG, SIE_FLAG,
+    FLAG_KCORRECTION=True):
+    distance_modulus = 5 * np.log10(cosmo.luminosity_distance(zs).value * 1e5)
+    M_lim = app_magn_limit - distance_modulus
+    if FLAG_KCORRECTION:
+        correction = K_correction(zs, photo_band, restframe_band, M_array)
+        m_array = M_array + (distance_modulus + correction)
+        M_lim = M_lim - K_correction(zs, photo_band, restframe_band, M_lim)
+    else:
+        m_array = M_array + distance_modulus
+    mag_index = np.argmin(np.power(m_array - mag_cut, 2))
+    if SIE_FLAG:
+        arc = Fraction_1st_image_arc_SIE(arc_mu_threshold, M_array, LF_func, zs)
+        second = Fraction_Nth_image_above_Mlim_SIE(2, M_array, M_lim, LF_func, zs)
+    else:
+        arc = Fraction_1st_image_arc(arc_mu_threshold, M_array, LF_func, zs)
+        second = Fraction_2nd_image_above_Mlim(M_array, M_lim, LF_func, zs)
+    size = Source_size_arcsec(M_array, zs)
+    exposure = (size, sky_bckgnd_m_per_arcsec_sq, zero_point_m, exp_time_sec, num_exposures)
+    snr1 = Signal_to_noise_ratio(m_array - 2.5 * np.log10(3), *exposure) >= SNR
+    snr2 = Signal_to_noise_ratio(m_array, *exposure) >= SNR
+    if LENS_LIGHT_FLAG:
+        source_SB = m_array + 2.5 * np.log10(np.pi * np.power(size, 2))
+    else:
+        weight = np.maximum(arc * snr1, second * snr2)
+
+    for izl, isg, theta, prob in _source_geometry(sigma_array, zl_array, zs,
+        dzs, M_array, LF_func, SIE_FLAG, seeing_trsh * seeing_arcsec):
+        if LENS_LIGHT_FLAG:
+            profile = _lens_light_profile(zl_array[izl], photo_band)
+            for row, index in enumerate(isg):
+                w1, w2 = _lens_light_weights(sigma_array[index], theta[row], source_SB, profile)
+                prob[row] *= np.maximum(arc * w1 * snr1, second * w2 * snr2)
+        else:
+            prob *= weight
+        yield izl, isg, theta, prob, mag_index
 
 def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, app_magn_limit,
                                     survey_area_sq_degrees, seeing_arcsec, SNR, exp_time_sec,
@@ -1584,82 +1681,28 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
         return 0, 0, 0
     if mag_cut is None:
         mag_cut = app_magn_limit
-    M_array_UV   = M_array_UV[::-1] if (M_array_UV[0]>M_array_UV[-1]) else M_array_UV
-    # Ngal_tensor will store the number of lenses for each (zs, zl, sigma, Mag_UV) combination
-    Ngal_tensor  = np.zeros((len(zs_array), len(sigma_array), len(zl_array), len(M_array_UV)))
-    # idxM_matrix will store the magnitude at which we should evaluate the cumulative probability
-    idxM_matrix  = np.zeros((len(zs_array), len(sigma_array), len(zl_array))).astype('int')
-    # N_gal_matrix is prob_matrix \times the number of galaxies in the sampled volume with a given
-    # sigma, evaluated at the magnitude described in idxM_matrix
-    Ngal_matrix  = np.zeros((len(zs_array), len(sigma_array), len(zl_array)))
-    # The Einstein radius distribution matrix
-    Theta_E_mat  = np.zeros((len(zs_array), len(sigma_array), len(zl_array)))
-    # Reduce the evaluation to the redshift range for which the rest frame Ly\alpha can be seen by
-    # the photometric filter in use
-    zs_array = zs_array[zs_array<=get_highest_LYA_rest_fram_observable(photo_band)]
-    # Loop over zs, sigma and zl
-    for izs, zs in enumerate(tqdm(zs_array)):
-        _dzs = zs_array[1]-zs_array[0] if (izs==0) else (zs-zs_array[izs-1])
-        if zs==0:
-            continue #avoid division by 0
-        #correcting for distance modulus and K-correction
-        obs_band_to_intr_UV_corr = 5 * np.log10(cosmo.luminosity_distance(zs).value * 1e5)+\
-             K_correction(zs, photo_band, restframe_band, M_array_UV)
-        m_array = M_array_UV + obs_band_to_intr_UV_corr
-        M_lim_b = app_magn_limit - 5 * np.log10(cosmo.luminosity_distance(zs).value * 1e5)
-        M_lim   = M_lim_b - K_correction(zs, photo_band, restframe_band, M_lim_b)
-        idxM_matrix[izs][:][:] = int(np.argmin(np.power(m_array-mag_cut,2)))
-        # Calculate the probability (at each mag bin) that the first image arc is stretched at
-        # least arc_mu_threshold and that the second image is brighter than M_lim
-        if SIE_FLAG:
-            frac_arc = Fraction_1st_image_arc_SIE(arc_mu_threshold, M_array_UV, LF_func, zs)
-            frac_2nd_img = Fraction_Nth_image_above_Mlim_SIE(2, M_array_UV, M_lim, LF_func, zs)
-        else:
-            frac_arc = Fraction_1st_image_arc(arc_mu_threshold, M_array_UV, LF_func, zs)
-            frac_2nd_img = Fraction_2nd_image_above_Mlim(M_array_UV, M_lim, LF_func, zs)
-        #TODO: if(SIE_FLAG): frac_3rd_img, frac_4th_img = Fraction_Nth_image_above_Mlim_SIE(3, ...)
-        for isg, sigma in enumerate(sigma_array):
-            _dsg = sigma_array[1]-sigma_array[0] if isg==0 else sigma-sigma_array[isg-1]
-            for izl, zl in enumerate(zl_array):
-                _dzl = zl_array[1]-zl_array[0] if izl == 0 else zl-zl_array[izl-1]
-                if zl==0:
-                    continue #avoid division by 0
-                # The (\Theta_e > c*seeing) condition is a first order approximation that works
-                # well in the JWST/EUCLID cases (small seeing).
-                #TODO: A complete treatment would involve finding which lensed sources can be seen
-                #TODO: after the deconvolution of the seeing
-                if zs > zl and Theta_E(sigma, zl, zs) > seeing_trsh * seeing_arcsec:
-                    # We approximate the selection of the arc strect OR the second image above
-                    # M_lim with the max (eval at each mag bin)
-                    SNR_1img = Signal_to_noise_ratio(m_array - 2.5 * np.log10(3),
-                                                    Source_size_arcsec(M_array_UV, zs),
-                                                    sky_bckgnd_m_per_arcsec_sq,
-                                                    zero_point_m, exp_time_sec,
-                                                    num_exposures = num_exposures) >= SNR
-                    SNR_2img = Signal_to_noise_ratio(m_array,
-                                                    Source_size_arcsec(M_array_UV, zs),
-                                                    sky_bckgnd_m_per_arcsec_sq,
-                                                    zero_point_m, exp_time_sec,
-                                                    num_exposures = num_exposures) >= SNR
-                    if LENS_LIGHT_FLAG:
-                        weight_1img, weight_2img = Check_R_from_sigma_FP(sigma, zl, zs,
-                                                                        m_array, M_array_UV,
-                                                                        photo_band)
-                    else:
-                        weight_1img, weight_2img = (1,1)
-                    weight_left = frac_arc * weight_1img * SNR_1img
-                    weight_right = frac_2nd_img * weight_2img * SNR_2img
-                    weight_final = np.vstack((weight_left, weight_right))
-                    prob_lens = get_prob_lensed_bckgnd(sigma, zl, zs, M_array_UV, dzs = _dzs,
-                                                        LF_func = LF_func, SIE_FLAG = SIE_FLAG)
-                    weighted_prob_lens = prob_lens * np.max(weight_final, axis=0)
-                    Cone = Lens_cone_volume_diff(zl, survey_area_sq_degrees, dz = _dzl)
-                    IVD = (Phi_vel_disp(sigma-_dsg/2, zl)+Phi_vel_disp(sigma+_dsg/2, zl))*_dsg/2
-                    number_of_ETGs = Cone * IVD
-                    Ngal_tensor[izs][isg][izl][:] = weighted_prob_lens * number_of_ETGs
-                    ijk = idxM_matrix[izs][isg][izl]
-                    Ngal_matrix[izs][isg][izl] = np.cumsum(Ngal_tensor[izs][isg][izl][:])[ijk]
-                    Theta_E_mat[izs][isg][izl] = Theta_E(sigma, zl, zs)
+    if M_array_UV[0] > M_array_UV[-1]:
+        M_array_UV = M_array_UV[::-1]
+    shape = (len(zs_array), len(sigma_array), len(zl_array))
+    Ngal_matrix, Theta_E_mat = np.zeros(shape), np.zeros(shape)
+    Ngal_tensor = np.zeros((*shape, len(M_array_UV)))
+    max_zs = get_highest_LYA_rest_fram_observable(photo_band)
+    visible = np.flatnonzero((zs_array != 0) & (zs_array <= max_zs))
+    if not len(visible):
+        return Ngal_matrix, Theta_E_mat, Ngal_tensor
+    counts = _lens_counts(sigma_array, zl_array, survey_area_sq_degrees, Phi_vel_disp,
+        zs_array[visible].max(), seeing_trsh * seeing_arcsec)
+    dzs = np.diff(zs_array)
+    for izs in tqdm(visible):
+        for izl, isg, theta, prob, mag_index in _survey_source_plane(
+            sigma_array, zl_array, zs_array[izs], dzs[max(izs-1, 0)], M_array_UV,
+            app_magn_limit, seeing_arcsec, SNR, exp_time_sec, sky_bckgnd_m_per_arcsec_sq,
+            zero_point_m, photo_band, mag_cut, arc_mu_threshold, seeing_trsh,
+            num_exposures, LF_func, restframe_band, LENS_LIGHT_FLAG, SIE_FLAG):
+            lenses = np.asarray(prob * counts[isg, izl, None], dtype=float)
+            Ngal_tensor[izs, isg, izl] = lenses
+            Ngal_matrix[izs, isg, izl] = np.cumsum(lenses[:, :mag_index+1], axis=1)[:, -1]
+            Theta_E_mat[izs, isg, izl] = theta
     return Ngal_matrix, Theta_E_mat, Ngal_tensor
 
 def get_N_and_P_projections(N_gal_matrix, sigma_array, zl_array, zs_array, SMOOTH=True):
