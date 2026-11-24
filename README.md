@@ -16,6 +16,17 @@ runtime fell from 80.27 s to 1.775 s, with bitwise-identical survey outputs.
 From this checkout, run `python -m pip install .` in a Python 3.9–3.11 environment.
 The package uses the dependencies pinned in [requirements.txt](requirements.txt).
 
+To install with uv, run these commands from the repository root. If you need
+uv, see the [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/).
+
+```bash
+uv venv --python 3.11
+source .venv/bin/activate
+uv pip install .
+```
+
+In Windows PowerShell, use `.\.venv\Scripts\Activate.ps1` for the activation step.
+
 ## Calculate a survey
 
 This example runs the Euclid Wide VIS forecast with a singular isothermal
