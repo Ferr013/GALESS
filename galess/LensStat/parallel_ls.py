@@ -9,13 +9,13 @@ import galess.LensStat.lens_stat as ls
 
 def _source_counts(plane, sigma_array, zl_array, lens_counts, settings):
     zs, dzs = plane
-    matrix = np.zeros_like(lens_counts)
+    matrix = np.zeros(lens_counts.shape)
     if zs != 0:
         for izl, isg, theta, prob, mag_index in ls._survey_source_plane(
             sigma_array, zl_array, zs, dzs, *settings
         ):
-            weighted = prob * lens_counts[isg, izl, None]
-            matrix[isg, izl] = np.cumsum(weighted, axis=-1)[:, mag_index]
+            weighted = ls._counts_per_magnitude(prob, lens_counts[isg, izl])
+            matrix[isg, izl] = np.cumsum(weighted[:, :mag_index+1], axis=1)[:, -1]
     return matrix
 
 
@@ -23,7 +23,7 @@ def _foreground_counts(sigma_array, zl_array, area, Phi_vel_disp, VDF_args, max_
     if VDF_args is None:
         return ls._lens_counts(sigma_array, zl_array, area, Phi_vel_disp, max_zs, min_theta)
     return ls._lens_counts(sigma_array, zl_array, area,
-                           lambda sigma, zl: Phi_vel_disp(sigma, zl, *VDF_args), max_zs, min_theta)
+        lambda sigma, zl: Phi_vel_disp(sigma, zl, *VDF_args), max_zs, min_theta)
 
 
 def inner_integral(zs, _dzs, sigma_array, zl_array, M_array_UV, app_magn_limit,
@@ -34,11 +34,11 @@ def inner_integral(zs, _dzs, sigma_array, zl_array, M_array_UV, app_magn_limit,
 ):
     """Integrate one source redshift and return counts by velocity dispersion and lens redshift."""
     counts = _foreground_counts(sigma_array, zl_array, survey_area_sq_degrees,
-                                Phi_vel_disp, VDF_args, zs, seeing_trsh * seeing_arcsec)
+        Phi_vel_disp, VDF_args, zs, seeing_trsh * seeing_arcsec)
     settings = (M_array_UV, app_magn_limit, seeing_arcsec, SNR, exp_time_sec,
-                sky_bckgnd_m_per_arcsec_sq, zero_point_m, photo_band, mag_cut,
-                arc_mu_threshold, seeing_trsh, num_exposures, LF_func, restframe_band,
-                LENS_LIGHT_FLAG, SIE_FLAG)
+        sky_bckgnd_m_per_arcsec_sq, zero_point_m, photo_band, mag_cut,
+        arc_mu_threshold, seeing_trsh, num_exposures, LF_func, restframe_band,
+        LENS_LIGHT_FLAG, SIE_FLAG)
     return _source_counts((zs, _dzs), sigma_array, zl_array, counts, settings)
 
 
@@ -71,14 +71,14 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
     dzs = np.diff(zs_array)
     planes = list(zip(zs_array[visible], np.r_[dzs[0], dzs][visible]))
     counts = _foreground_counts(sigma_array, zl_array, survey_area_sq_degrees,
-                                Phi_vel_disp, VDF_args, max(zs_array[visible]),
-                                seeing_trsh * seeing_arcsec)
+        Phi_vel_disp, VDF_args, max(zs_array[visible]),
+        seeing_trsh * seeing_arcsec)
     settings = (M_array_UV, app_magn_limit, seeing_arcsec, SNR, exp_time_sec,
-                sky_bckgnd_m_per_arcsec_sq, zero_point_m, photo_band, mag_cut,
-                arc_mu_threshold, seeing_trsh, num_exposures, LF_func, restframe_band,
-                LENS_LIGHT_FLAG, SIE_FLAG)
+        sky_bckgnd_m_per_arcsec_sq, zero_point_m, photo_band, mag_cut,
+        arc_mu_threshold, seeing_trsh, num_exposures, LF_func, restframe_band,
+        LENS_LIGHT_FLAG, SIE_FLAG)
     integrate = partial(_source_counts, sigma_array=sigma_array, zl_array=zl_array,
-                        lens_counts=counts, settings=settings)
+        lens_counts=counts, settings=settings)
     if ncores is None:
         ncores = multiprocessing.cpu_count()
     ncores = min(ncores, len(planes))

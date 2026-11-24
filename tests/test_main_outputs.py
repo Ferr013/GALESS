@@ -12,6 +12,7 @@ import zipfile
 import numpy as np
 from galess.LensStat import lens_stat as ls
 from galess.LensStat import parallel_ls
+from galess.RareLensStat import rare_lens_stat as rare
 from galess.Utils import ls_utils as utils
 
 
@@ -118,6 +119,32 @@ class SurveyComparison(unittest.TestCase):
                 self.assertEqual(expected.dtype, actual.dtype)
                 self.assertEqual(expected.tobytes(), actual.tobytes())
 
+    def test_third_and_fourth_images_against_main_luminosity_functions(self):
+        # Dev's cusp/quad selection applied to the independent original main routines.
+        old = self.reference
+        sigma, zl, zs = np.array([180., 220.]), np.array([0., .3]), np.array([0., 1.])
+        mag = np.linspace(-24., -16., 15)
+        area, limit, cut, band = 40., 26., 24.5, 'sdss_i0'
+        cusp, quad, radius = rare.calculate_num_quad_cusps_lenses(
+            sigma, zl, zs, mag, limit, area, .12, 20., 2000., 21., 25., band, mag_cut=cut)
+        modulus = 5 * np.log10(old.cosmo_luminosity_distance(1.) * 1e5)
+        apparent = mag + (modulus + old.K_correction(1., band, 'galex_NUV', mag))
+        index = np.argmin((apparent - cut)**2)
+        abs_limit = limit - modulus
+        abs_limit -= old.K_correction(1., band, 'galex_NUV', abs_limit)
+        for image, counts in ((3, cusp), (4, quad)):
+            fraction = old.Fraction_Nth_image_above_Mlim_SIE(image, mag, abs_limit,
+                old.schechter_LF, 1.)
+            self.assertGreater(counts.sum(), 0)
+            self.assertFalse(counts[0].any() or counts[:, :, 0].any())
+            for i, s in enumerate(sigma):
+                prob = old.get_prob_lensed_bckgnd(s, .3, 1., mag, dzs=1., SIE_FLAG=True)
+                density = old.Phi_vel_disp_Mason(s-20, .3) + old.Phi_vel_disp_Mason(s+20, .3)
+                n_lens = old.Lens_cone_volume_diff(.3, area, dz=.3) * density * 40 / 2
+                expected = np.cumsum(prob * fraction)[index] * n_lens
+                self.assertEqual(counts[1, i, 1].tobytes(), expected.tobytes())
+                self.assertEqual(radius[1, i, 1].tobytes(), old.Theta_E(s, .3, 1.).tobytes())
+
     def test_parallel_schedules_every_visible_plane(self):
         sigma = np.array([140., 250., 320.])
         zl = np.array([0., 0.18, 0.7])
@@ -134,6 +161,18 @@ class SurveyComparison(unittest.TestCase):
                     *args, Phi_vel_disp=ls.Phi_vel_disp_GENERIC, VDF_args=evolution, ncores=workers)
                 self.assertEqual(actual.shape, expected[visible].shape)
                 self.assertEqual(actual.tobytes(), expected[visible].tobytes())
+
+    def test_extended_precision_vdf_accumulates_in_the_output_dtype(self):
+        args = (np.array([140., 220.]), np.array([0., .2]), np.array([0., 1.]),
+                np.linspace(-24., -16., 8), 26., 30., .13, 10, 1000., 21., 25., 'sdss_i0')
+        def population(s, z):
+            return np.longdouble(ls.Phi_vel_disp_Mason(s, z))
+        expected = self.reference.calculate_num_lenses_and_prob(*args, Phi_vel_disp=population)[0]
+        serial = ls.calculate_num_lenses_and_prob(*args, Phi_vel_disp=population)[0]
+        parallel = parallel_ls.calculate_num_lenses_and_prob(*args, Phi_vel_disp=population, ncores=1)
+        for actual in (serial, parallel):
+            self.assertEqual(expected.dtype, actual.dtype)
+            self.assertEqual(expected.tobytes(), actual.tobytes())
 
     @unittest.skipUnless(os.environ.get('GALESS_FULL_GRID'), 'set GALESS_FULL_GRID=1')
     def test_euclid_full_grid(self):

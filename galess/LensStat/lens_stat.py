@@ -1601,6 +1601,13 @@ def _survey_source_plane(sigma_array, zl_array, zs, dzs, M_array,
             prob *= weight
         yield izl, isg, theta, prob, mag_index
 
+def _counts_per_magnitude(prob, foreground):
+    # A scalar VDF can return extended precision. NumPy promotes an array
+    # times a scalar differently from two arrays on the original pinned stack.
+    if prob.dtype == foreground.dtype:
+        return np.asarray(prob * foreground[:, None], dtype=float)
+    return np.array([row * count for row, count in zip(prob, foreground)], dtype=float)
+
 def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, app_magn_limit,
                                     survey_area_sq_degrees, seeing_arcsec, SNR, exp_time_sec,
                                     sky_bckgnd_m_per_arcsec_sq, zero_point_m, photo_band,
@@ -1699,7 +1706,7 @@ def calculate_num_lenses_and_prob(sigma_array, zl_array, zs_array, M_array_UV, a
             app_magn_limit, seeing_arcsec, SNR, exp_time_sec, sky_bckgnd_m_per_arcsec_sq,
             zero_point_m, photo_band, mag_cut, arc_mu_threshold, seeing_trsh,
             num_exposures, LF_func, restframe_band, LENS_LIGHT_FLAG, SIE_FLAG):
-            lenses = np.asarray(prob * counts[isg, izl, None], dtype=float)
+            lenses = _counts_per_magnitude(prob, counts[isg, izl])
             Ngal_tensor[izs, isg, izl] = lenses
             Ngal_matrix[izs, isg, izl] = np.cumsum(lenses[:, :mag_index+1], axis=1)[:, -1]
             Theta_E_mat[izs, isg, izl] = theta
